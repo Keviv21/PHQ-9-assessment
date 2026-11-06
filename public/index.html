@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PHQ-9 assessment | Casebook preview</title>
+  <link rel="stylesheet" href="/casebook.css">
+  <link rel="stylesheet" href="/report-view.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">+</span><strong>Casebook</strong><span class="header-divider"></span><span class="prototype-label">Assessment preview</span></div>
+      <span id="connection" class="status">Ready to begin</span>
+    </header>
+
+    <div class="workspace">
+      <aside class="context-panel" aria-label="Assessment setup">
+        <div class="breadcrumb">Casebook <span aria-hidden="true">/</span> <strong data-i18n="assessments">Assessments</strong></div>
+        <div class="assessment-identity"><div class="assessment-avatar">PH</div><div><h1>PHQ-9</h1><p data-i18n="assessmentPeriod">ASSESSMENT · PAST TWO WEEKS</p></div></div>
+        <p class="context-summary" data-i18n="intro">Discuss nine symptoms from the past two weeks. Each answer is confirmed before it is saved.</p>
+        <div class="context-meta"><div><span data-i18n="statementCount">Questions</span><strong>9</strong></div><div><span data-i18n="languageLabel">Assessment language</span><strong id="selected-language">English</strong></div></div>
+        <label class="language-picker" for="language"><span data-i18n="languageLabel">Assessment language</span><select id="language"><option value="en">English</option></select></label>
+        <div class="mode-actions"><button id="start-live" class="button primary" data-i18n="startLive">Start voice conversation</button><button id="start-demo" class="button secondary" data-i18n="startDemo">Try form test</button></div>
+        <p id="key-note" class="support-note"></p>
+        <div class="side-divider"></div>
+        <section class="recent-section"><h2 data-i18n="savedResults">SAVED RESULTS</h2><div id="recent-results" class="recent-results"><p class="empty" data-i18n="resultsEmpty">No completed assessments yet.</p></div></section>
+      </aside>
+
+      <main class="conversation-panel">
+        <div class="conversation-header"><div class="assistant-avatar" aria-hidden="true"><span></span></div><div><h2 data-i18n="conversation">Assessment conversation</h2><p data-i18n="conversationIntro">Share your experience in your own words. The assistant will check its understanding.</p></div><span id="live-label" class="live-badge">OFF</span></div>
+        <div class="conversation-body">
+          <section class="assessment-card" aria-label="Current question"><div class="assessment-topline"><span data-i18n="currentStatement">CURRENT QUESTION</span><span id="progress-label">0 / 9</span></div><div class="progress-track"><div id="progress-bar"></div></div>
+            <div id="question-area" class="question-area"><span class="question-number">PHQ-9</span><h2 data-i18n="chooseMode">Choose a mode to begin</h2><p data-i18n="cameraInfo">Gemini Live uses your microphone and, if enabled, camera frames for conversational context. The camera does not determine scores.</p></div>
+            <div id="answer-options" class="answer-options" aria-label="Form test response choices"></div>
+            <div id="confirmation" class="confirmation hidden" role="status"><div><span class="eyebrow" data-i18n="confirmResponse">IS THIS WHAT YOU MEANT?</span><strong id="pending-label"></strong></div><div class="confirm-actions"><button id="cancel-answer" class="button secondary" data-i18n="change">Let me clarify</button><button id="confirm-answer" class="button primary" data-i18n="confirmAnswer">Yes, that's right</button></div></div>
+            <div id="results" class="results hidden"></div>
+          </section>
+          <section id="transcript" class="transcript" aria-label="Conversation" aria-live="polite"><p class="empty" data-i18n="conversationEmpty">The conversation will appear here.</p></section>
+        </div>
+        <form id="text-form" class="composer"><input id="text-input" type="text" maxlength="1000" autocomplete="off" disabled aria-label="Type a response" placeholder="You can type a response here during a Live session"><button id="send-text" class="button primary" type="submit" disabled data-i18n="sendText">Send</button></form>
+      </main>
+
+      <aside class="session-panel" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2 data-i18n="liveSession">LIVE SESSION</h2><span id="mode-label">OFF</span></div><div class="camera-box"><video id="preview" autoplay muted playsinline></video><div id="camera-placeholder" data-i18n="cameraOff">Camera is off</div><span class="camera-badge" data-i18n="localPreview">LOCAL PREVIEW</span></div><div class="media-actions"><button id="mic-toggle" class="button secondary" disabled>Turn microphone off</button><button id="camera-toggle" class="button secondary" disabled>Turn camera on</button></div><p class="support-note" data-i18n="privacy">Confirmed answers, brief response summaries, and scores are stored locally. Audio and camera frames are streamed during a Live session and are not saved by this app.</p></section><section class="session-card guide"><h2 data-i18n="guideTitle">How this works</h2><ol><li data-i18n="guideOne">Describe your experience in your own words.</li><li data-i18n="guideTwo">Gemini may ask a short follow-up.</li><li data-i18n="guideThree">Confirm the summary before it is saved.</li></ol><p data-i18n="footer">Workflow prototype only. A positive response to item 9 needs human follow-up.</p></section></aside>
+    </div>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
