@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GeminiBridge } from '../src/gemini-bridge.js';
+import { getForm } from '../src/assessment.js';
 import { openStore } from '../src/store.js';
 
 test('conversational mapping waits for confirmation and asks the next PHQ-9 item', async () => {
@@ -27,6 +28,22 @@ test('conversational mapping waits for confirmation and asks the next PHQ-9 item
     assert.match(prompt.value.turns[0].parts[0].text, /item Q02 of 9/);
     assert.match(prompt.value.turns[0].parts[0].text, /Feeling down, depressed, or hopeless/);
     assert.ok(events.findIndex((event) => event.type === 'tool_response' && event.value.functionResponses[0].id === 'two') < events.indexOf(prompt));
+  } finally { store.close(); }
+});
+
+test('Hindi conversation advances using the fixed Hindi question text', () => {
+  const store = openStore(':memory:');
+  try {
+    const assessment = store.create('live', 'hi');
+    const prompts = [];
+    const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model', language: 'hi',
+      socket: { readyState: 1, send: () => {} }, store, assessmentId: assessment.id, onState: () => {} });
+    bridge.session = { sendClientContent: (value) => prompts.push(value) };
+    bridge.propose('Q01', 1, 'पिछले दो सप्ताह में कई दिन ऐसा हुआ।', 'voice');
+    const result = bridge.confirm();
+    bridge.afterConfirmation(result);
+    assert.equal(store.get(assessment.id).language, 'hi');
+    assert.match(prompts[0].turns[0].parts[0].text, new RegExp(getForm('hi').questions[1].text));
   } finally { store.close(); }
 });
 

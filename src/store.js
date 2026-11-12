@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { assertAnswer, form, scoreAnswers } from './assessment.js';
+import { assertAnswer, getForm, scoreAnswers } from './assessment.js';
 
 export function openStore(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
@@ -14,7 +14,7 @@ export function openStore(path) {
       id TEXT PRIMARY KEY,
       form_id TEXT NOT NULL CHECK (form_id = 'phq9'),
       form_version TEXT NOT NULL,
-      language TEXT NOT NULL CHECK (language = 'en'),
+      language TEXT NOT NULL CHECK (language IN ('en', 'hi')),
       mode TEXT NOT NULL CHECK (mode IN ('demo', 'live')),
       collection_method TEXT NOT NULL CHECK (collection_method IN ('explicit_choice', 'conversational_inference')),
       status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed')),
@@ -45,8 +45,38 @@ export function openStore(path) {
   if (!db.prepare('PRAGMA table_info(assessments)').all().some((column) => column.name === 'review_ready')) {
     db.exec('ALTER TABLE assessments ADD COLUMN review_ready INTEGER NOT NULL DEFAULT 0 CHECK (review_ready IN (0, 1))');
   }
+  // SQLite cannot alter a CHECK constraint in place. Rebuild only legacy English-only tables.
+  const assessmentSql = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'assessments'").get().sql;
+  if (/CHECK\s*\(\s*language\s*=\s*'en'\s*\)/i.test(assessmentSql)) {
+    db.exec('PRAGMA foreign_keys = OFF');
+    try {
+      db.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE assessments_new (
+          id TEXT PRIMARY KEY,
+          form_id TEXT NOT NULL CHECK (form_id = 'phq9'),
+          form_version TEXT NOT NULL,
+          language TEXT NOT NULL CHECK (language IN ('en', 'hi')),
+          mode TEXT NOT NULL CHECK (mode IN ('demo', 'live')),
+          collection_method TEXT NOT NULL CHECK (collection_method IN ('explicit_choice', 'conversational_inference')),
+          status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed')),
+          review_ready INTEGER NOT NULL DEFAULT 0 CHECK (review_ready IN (0, 1)),
+          started_at TEXT NOT NULL,
+          completed_at TEXT,
+          scores_json TEXT
+        ) STRICT;
+        INSERT INTO assessments_new (id, form_id, form_version, language, mode, collection_method, status, review_ready, started_at, completed_at, scores_json)
+          SELECT id, form_id, form_version, language, mode, collection_method, status, review_ready, started_at, completed_at, scores_json FROM assessments;
+        DROP TABLE assessments;
+        ALTER TABLE assessments_new RENAME TO assessments;
+        COMMIT;`);
+    } catch (error) {
+      try { db.exec('ROLLBACK'); } catch {}
+      throw error;
+    } finally { db.exec('PRAGMA foreign_keys = ON'); }
+    if (db.prepare('PRAGMA foreign_key_check').all().length) throw new Error('Existing answers failed migration integrity check.');
+  }
   const insertAssessment = db.prepare(`INSERT INTO assessments (id, form_id, form_version, language, mode, collection_method, status, started_at)
-    VALUES (?, 'phq9', ?, 'en', ?, ?, 'in_progress', ?)`);
+    VALUES (?, 'phq9', ?, ?, ?, ?, 'in_progress', ?)`);
   const selectAssessment = db.prepare('SELECT * FROM assessments WHERE id = ?');
   const selectAnswers = db.prepare('SELECT * FROM answers WHERE assessment_id = ? ORDER BY question_number');
   const countRevisions = db.prepare('SELECT COUNT(*) AS count FROM answer_revisions WHERE assessment_id = ?');
@@ -75,9 +105,10 @@ export function openStore(path) {
   }
 
   function create(mode, language = 'en') {
-    if (!['demo', 'live'].includes(mode) || language !== 'en') throw new RangeError('Unsupported mode or language.');
+    if (!['demo', 'live'].includes(mode)) throw new RangeError('Unsupported mode.');
+    const assessmentForm = getForm(language);
     const id = randomUUID();
-    insertAssessment.run(id, form.version, mode, mode === 'live' ? 'conversational_inference' : 'explicit_choice', new Date().toISOString());
+    insertAssessment.run(id, assessmentForm.version, language, mode, mode === 'live' ? 'conversational_inference' : 'explicit_choice', new Date().toISOString());
     return get(id);
   }
 

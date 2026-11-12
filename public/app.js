@@ -185,7 +185,7 @@ function renderReview(next) {
   finalizeButton.textContent = t('finalizeReport');
   finalizeButton.addEventListener('click', () => {
     if (socket?.readyState !== WebSocket.OPEN) {
-      appendTranscript('system', 'Connection lost. Restart the assessment to review answers.');
+      appendTranscript('system', t('connectionLost'));
       return;
     }
     finalizeButton.disabled = true;
@@ -277,7 +277,7 @@ async function toggleCamera() {
         socket.send(packet);
       }, 'image/jpeg', 0.55);
     }, 1100);
-  } catch (error) { appendTranscript('system', `Camera unavailable: ${error.message}`); }
+  } catch (error) { appendTranscript('system', `${t('cameraUnavailable')}: ${error.message}`); }
 }
 
 function stopInputMedia() {
@@ -325,8 +325,8 @@ async function start(nextMode) {
   if (nextMode === 'live') {
     try { await startMicrophone(); }
     catch (error) {
-      appendTranscript('system', `Microphone access failed: ${error.message}`);
-      setStatus('Microphone unavailable');
+      appendTranscript('system', `${t('microphoneFailed')}: ${error.message}`);
+      setStatus(t('microphoneUnavailable'));
       ui.startLive.disabled = false; ui.startDemo.disabled = false;
       ui.language.disabled = false;
       stopMedia();
@@ -352,7 +352,7 @@ async function start(nextMode) {
     }
     else if (message.type === 'error') { appendTranscript('system', message.message); if (state?.status === 'review' && finalizeButton) finalizeButton.disabled = false; }
   };
-  connection.onerror = () => appendTranscript('system', 'Connection error. Check the server terminal.');
+  connection.onerror = () => appendTranscript('system', t('connectionError'));
   connection.onclose = () => {
     if (socket !== connection) return;
     ui.startLive.disabled = !config.geminiConfigured;
@@ -372,10 +372,10 @@ async function refreshRecent() {
   for (const item of results.slice(0, 5)) {
     const row = document.createElement('a'); row.className = 'recent-item';
     row.href = `/report.html?id=${encodeURIComponent(item.id)}`;
-    row.setAttribute('aria-label', `Open PHQ-9 report completed ${new Date(item.completedAt).toLocaleString()}`);
+    row.setAttribute('aria-label', `${t('openReport')} ${new Date(item.completedAt).toLocaleString(item.language === 'hi' ? 'hi-IN' : 'en-IN')}`);
     const kind = item.collectionMethod === 'conversational_inference' ? t('conversation') : item.mode === 'live' ? t('previousLive') : t('formTest');
-    const title = document.createElement('strong'); title.textContent = `${kind} · ${item.language?.toUpperCase() || 'EN'} · ${item.scores.rawTotal} / 27${item.scores.requiresHumanFollowUp ? ' · Follow-up needed' : ''}`;
-    const date = document.createElement('span'); date.textContent = new Date(item.completedAt).toLocaleString();
+    const title = document.createElement('strong'); title.textContent = `${kind} · ${item.language?.toUpperCase() || 'EN'} · ${item.scores.rawTotal} / 27${item.scores.requiresHumanFollowUp ? ` · ${t('followUpNeeded')}` : ''}`;
+    const date = document.createElement('span'); date.textContent = new Date(item.completedAt).toLocaleString(item.language === 'hi' ? 'hi-IN' : 'en-IN');
     row.append(title, date); ui.recent.append(row);
   }
 }
@@ -395,7 +395,7 @@ ui.language.addEventListener('change', async () => {
   ui.language.disabled = true;
   try {
     const response = await fetch(`/api/form?language=${encodeURIComponent(selected)}`);
-    if (!response.ok) throw new Error('Could not load the selected form.');
+    if (!response.ok) throw new Error(t('formLoadFailed'));
     form = await response.json();
     language = selected;
     state = null;
@@ -431,7 +431,7 @@ try {
     : t('keyMissing');
   await refreshRecent();
 } catch (error) {
-  setStatus('Server unavailable');
-  ui.keyNote.textContent = `Could not load the form: ${error.message}`;
+  setStatus(t('serverUnavailable'));
+  ui.keyNote.textContent = `${t('couldNotLoad')}: ${error.message}`;
   ui.startLive.disabled = true; ui.startDemo.disabled = true;
 }

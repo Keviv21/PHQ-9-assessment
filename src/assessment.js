@@ -1,18 +1,25 @@
 import { readFileSync } from 'node:fs';
 
 export const form = Object.freeze(JSON.parse(readFileSync(new URL('../data/phq9.json', import.meta.url), 'utf8')));
-export const languages = Object.freeze([{ code: 'en', name: 'English', speechCode: 'en-IN' }]);
+export const hindiForm = Object.freeze(JSON.parse(readFileSync(new URL('../data/phq9.hi.json', import.meta.url), 'utf8')));
+export const languages = Object.freeze([
+  { code: 'en', name: 'English', speechCode: 'en-IN' },
+  { code: 'hi', name: 'हिन्दी', speechCode: 'hi-IN' },
+]);
 const ids = Array.from({ length: 9 }, (_, index) => `Q${String(index + 1).padStart(2, '0')}`);
 
-if (form.formId !== 'phq9' || form.questions.length !== 9 ||
-    form.questions.some((question, index) => question.id !== ids[index] || !question.text?.trim()) ||
-    form.options.length !== 4 || form.options.some((option, index) => option.value !== index || !option.label?.trim())) {
-  throw new Error('The PHQ-9 form is invalid.');
+for (const assessmentForm of [form, hindiForm]) {
+  if (assessmentForm.formId !== 'phq9' || assessmentForm.questions.length !== 9 ||
+      assessmentForm.questions.some((question, index) => question.id !== ids[index] || !question.text?.trim()) ||
+      assessmentForm.options.length !== 4 || assessmentForm.options.some((option, index) => option.value !== index || !option.label?.trim())) {
+    throw new Error(`The ${assessmentForm.language} PHQ-9 form is invalid.`);
+  }
 }
 
 export function getForm(language = 'en') {
-  if (language !== 'en') throw new RangeError('Only the verified English PHQ-9 form is available.');
-  return form;
+  if (language === 'en') return form;
+  if (language === 'hi') return hindiForm;
+  throw new RangeError('Unsupported PHQ-9 language.');
 }
 
 export function assertAnswer(value) {

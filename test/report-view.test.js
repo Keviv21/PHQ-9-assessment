@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { form } from '../src/assessment.js';
+import { form, getForm } from '../src/assessment.js';
 import { openStore } from '../src/store.js';
 import { renderReport } from '../public/report-view.js';
 
@@ -33,6 +33,28 @@ test('completed result renders score, all responses, safety notice, and printabl
     assert.match(text, /Open printable report/);
     const link = container.children[0].children.at(-1);
     assert.equal(link.href, `/report.html?id=${assessment.id}`);
+  } finally {
+    store.close();
+    globalThis.document = previousDocument;
+  }
+});
+
+test('Hindi saved result renders the Hindi questions, scale, and safety notice', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = { createElement: (tag) => new FakeElement(tag) };
+  const store = openStore(':memory:');
+  try {
+    const assessment = store.create('demo', 'hi');
+    let state;
+    for (let number = 1; number <= 9; number++) state = store.record(assessment.id, number, number === 9 ? 1 : 0, 'demo');
+    state = store.finalize(assessment.id, state.answers.map((answer) => answer.value));
+    const container = new FakeElement('main');
+    renderReport(container, state, getForm('hi'), { printableLink: true });
+    assert.match(container.textContent, /पुष्टि किए गए उत्तर/);
+    assert.match(container.textContent, /एक भी दिन नहीं/);
+    assert.match(container.textContent, /कृपया जल्द किसी योग्य चिकित्सक से संपर्क करें/);
+    assert.match(container.textContent, /प्रिंट करने योग्य रिपोर्ट खोलें/);
+    assert.throws(() => renderReport(container, state, form), /language does not match/);
   } finally {
     store.close();
     globalThis.document = previousDocument;

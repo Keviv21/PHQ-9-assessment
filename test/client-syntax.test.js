@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { copy } from '../public/i18n.js';
 
 test('browser scripts parse and the assessment screen has its referenced controls', () => {
-  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js']) {
+  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js']) {
     const path = fileURLToPath(new URL(`../public/${name}`, import.meta.url));
     execFileSync(process.execPath, ['--check', path], { stdio: 'pipe' });
   }
@@ -17,5 +17,7 @@ test('browser scripts parse and the assessment screen has its referenced control
   }
   for (const [, key] of html.matchAll(/data-i18n="([^"]+)"/g)) {
     assert.ok(copy.en[key], `Missing English text for ${key}`);
+    assert.ok(copy.hi[key], `Missing Hindi text for ${key}`);
   }
+  assert.match(html, /<option value="hi">हिन्दी<\/option>/);
 });

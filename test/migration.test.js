@@ -45,6 +45,11 @@ test('existing completed results survive the final-review schema upgrade', () =>
       assert.equal(previous.answers.length, 9);
       assert.equal(previous.scores.rawTotal, 0);
       assert.equal(previous.reviewChangeCount, 0);
+      assert.equal(previous.language, 'en');
+      let hindi = store.create('demo', 'hi');
+      for (let number = 1; number <= 9; number++) hindi = store.record(hindi.id, number, 0, 'demo');
+      assert.equal(store.finalize(hindi.id, Array(9).fill(0)).language, 'hi');
+      assert.equal(store.get('legacy').answers.length, 9);
       let current = store.create('demo');
       for (let number = 1; number <= 9; number++) current = store.record(current.id, number, 0, 'demo');
       assert.equal(current.status, 'review');

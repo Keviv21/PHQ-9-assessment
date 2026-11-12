@@ -6,6 +6,7 @@ import { WebSocketServer } from 'ws';
 import { currentQuestion, getForm, languages } from './assessment.js';
 import { openStore } from './store.js';
 import { GeminiBridge } from './gemini-bridge.js';
+import { recommendAssessments } from './recommendation.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
@@ -14,7 +15,7 @@ const store = openStore(dbPath);
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/', '/index.html', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-view.css']);
+const allowedStatic = new Set(['/', '/index.html', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-view.css', '/recommend.html', '/recommend.js']);
 const activeAssessments = new Set();
 
 function json(response, status, value) {
@@ -23,8 +24,25 @@ function json(response, status, value) {
 }
 
 const server = http.createServer((request, response) => {
-  if (request.method !== 'GET') return json(response, 405, { error: 'Method not allowed.' });
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+  if (url.pathname === '/api/recommendations') {
+    if (request.method !== 'POST') return json(response, 405, { error: 'Method not allowed.' });
+    if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
+    let body = '';
+    let tooLarge = false;
+    request.on('data', (chunk) => {
+      if (tooLarge) return;
+      body += chunk;
+      if (body.length > 4096) tooLarge = true;
+    });
+    request.on('end', () => {
+      if (tooLarge) return json(response, 413, { error: 'Context is too large. Use only structured fields.' });
+      try { return json(response, 200, recommendAssessments(JSON.parse(body))); }
+      catch (error) { return json(response, 400, { error: error.message }); }
+    });
+    return;
+  }
+  if (request.method !== 'GET') return json(response, 405, { error: 'Method not allowed.' });
   if (url.pathname === '/api/health') return json(response, 200, { ok: true });
   if (url.pathname === '/api/config') {
     return json(response, 200, { geminiConfigured: Boolean(apiKey), model, webcamFrameRate: 1, languages });

@@ -25,6 +25,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal(ready, true, 'server started');
     const page = await (await fetch(`${base}/`)).text();
     assert.match(page, /PHQ-9/);
+    assert.match(page, /recommend\.html/);
     assert.match(page, /report-view\.css/);
     const reportPage = await (await fetch(`${base}/report.html`)).text();
     assert.match(reportPage, /Print \/ Save as PDF/);
@@ -32,9 +33,26 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal((await fetch(`${base}/report-view.js`)).status, 200);
     assert.equal((await fetch(`${base}/report.css`)).status, 200);
     assert.equal((await fetch(`${base}/report-view.css`)).status, 200);
+    assert.equal((await fetch(`${base}/recommend.html`)).status, 200);
+    assert.equal((await fetch(`${base}/recommend.js`)).status, 200);
+    const suggestion = await fetch(`${base}/api/recommendations`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ageGroup: '19to64', concerns: ['depression'], traumaExposure: 'notReported', safetyStatus: 'noneReported' }),
+    });
+    assert.equal(suggestion.status, 200);
+    assert.equal((await suggestion.json()).recommendations[0].id, 'phq9');
+    const rejected = await fetch(`${base}/api/recommendations`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ageGroup: '19to64', concerns: [], traumaExposure: 'notReported', safetyStatus: 'noneReported', patientId: 'private' }),
+    });
+    assert.equal(rejected.status, 400);
     const form = await (await fetch(`${base}/api/form`)).json();
     assert.equal(form.questions.length, 9);
     assert.equal(form.referencePeriod, 'Past two weeks');
+    const hindiForm = await (await fetch(`${base}/api/form?language=hi`)).json();
+    assert.equal(hindiForm.language, 'hi');
+    assert.equal(hindiForm.questions.length, 9);
+    assert.equal(hindiForm.options[0].label, 'एक भी दिन नहीं');
     assert.equal((await fetch(`${base}/api/form?language=mr`)).status, 400);
     socket = new WebSocket(`ws://127.0.0.1:${port}/ws?mode=demo&language=en`);
     const messages = [];
@@ -72,6 +90,32 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     const reportData = await (await fetch(`${base}/api/results/${results[0].id}`)).json();
     assert.equal(reportData.answers.length, 9);
     assert.equal(reportData.scores.requiresHumanFollowUp, true);
+
+    socket.close();
+    socket = new WebSocket(`ws://127.0.0.1:${port}/ws?mode=demo&language=hi`);
+    const hindiMessages = [];
+    const hindiWaiters = [];
+    socket.on('message', (raw) => {
+      const message = JSON.parse(raw.toString());
+      if (hindiWaiters.length) hindiWaiters.shift()(message);
+      else hindiMessages.push(message);
+    });
+    await once(socket, 'open');
+    const nextHindi = () => hindiMessages.length ? Promise.resolve(hindiMessages.shift()) : new Promise((resolve) => hindiWaiters.push(resolve));
+    const firstHindi = await nextHindi();
+    assert.equal(firstHindi.assessment.language, 'hi');
+    assert.equal(firstHindi.question.text, hindiForm.questions[0].text);
+    for (let number = 1; number <= 9; number++) {
+      socket.send(JSON.stringify({ type: 'select', value: 0 }));
+      assert.equal((await nextHindi()).number, number);
+      socket.send(JSON.stringify({ type: 'confirm' }));
+      assert.equal((await nextHindi()).assessment.answers.length, number);
+    }
+    socket.send(JSON.stringify({ type: 'finalize', answers: Array(9).fill(0) }));
+    const hindiCompleted = await nextHindi();
+    assert.equal(hindiCompleted.assessment.status, 'completed');
+    assert.equal(hindiCompleted.assessment.language, 'hi');
+    assert.equal(hindiCompleted.assessment.scores.rawTotal, 0);
   } finally {
     socket?.close();
     child.kill();
