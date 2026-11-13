@@ -7,6 +7,7 @@ import { createTranslationsService } from "./translations.js";
 import { GeminiBridge } from "./live-bridge.js";
 import { presentation } from "./presentation.js";
 import { HttpError } from "./errors.js";
+import { doctorGuidance } from "./doctor-guidance.js";
 const esc = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -86,6 +87,16 @@ export function createWorkspaceApi(
         data = store.createPatient(await body(req));
       else if (p[0] === "patients" && p.length === 2 && req.method === "GET")
         data = store.patient(p[1]);
+      else if (
+        p[0] === "patients" &&
+        p.length === 3 &&
+        p[2] === "doctor-guidance" &&
+        ["GET", "POST"].includes(req.method)
+      )
+        data = doctorGuidance(
+          store.patient(p[1]),
+          req.method === "POST" ? await body(req) : undefined,
+        );
       else if (
         p[0] === "patients" &&
         p[2] === "recommendations" &&

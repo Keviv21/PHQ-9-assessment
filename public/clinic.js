@@ -32,6 +32,10 @@ function clearConsultation() {
   $("doctor-messages").replaceChildren();
   $("doctor-suggestions").replaceChildren();
   recommendBusy = false;
+  $("guidance-form").reset();
+  $("guidance-fields").disabled = true;
+  $("guidance-results").replaceChildren();
+  $("guidance-status").textContent = "";
 }
 function view(name, patientId = selectedPatientId) {
   clearConsultation();
@@ -256,6 +260,166 @@ async function suggest(source, refresh = false) {
     }
   }
 }
+const concernLabels = {
+  depression: "Low mood or reduced interest",
+  anxiety: "Worry or anxiety",
+  traumaSymptoms: "Trauma-related symptoms",
+  stress: "Stress",
+};
+function guidanceConcerns() {
+  return [
+    ...document.querySelectorAll('input[name="guidance-concern"]:checked'),
+  ].map((i) => i.value);
+}
+function guidanceFocus() {
+  const concerns = guidanceConcerns(),
+    selected = $("guidance-focus").value;
+  $("guidance-focus").replaceChildren(new Option("Use summary priorities", ""));
+  concerns.forEach((value) =>
+    $("guidance-focus").add(new Option(concernLabels[value], value)),
+  );
+  $("guidance-focus").value = concerns.includes(selected) ? selected : "";
+  $("guidance-focus-label").hidden = concerns.length < 2;
+  if (concerns.length < 2) $("guidance-focus").value = "";
+}
+function renderGuidance(result, autoSelect = false) {
+  const area = $("guidance-results");
+  area.replaceChildren(
+    el(
+      "p",
+      result.reply,
+      result.status === "suggestions" ? "notice" : "notice alert",
+    ),
+  );
+  for (const item of result.suggestions) {
+    const card = el(
+      "article",
+      undefined,
+      `suggestion-card ${item.assessmentId === result.primaryAssessmentId ? "leading" : ""}`,
+    );
+    card.append(
+      el(
+        "span",
+        item.assessmentId === result.primaryAssessmentId
+          ? "Suggested first · structured guidance"
+          : "Additional option · structured guidance",
+        "tag",
+      ),
+      el("h3", item.title),
+      el("p", item.purpose),
+      el("p", item.reason),
+    );
+    if (item.caution) card.append(el("p", item.caution, "muted-text"));
+    if (item.evidence.length) {
+      card.append(el("strong", "Matched summary observations"));
+      const list = el("ul", undefined, "evidence-list");
+      item.evidence.forEach((e) => list.append(el("li", e.description)));
+      card.append(list);
+    }
+    const source = el("a", "Clinical reference");
+    source.href = item.source;
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    const choose = el(
+      "button",
+      item.available ? "Use this doctor suggestion" : item.availability,
+      "button outline",
+    );
+    choose.type = "button";
+    choose.disabled = !item.available;
+    choose.onclick = () => {
+      selectAssessment(item.assessmentId, "doctor review");
+      manual = true;
+      $("assessment-select").scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    };
+    const actions = el("div", undefined, "guidance-actions");
+    actions.append(choose, source);
+    card.append(actions);
+    area.append(card);
+  }
+  if (result.ignoredObservations.length) {
+    const details = el("details");
+    details.append(
+      el("summary", "Additional context — not used as current concerns"),
+    );
+    const list = el("ul", undefined, "summary-list");
+    result.ignoredObservations.forEach((e) =>
+      list.append(el("li", `${e.description} — ${e.reason}`)),
+    );
+    details.append(list);
+    area.append(details);
+  }
+  if (autoSelect && !manual && result.primaryAssessmentId) {
+    selectAssessment(result.primaryAssessmentId, "doctor review");
+    manual = true;
+  }
+}
+async function loadGuidance(id, token) {
+  $("guidance-status").textContent = "Loading doctor review…";
+  try {
+    const r = await api(`patients/${id}/doctor-guidance`);
+    if (token !== version) return;
+    $("guidance-age").value = r.context.ageGroup;
+    $("guidance-safety").value = r.context.safetyStatus;
+    $("guidance-trauma").value = r.context.traumaExposure;
+    document
+      .querySelectorAll('input[name="guidance-concern"]')
+      .forEach((i) => (i.checked = r.context.concerns.includes(i.value)));
+    guidanceFocus();
+    renderGuidance(r, !config.geminiConfigured);
+    $("guidance-status").textContent =
+      r.contextSource === "Sample patient summary"
+        ? "Pre-filled from the sample summary. Review or adjust the details."
+        : "Confirm the review details and current concerns to request doctor guidance.";
+  } catch (e) {
+    if (token === version) error($("guidance-results"), e.message);
+  } finally {
+    if (token === version) $("guidance-fields").disabled = false;
+  }
+}
+$("guidance-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const token = version,
+    id = selectedPatientId;
+  $("guidance-fields").disabled = true;
+  $("guidance-status").textContent = "Preparing doctor suggestions…";
+  try {
+    const result = await api(`patients/${id}/doctor-guidance`, {
+      method: "POST",
+      body: JSON.stringify({
+        context: {
+          ageGroup: $("guidance-age").value,
+          safetyStatus: $("guidance-safety").value,
+          traumaExposure: $("guidance-trauma").value,
+          concerns: guidanceConcerns(),
+        },
+        focus: $("guidance-focus").value,
+      }),
+    });
+    if (token !== version) return;
+    renderGuidance(result, true);
+    $("guidance-status").textContent =
+      "Updated from doctor review. You can choose a suggestion or any assessment in the full dropdown.";
+  } catch (e) {
+    if (token === version) error($("guidance-results"), e.message);
+  } finally {
+    if (token === version) $("guidance-fields").disabled = false;
+  }
+};
+$("guidance-form").onchange = (e) => {
+  if (e.target.id === "guidance-focus") {
+    $("guidance-form").requestSubmit();
+    return;
+  }
+  guidanceFocus();
+  $("guidance-results").replaceChildren();
+  $("guidance-status").textContent =
+    "Review details changed. Select “Suggest from doctor review” to update suggestions.";
+};
+
 async function openPatient() {
   clearConsultation();
   const token = version;
@@ -293,6 +457,8 @@ async function openPatient() {
     }
     $("refresh-suggestions").disabled = !config.geminiConfigured;
     $("doctor-send").disabled = !config.geminiConfigured;
+    await loadGuidance(p.id, token);
+    if (token !== version) return;
     if (config.geminiConfigured) await suggest("history");
     else
       error(

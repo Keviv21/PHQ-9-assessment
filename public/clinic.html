@@ -225,6 +225,99 @@
                     </p>
                     <div id="suggestion-output" aria-live="polite"></div>
                   </article>
+                  <article class="panel doctor-guidance-panel">
+                    <h2>Doctor-suggested assessments</h2>
+                    <p>
+                      Select current concerns and review details to see
+                      suggested assessments. This works without Gemini. These
+                      review details stay temporary.
+                    </p>
+                    <form id="guidance-form">
+                      <fieldset id="guidance-fields" disabled>
+                        <div class="guidance-fields">
+                          <label
+                            >Age group<select id="guidance-age">
+                              <option value="unknown">Not confirmed</option>
+                              <option value="under19">Under 19</option>
+                              <option value="19to64">Adult 19–64</option>
+                              <option value="65plus">Adult 65+</option>
+                            </select></label
+                          >
+                          <label
+                            >Safety review<select id="guidance-safety">
+                              <option value="notReviewed">Not reviewed</option>
+                              <option value="noneReported">
+                                Reviewed — none reported
+                              </option>
+                              <option value="concern">
+                                Immediate safety concern
+                              </option>
+                            </select></label
+                          >
+                          <label
+                            >Trauma exposure<select id="guidance-trauma">
+                              <option value="notReported">Not reported</option>
+                              <option value="uncertain">Uncertain</option>
+                              <option value="confirmed">
+                                Qualifying exposure and index event confirmed
+                              </option>
+                            </select></label
+                          >
+                        </div>
+                        <fieldset class="guidance-concerns">
+                          <legend>Documented current concerns</legend>
+                          <label
+                            ><input
+                              type="checkbox"
+                              name="guidance-concern"
+                              value="depression"
+                            />Low mood or reduced interest</label
+                          >
+                          <label
+                            ><input
+                              type="checkbox"
+                              name="guidance-concern"
+                              value="anxiety"
+                            />Worry or anxiety</label
+                          >
+                          <label
+                            ><input
+                              type="checkbox"
+                              name="guidance-concern"
+                              value="traumaSymptoms"
+                            />Trauma-related symptoms</label
+                          >
+                          <label
+                            ><input
+                              type="checkbox"
+                              name="guidance-concern"
+                              value="stress"
+                            />Stress</label
+                          >
+                        </fieldset>
+                        <label id="guidance-focus-label" hidden
+                          >Which current concern is the priority?<select
+                            id="guidance-focus"
+                          >
+                            <option value="">Use summary priorities</option>
+                          </select></label
+                        >
+                        <button
+                          id="guidance-submit"
+                          type="submit"
+                          class="button outline"
+                        >
+                          Suggest from doctor review
+                        </button>
+                      </fieldset>
+                    </form>
+                    <p
+                      id="guidance-status"
+                      role="status"
+                      class="muted-text"
+                    ></p>
+                    <div id="guidance-results" aria-live="polite"></div>
+                  </article>
                   <article class="panel">
                     <h2>Doctor conversation</h2>
                     <p>
