@@ -33,7 +33,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal((await fetch(`${base}/clinic.js`)).status, 200);
     assert.equal((await fetch(`${base}/analytics.js`)).status, 200);
     assert.equal((await fetch(`${base}/analytics.css`)).status, 200);
-    assert.match(page, /Assessment Analytics/);
+    assert.match(page, /Patient analytics/);
     const emptyOverview = await (await fetch(`${base}/api/analytics/overview`)).json();
     assert.equal(emptyOverview.totals.prescribed, 0);
     assert.equal(emptyOverview.totals.completionRate, null);

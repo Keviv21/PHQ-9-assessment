@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/clinic.css" />
     <link rel="stylesheet" href="/clinic-recommend.css" />
     <link rel="stylesheet" href="/assessment-library.css" />
-    <link rel="stylesheet" href="/analytics.css" />
+    <link rel="stylesheet" href="/workspace-analytics.css" />
     <link rel="stylesheet" href="/workspace.css" />
   </head>
   <body>
@@ -434,67 +434,28 @@
             <div class="page-heading">
               <div>
                 <p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p>
-                <h1>Assessment Analytics</h1>
+                <h1>Patient analytics</h1>
                 <p>
-                  Review assessment completion and saved patient responses over
-                  time.
+                  Compare completed visits and review each patient's saved
+                  assessments.
                 </p>
               </div>
             </div>
-            <p class="analytics-note">
-              Review completed assessments and response history for the selected
-              patient. Each instrument, version and language is kept separate.
-              Scores appear only when the source provides validated scoring
-              rules.
-            </p>
-            <div
-              id="analytics-status"
-              class="analytics-status"
-              role="status"
-              aria-live="polite"
-            ></div>
-            <div id="analytics-summary" class="analytics-summary"></div>
-            <div class="analytics-grid">
-              <section class="panel analytics-panel">
-                <h2>Completed prescriptions by month</h2>
-                <div id="analytics-months"></div>
-              </section>
-              <section class="panel analytics-panel">
-                <h2>By assessment</h2>
-                <div id="analytics-by-form"></div>
-              </section>
-            </div>
-            <section class="panel analytics-patient-panel">
-              <div class="analytics-patient-heading">
-                <div>
-                  <h2>Patient progress</h2>
-                  <p>
-                    Each row is a completed assessment. Open its report to
-                    review the saved answers.
-                  </p>
-                </div>
-                <div class="analytics-controls">
-                  <label for="analytics-patient"
-                    >Patient<select
-                      id="analytics-patient"
-                      class="patient-picker"
-                    >
-                      <option value="">Choose a patient</option>
-                    </select></label
-                  ><label for="analytics-range"
-                    >Period<select id="analytics-range" class="patient-picker">
-                      <option value="all">All time</option>
-                      <option value="90">Last 90 days</option>
-                      <option value="30">Last 30 days</option>
-                    </select></label
-                  >
-                </div>
+            <section class="panel pa-page">
+              <div class="pa-toolbar">
+                <label
+                  >Patient<select id="analytics-patient" class="patient-picker">
+                    <option value="">Choose a patient</option>
+                  </select></label
+                ><label
+                  >Period<select id="analytics-range">
+                    <option value="all">All time</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="30">Last 30 days</option>
+                  </select></label
+                >
               </div>
-              <div id="analytics-patient-content">
-                <p class="empty-state">
-                  Choose a patient to see their score history.
-                </p>
-              </div>
+              <div id="analytics-dashboard"></div>
             </section>
           </section>
           <section id="library-view" hidden>
@@ -601,6 +562,23 @@
         <p id="patient-form-error" role="alert"></p>
         <button class="button primary" type="submit">Save patient</button>
       </form>
+    </dialog>
+    <dialog
+      id="patient-analytics-dialog"
+      class="patient-analytics"
+      aria-labelledby="pa-dialog-title"
+    >
+      <header class="pa-header">
+        <div>
+          <p class="pa-eyebrow">Clinician review</p>
+          <h2 id="pa-dialog-title">Patient analytics</h2>
+          <p id="pa-patient-name" class="pa-patient-name"></p>
+        </div>
+        <form method="dialog">
+          <button class="button outline" autofocus>Close</button>
+        </form>
+      </header>
+      <div id="analytics-dialog-dashboard" class="pa-body"></div>
     </dialog>
     <script type="module" src="/clinic.js"></script>
 

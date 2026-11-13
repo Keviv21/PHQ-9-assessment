@@ -1,3 +1,4 @@
+import { groupPatientAssessments } from "./patient-analytics.js";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
@@ -275,41 +276,25 @@ export function openWorkspaceStore(
         ),
       );
   }
-  // Adapted from sagar's groupPatientAssessments: keep instruments, versions and languages separate.
   function analytics(patientId) {
-    const states = sessions(patientId),
-      groups = new Map();
-    for (const s of states.filter((x) => x.status === "completed").reverse()) {
-      const key = JSON.stringify([
-        s.assessmentId,
-        s.definition.version,
-        s.language,
-      ]);
-      if (!groups.has(key))
-        groups.set(key, {
-          key,
-          title: s.definition.title,
-          version: s.definition.version,
-          language: s.language,
-          scored: s.definition.scoring.enabled,
-          results: [],
-        });
-      groups
-        .get(key)
-        .results.push({
-          id: s.id,
-          completedAt: s.completedAt,
-          score: s.score,
-          max: s.definition.scoring.max ?? null,
-          answers: s.answers,
-          questionCount: s.answers.length,
-        });
-    }
+    const p = patient(patientId),
+      states = sessions(patientId);
+    const assigned = db
+      .prepare(
+        "SELECT count(*) AS count FROM workspace_prescriptions p WHERE patient_id=? AND NOT EXISTS (SELECT 1 FROM workspace_sessions s WHERE s.prescription_id=p.id)",
+      )
+      .get(patientId).count;
     return {
-      patient: patient(patientId),
+      patient: {
+        id: p.id,
+        name: p.name,
+        recordedAge: p.recordedAge,
+        gender: p.gender,
+      },
       completed: states.filter((s) => s.status === "completed").length,
       drafts: states.filter((s) => s.status === "draft").length,
-      groups: [...groups.values()],
+      assigned,
+      groups: groupPatientAssessments(states),
     };
   }
   return {

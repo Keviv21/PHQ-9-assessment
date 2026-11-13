@@ -97,6 +97,8 @@ function render() {
   $("session-review").hidden = !review;
   $("session-complete").hidden = !complete;
   if (complete) {
+    $("completed-analytics").href =
+      `/?view=analytics&patient=${state.patientId}&session=${state.id}`;
     disconnect();
     stopCamera();
     $("session-setup").hidden = true;

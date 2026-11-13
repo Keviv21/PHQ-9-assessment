@@ -1,3 +1,4 @@
+import { createPatientAnalytics } from "./workspace-analytics.js";
 import { $, el, api, date, reportLinks } from "./workspace-common.js";
 let patients = [],
   catalogue = [],
@@ -39,6 +40,8 @@ function clearConsultation() {
 }
 function view(name, patientId = selectedPatientId) {
   clearConsultation();
+  pageAnalytics.hide();
+  if (analyticsDialog.open) analyticsDialog.close();
   for (const id of ["prescribe", "reports", "analytics", "library"]) {
     $(`${id}-view`).hidden = id !== name;
     $(`nav-${id}`).classList.toggle("active", id === name);
@@ -533,149 +536,20 @@ async function loadReports() {
     error(area, e.message);
   }
 }
-function completionBar(title, count, max) {
-  const row = el("div", undefined, "completion-bar");
-  row.append(el("strong", `${title}: ${count} completed`));
-  const bar = el("progress");
-  bar.max = Math.max(1, max);
-  bar.value = count;
-  bar.setAttribute("aria-label", `${title}: ${count} completed`);
-  row.append(bar);
-  return row;
+const pageAnalytics = createPatientAnalytics($("analytics-dashboard"));
+const dialogAnalytics = createPatientAnalytics($("analytics-dialog-dashboard"));
+const analyticsDialog = $("patient-analytics-dialog");
+function loadAnalytics() {
+  pageAnalytics.show($("analytics-patient").value, {
+    range: $("analytics-range").value,
+    sessionId: new URL(location.href).searchParams.get("session"),
+  });
 }
-async function loadAnalytics() {
-  const id = $("analytics-patient").value,
-    area = $("analytics-patient-content");
-  $("analytics-summary").replaceChildren();
-  $("analytics-months").replaceChildren();
-  $("analytics-by-form").replaceChildren();
-  if (!id) {
-    area.replaceChildren(el("p", "Choose a patient to view their progress."));
-    return;
-  }
-  try {
-    const data = await api(`patients/${id}/analytics`);
-    if ($("analytics-patient").value !== id) return;
-    area.replaceChildren();
-    $("analytics-summary").append(
-      el("div", `${data.completed} completed assessments`, "panel"),
-      el("div", `${data.drafts} in-progress assessments`, "panel"),
-    );
-    const groups = data.groups
-      .map((g) => ({
-        ...g,
-        results: g.results.filter(
-          (r) =>
-            $("analytics-range").value === "all" ||
-            Date.now() - Date.parse(r.completedAt) <=
-              Number($("analytics-range").value) * 86400000,
-        ),
-      }))
-      .filter((g) => g.results.length);
-    const monthly = new Map();
-    for (const g of groups) {
-      $("analytics-by-form").append(
-        completionBar(
-          g.title,
-          g.results.length,
-          Math.max(...groups.map((item) => item.results.length)),
-        ),
-      );
-      for (const r of g.results) {
-        const month = r.completedAt.slice(0, 7);
-        monthly.set(month, (monthly.get(month) || 0) + 1);
-      }
-      const card = el("section", undefined, "panel");
-      card.append(
-        el("h3", g.title),
-        el(
-          "p",
-          `${g.version} · ${g.language} · ${g.results.length} visit(s)`,
-          "muted-text",
-        ),
-      );
-      if (g.scored) {
-        const valid = g.results.filter(
-          (r) => Number.isFinite(r.score) && r.max > 0,
-        );
-        if (valid.length) {
-          const svg = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "svg",
-          );
-          svg.setAttribute("viewBox", "0 0 600 160");
-          svg.setAttribute("role", "img");
-          svg.setAttribute(
-            "aria-label",
-            "Score trend; exact values are in the table below.",
-          );
-          const line = document.createElementNS(svg.namespaceURI, "polyline");
-          line.setAttribute(
-            "points",
-            valid
-              .map(
-                (r, i) =>
-                  `${30 + (i * 540) / Math.max(1, valid.length - 1)},${140 - (r.score / r.max) * 120}`,
-              )
-              .join(" "),
-          );
-          line.setAttribute("fill", "none");
-          line.setAttribute("stroke", "#138aff");
-          line.setAttribute("stroke-width", "3");
-          svg.append(line);
-          card.append(svg);
-        }
-      } else
-        card.append(
-          el(
-            "p",
-            "Response history only. The source disables scoring, so no clinical score or severity trend is calculated.",
-            "notice",
-          ),
-        );
-      const table = el("table");
-      const head = el("tr");
-      ["Completed", "Responses", "Score", "Report"].forEach((t) =>
-        head.append(el("th", t)),
-      );
-      table.append(head);
-      for (const r of g.results) {
-        const tr = el("tr");
-        tr.append(
-          el("td", date(r.completedAt)),
-          el("td", `${r.questionCount} saved`),
-          el("td", r.score == null ? "Not scored" : `${r.score} / ${r.max}`),
-        );
-        const td = el("td");
-        const link = el("a", "View report");
-        link.href = `/api/workspace/sessions/${r.id}/report`;
-        link.target = "_blank";
-        link.rel = "noopener";
-        td.append(link);
-        tr.append(td);
-        table.append(tr);
-      }
-      const scroll = el("div", undefined, "table-scroll");
-      scroll.append(table);
-      card.append(scroll);
-      area.append(card);
-    }
-    for (const [month, count] of [...monthly].sort())
-      $("analytics-months").append(
-        completionBar(month, count, Math.max(...monthly.values())),
-      );
-    if (!groups.length)
-      area.append(
-        el(
-          "p",
-          "No completed assessments in this period. Complete an assessment to see its history here.",
-          "empty-state",
-        ),
-      );
-  } catch (e) {
-    error(area, e.message);
-  }
-}
+analyticsDialog.addEventListener("close", () => dialogAnalytics.hide());
+addEventListener("pagehide", () => {
+  pageAnalytics.destroy();
+  dialogAnalytics.destroy();
+});
 for (const name of ["prescribe", "reports", "analytics", "library"])
   $(`nav-${name}`).onclick = () => view(name);
 $("patient-search").oninput = renderPatients;
@@ -692,7 +566,12 @@ $("doctor-form").onsubmit = (e) => {
   suggest("doctor");
 };
 $("prescribe-button").onclick = prescribe;
-$("patient-analytics").onclick = () => view("analytics");
+$("patient-analytics").onclick = () => {
+  if (!patient || patient.id !== selectedPatientId) return;
+  $("pa-patient-name").textContent = patient.name;
+  analyticsDialog.showModal();
+  dialogAnalytics.show(patient.id);
+};
 $("patient-reports").onclick = () => view("reports");
 $("report-patient").onchange = loadReports;
 $("analytics-patient").onchange = loadAnalytics;
