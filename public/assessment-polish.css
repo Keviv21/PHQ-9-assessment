@@ -1,0 +1,39 @@
+:root { --openmind-blue: #0088ff; --openmind-ink: #172b45; --openmind-border: #dce3ec; }
+body { background: #fff; color: var(--openmind-ink); }
+.app-header { min-height: 76px; border-bottom-color: #e3e9f1; }
+.brand { gap: 9px; }
+.brand-mark { width: 23px; height: 26px; object-fit: contain; }
+.brand strong { font-size: 21px; color: #102138; letter-spacing: -.045em; }
+.page-label { color: #65778e; font-size: 13px; font-weight: 600; }
+.status { color: #116bbd; background: #edf7ff; border-color: #d2eaff; }
+.workspace { min-height: calc(100vh - 76px); grid-template-columns: 296px minmax(0, 1fr) 300px; }
+.context-panel { border-right: 2px solid #e2e7ee; padding: 28px 24px; }
+.breadcrumb { margin-bottom: 28px; }
+.breadcrumb a { color: #5c708a; text-decoration: none; }
+.breadcrumb a:hover { color: #0078da; }
+.breadcrumb strong { color: #0877d8; }
+.assessment-avatar,.assistant-avatar { background: var(--openmind-blue); box-shadow: none; }
+.assessment-identity h1 { color: #172b45; font-size: 23px; }
+.context-summary { color: #60738b; }
+.language-picker select,.composer input { border-color: var(--openmind-border); }
+.language-picker select:focus,.composer input:focus { border-color: var(--openmind-blue); box-shadow: 0 0 0 3px #0088ff1c; }
+.button.primary { background: var(--openmind-blue); }
+.button.primary:hover:not(:disabled) { background: #0875d6; }
+.button.secondary { color: #0878da; border-color: #cbd8e7; }
+.conversation-panel { background: #f8fafc; }
+.conversation-header { border-bottom-color: #e2e8f0; }
+.conversation-header h2 { color: #172b45; }
+.conversation-body { gap: 22px; }
+.assessment-card { border-color: #e1e9f3; border-radius: 14px; box-shadow: 0 3px 14px #17315b0a; }
+.progress-track div { background: var(--openmind-blue); }
+.question-number,.live-badge { color: #0875d5; background: #eaf5ff; }
+.question-area h2 { color: #172b45; }
+.option:hover,.option.selected { border-color: var(--openmind-blue); }
+.option .number { color: #0875d5; }
+.session-panel { border-left-color: #e2e8f0; padding: 22px 17px; }
+.session-card { border-color: #e1e8f0; border-radius: 12px; }
+.camera-box { background: #edf2f7; }
+.line strong { color: #0879df; }
+.review-choice:has(input:checked) { border-color: var(--openmind-blue); }
+@media (max-width: 1180px) { .workspace { grid-template-columns: 252px minmax(0, 1fr); } }
+@media (max-width: 750px) { .app-header { min-height: 66px; } .workspace { display: block; } .context-panel { border-right: 0; } .page-label,.header-divider { display: none; } }

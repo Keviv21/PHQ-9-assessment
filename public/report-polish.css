@@ -1,0 +1,10 @@
+.report-toolbar { max-width: 980px; padding-top: 22px; }
+.report-toolbar a { color: #0876d8; }
+.report-toolbar button { background: #0088ff; }
+.report-toolbar button:hover:not(:disabled) { background: #0875d6; }
+.report-page { max-width: 980px; border-color: #e1e8f0; box-shadow: 0 4px 18px #17315b0a; }
+.phq-report-eyebrow { color: #0876d8; }
+.phq-report-score,.phq-report-severity { background: #edf7ff; border-color: #d1e9ff; }
+.phq-report-band.active { background: #e7f3ff; }
+.phq-report-notes a { color: #0876d8; }
+@media print { .report-page { box-shadow: none; } }

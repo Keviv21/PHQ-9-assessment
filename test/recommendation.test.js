@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { recommendAssessments } from '../src/recommendation.js';
+import { getCatalogEntry, listAssessmentCatalog } from '../src/assessment-catalog.js';
+import { getAssessmentForm } from '../src/forms.js';
 
 const context = (changes = {}) => ({
   ageGroup: '19to64', concerns: [], traumaExposure: 'notReported', safetyStatus: 'noneReported', ...changes,
@@ -16,8 +18,20 @@ test('routes specific adult concerns to relevant measures with reasons', () => {
 test('PCL-5 requires trauma exposure review', () => {
   const pending = recommendAssessments(context({ concerns: ['traumaSymptoms'], traumaExposure: 'uncertain' }));
   assert.equal(pending.recommendations[0].availability, 'requires_trauma_review');
+  assert.match(pending.recommendations[0].missingInformation[0], /trauma exposure/);
+  assert.match(pending.recommendations[0].reason, /must be confirmed/);
   const confirmed = recommendAssessments(context({ concerns: ['traumaSymptoms'], traumaExposure: 'confirmed' }));
-  assert.equal(confirmed.recommendations[0].availability, 'not_implemented');
+  assert.equal(confirmed.recommendations[0].availability, 'available');
+});
+
+test('prototype catalogue maps runnable forms to supported languages and keeps DASS separate', () => {
+  const catalog = listAssessmentCatalog();
+  assert.equal(catalog.length, 4);
+  for (const entry of catalog.filter((item) => item.availability === 'available')) {
+    for (const language of entry.languages) assert.equal(getAssessmentForm(entry.id, language).language, language);
+  }
+  assert.equal(getCatalogEntry('dass21').availability, 'separate_prototype');
+  assert.equal(getCatalogEntry('unknown'), null);
 });
 
 test('safety concern pauses all questionnaire suggestions', () => {

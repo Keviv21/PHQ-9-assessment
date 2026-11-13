@@ -13,9 +13,11 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     const resultResponse = await fetch(`/api/results/${encodeURIComponent(id)}`);
     if (!resultResponse.ok) throw new Error('Report not found.');
     const assessment = await resultResponse.json();
-    const formResponse = await fetch(`/api/form?language=${encodeURIComponent(assessment.language)}`);
+    if (assessment.demoPatientId) backLink.href = `/?view=reports&patient=${encodeURIComponent(assessment.demoPatientId)}`;
+    const formResponse = await fetch(`/api/form?formId=${encodeURIComponent(assessment.formId)}&language=${encodeURIComponent(assessment.language)}`);
     if (!formResponse.ok) throw new Error('Report form not found.');
     const form = await formResponse.json();
+    document.title = `${assessment.formId.toUpperCase()} Report | OpenMind`;
     document.documentElement.lang = assessment.language;
     if (assessment.language === 'hi') {
       document.title = 'PHQ-9 रिपोर्ट | Casebook पूर्वावलोकन';

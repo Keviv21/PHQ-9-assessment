@@ -1,0 +1,63 @@
+{
+  "formId": "gad7",
+  "language": "en",
+  "version": "v1-prototype",
+  "title": "Generalised Anxiety Disorder Assessment (GAD-7)",
+  "referencePeriod": "Past two weeks",
+  "instructions": "Please read each statement and select from \"Not at all\" to \"Nearly every day\" to indicate how much the statement applied to you over the past two weeks.",
+  "source": "https://novopsych.com/wp-content/uploads/2023/03/Generalised-Anxiety-Disorder-Assessment-GAD-7.pdf",
+  "scoringSource": null,
+  "catalogDraftId": "GAD7",
+  "options": [
+    {
+      "value": 0,
+      "label": "Not at all",
+      "description": "Past two weeks"
+    },
+    {
+      "value": 1,
+      "label": "Several days",
+      "description": "Past two weeks"
+    },
+    {
+      "value": 2,
+      "label": "More than half the days",
+      "description": "Past two weeks"
+    },
+    {
+      "value": 3,
+      "label": "Nearly every day",
+      "description": "Past two weeks"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q01",
+      "text": "Feeling nervous, anxious or on edge"
+    },
+    {
+      "id": "Q02",
+      "text": "Not being able to stop or control worrying"
+    },
+    {
+      "id": "Q03",
+      "text": "Worrying too much about different things"
+    },
+    {
+      "id": "Q04",
+      "text": "Trouble relaxing"
+    },
+    {
+      "id": "Q05",
+      "text": "Being so restless that it is hard to sit still"
+    },
+    {
+      "id": "Q06",
+      "text": "Becoming easily annoyed or irritable"
+    },
+    {
+      "id": "Q07",
+      "text": "Feeling afraid as if something awful might happen"
+    }
+  ]
+}

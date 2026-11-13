@@ -1,0 +1,49 @@
+.library-notice { margin: 0 0 22px; padding: 14px 17px; border-radius: 9px; background: #eff7ff; color: #285781; font-size: 13px; line-height: 1.55; }
+.library-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; margin-bottom: 12px; }
+.library-toolbar .search-label { flex: 1 1 300px; margin: 0; }
+.library-toolbar .search-label:last-child { flex: 0 1 240px; }
+.library-toolbar input,.library-toolbar select { display: block; width: 100%; height: 45px; margin-top: 8px; padding: 0 13px; border: 1px solid #d4dce7; border-radius: 8px; background: #fff; color: #172b45; }
+.library-toolbar input:focus,.library-toolbar select:focus { outline: 2px solid #0088ff; outline-offset: 1px; }
+.library-count { color: #61758c; font-size: 13px; margin: 16px 0; }
+.library-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 14px; }
+.library-card { min-width: 0; padding: 18px; border: 1px solid #dde5ee; border-radius: 11px; background: #fff; display: flex; flex-direction: column; align-items: flex-start; }
+.library-card h2 { margin: 0 0 9px; color: #182b45; font-size: 16px; line-height: 1.35; }
+.library-card p { color: #697b90; margin: 0 0 14px; font-size: 12px; line-height: 1.5; }
+.library-status { display: inline-block; margin-bottom: 17px; padding: 5px 8px; border-radius: 5px; background: #eaf5ff; color: #096fbd; font-size: 11px; font-weight: 650; }
+.library-status.incomplete { background: #fff4e7; color: #9d5b12; }
+.library-card .button { margin-top: auto; }
+.library-live-link { color: #0877d8; font-size: 12px; font-weight: 650; margin-top: 12px; }
+.library-live-button { display: table; margin: 2px 0 20px; }
+.library-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 20px; font-size: 13px; color: #61758c; }
+.library-sessions { margin-top: 32px; border-top: 1px solid #dfe6ee; padding-top: 22px; }
+.library-sessions h2 { color: #172b45; font-size: 17px; }
+.library-session-link { display: block; padding: 11px 13px; margin: 7px 0; border: 1px solid #dce5ef; border-radius: 8px; color: #0877d8; text-decoration: none; font-size: 13px; }
+.library-session-link:hover { background: #f3f9ff; }
+.library-back { border: 0; background: none; color: #0877d8; font-size: 13px; font-weight: 650; padding: 0; margin: 0 0 20px; }
+.library-back:hover { text-decoration: underline; }
+#library-detail { max-width: 900px; }
+#library-detail h2 { margin: 0 0 7px; color: #172b45; font-size: 24px; }
+#library-detail h3 { color: #172b45; font-size: 18px; }
+#library-detail > p { color: #50647b; line-height: 1.55; }
+.library-detail-status { font-size: 12px; color: #94611f !important; }
+.library-instructions { padding: 13px 16px; background: #f5f8fc; border-radius: 8px; }
+.library-source { display: inline-block; margin: 2px 0 14px; color: #0877d8; font-size: 13px; }
+.library-question { padding: 22px; border: 1px solid #dfe7f0; border-radius: 12px; background: #fff; }
+.library-progress { color: #0877d8; font-size: 12px; font-weight: 700; }
+.library-question h3 { line-height: 1.5; }
+.library-choices { border: 0; margin: 19px 0 0; padding: 0; }
+.library-choices legend { margin-bottom: 10px; color: #61758c; font-size: 12px; }
+.library-choice { display: flex; align-items: center; gap: 11px; margin: 7px 0; padding: 12px 14px; border: 1px solid #dce5ef; border-radius: 8px; cursor: pointer; }
+.library-choice:has(input:checked) { border-color: #0088ff; background: #f2f9ff; }
+.library-choice input { accent-color: #0088ff; }
+.library-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.library-review { padding-left: 27px; }
+.library-review li { padding: 11px 0; border-bottom: 1px solid #e4eaf1; }
+.library-review strong { font-size: 13px; color: #243c57; }
+.library-review p { font-size: 13px; color: #50647b; }
+.library-edit { border: 0; background: none; color: #0877d8; padding: 0; font-size: 12px; font-weight: 650; }
+.library-edit:hover { text-decoration: underline; }
+.library-disclaimer { margin-top: 18px; font-size: 12px; color: #718198 !important; }
+.library-unavailable { padding: 18px; border-radius: 9px; background: #fff4e7; color: #8b571b !important; }
+.library-complete { padding: 18px; border-radius: 9px; background: #f0f8f1; color: #2d6539 !important; }
+@media (max-width: 650px) { .library-toolbar .search-label:last-child { flex: 1 1 100%; } .library-pagination { justify-content: space-between; gap: 7px; } .library-question { padding: 15px; } .library-actions { flex-wrap: wrap; } }

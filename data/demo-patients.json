@@ -1,0 +1,71 @@
+[
+  {
+    "id": "demo-a",
+    "label": "Aarav Mehta · Sample A",
+    "summary": {
+      "ageGroup": "19to64",
+      "overview": "Recent clinician summary describes low mood and reduced interest. No immediate safety concern was reported after review.",
+      "observations": [
+        { "code": "lowMood", "status": "current", "description": "Low mood during recent weeks", "source": "recent_clinician_summary.mood" },
+        { "code": "lossOfInterest", "status": "current", "description": "Reduced interest in usual activities", "source": "recent_clinician_summary.function" }
+      ],
+      "traumaExposure": "notReported",
+      "safetyStatus": "noneReported"
+    }
+  },
+  {
+    "id": "demo-b",
+    "label": "Meera Iyer · Sample B",
+    "summary": {
+      "ageGroup": "19to64",
+      "overview": "Recent notes describe persistent worry and difficulty relaxing, with work-related stress. Safety has been reviewed.",
+      "observations": [
+        { "code": "persistentWorry", "status": "current", "description": "Persistent worry across daily situations", "source": "recent_clinician_summary.anxiety" },
+        { "code": "highStress", "status": "current", "description": "Stress and difficulty relaxing", "source": "recent_clinician_summary.stress" }
+      ],
+      "traumaExposure": "notReported",
+      "safetyStatus": "noneReported"
+    }
+  },
+  {
+    "id": "demo-c",
+    "label": "Rohan Desai · Sample C",
+    "summary": {
+      "ageGroup": "19to64",
+      "overview": "Recent notes describe trauma-related intrusive memories. A clinician has separately confirmed a qualifying trauma exposure and reviewed immediate safety.",
+      "observations": [
+        { "code": "traumaIntrusions", "status": "current", "description": "Intrusive memories related to a prior event", "source": "recent_clinician_summary.trauma_symptoms" }
+      ],
+      "traumaExposure": "confirmed",
+      "safetyStatus": "noneReported"
+    }
+  },
+  {
+    "id": "demo-d",
+    "label": "Nisha Rao · Sample D",
+    "summary": {
+      "ageGroup": "19to64",
+      "overview": "Recent summary describes elevated stress without a documented current depression or generalized anxiety concern. Safety has been reviewed.",
+      "observations": [
+        { "code": "highStress", "status": "current", "description": "High day-to-day stress", "source": "recent_clinician_summary.stress" }
+      ],
+      "traumaExposure": "notReported",
+      "safetyStatus": "noneReported"
+    }
+  },
+  {
+    "id": "demo-e",
+    "label": "Kabir Sen · Sample E",
+    "summary": {
+      "ageGroup": "19to64",
+      "overview": "A neurological report describes epilepsy, sleep disruption, an older mood concern, and seizure-related fear. It does not document a current psychiatric concern or a completed immediate safety review.",
+      "observations": [
+        { "code": "lowMood", "status": "historical", "description": "Older low-mood observation", "source": "clinical__notes_summary.longitudinal_summary" },
+        { "code": "ictalFear", "status": "current", "description": "Fear occurring around seizures", "source": "clinical__notes_summary.clinical_inference.aura_analysis" },
+        { "code": "sleepDisruption", "status": "current", "description": "Sleep disruption in the neurological history", "source": "clinical__notes_summary.clinical_inference.sleep_analysis" }
+      ],
+      "traumaExposure": "notReported",
+      "safetyStatus": "notReviewed"
+    }
+  }
+]

@@ -1,9 +1,19 @@
-// Clinician-reviewed routing aid. Keep this independent of Gemini and patient identifiers.
+import { getCatalogEntry, retrieveAssessmentCandidates } from './assessment-catalog.js';
+
+// Prototype routing aid pending clinician review. Keep this independent of Gemini and patient identifiers.
 export const recommendationSources = Object.freeze({
-  depression: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-depression-suicide-risk-adults',
-  anxiety: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/anxiety-adults-screening',
-  ptsd: 'https://www.ptsd.va.gov/Professional/Assessment/Adult-Sr/Ptsd-Checklist.Asp',
-  dass: 'https://dass.psy.unsw.edu.au/DASSFAQ.htm',
+  depression: getCatalogEntry('phq9').source,
+  anxiety: getCatalogEntry('gad7').source,
+  ptsd: getCatalogEntry('pcl5').source,
+  dass: getCatalogEntry('dass21').source,
+});
+
+// IDs point to the supplied 186-item draft export. The draft questions/scoring are not used here.
+export const catalogDraftIds = Object.freeze({
+  phq9: getCatalogEntry('phq9').catalogDraftId,
+  gad7: getCatalogEntry('gad7').catalogDraftId,
+  pcl5: getCatalogEntry('pcl5').catalogDraftId,
+  dass21: getCatalogEntry('dass21').catalogDraftId,
 });
 
 const allowedConcerns = new Set(['depression', 'anxiety', 'traumaSymptoms', 'stress']);
@@ -29,7 +39,6 @@ export function validateRecommendationContext(value) {
 
 export function recommendAssessments(input) {
   const context = validateRecommendationContext(input);
-  const concerns = new Set(context.concerns);
   if (context.safetyStatus === 'concern') return {
     status: 'safety_review',
     message: 'Immediate clinician safety review is needed. Follow your local urgent assessment protocol before choosing a questionnaire.',
@@ -48,36 +57,27 @@ export function recommendAssessments(input) {
     recommendations: [],
   };
 
-  const recommendations = [];
-  const add = (id, title, priority, reason, source, availability, note = '') => recommendations.push({
-    id, title, priority, reason, source, availability, note,
+  const recommendations = retrieveAssessmentCandidates(context.concerns, context.ageGroup).map((entry) => {
+    const missingInformation = [];
+    let availability = entry.availability;
+    let priority = entry.preventive ? 2 : entry.priority;
+    let note = entry.note || '';
+    let reason = entry.preventive ? entry.preventiveReason : entry.reason;
+    if (entry.requiresConfirmedTraumaExposure && context.traumaExposure !== 'confirmed') {
+      availability = 'requires_trauma_review';
+      priority = 3;
+      reason = 'Current trauma-related symptoms match PCL-5, but qualifying trauma exposure and an index event must be confirmed first.';
+      missingInformation.push('Clinician confirmation of qualifying trauma exposure and an index event.');
+    }
+    if (entry.ageCaveats?.[context.ageGroup]) note = [note, entry.ageCaveats[context.ageGroup]].filter(Boolean).join(' ');
+    return {
+      id: entry.id, title: entry.title, purpose: entry.purpose, priority,
+      reason,
+      source: entry.source, availability, note, catalogDraftId: entry.catalogDraftId,
+      matchedConcerns: entry.matchedConcerns, missingInformation, languages: entry.languages,
+      metadataStatus: 'prototype_curated',
+    };
   });
-
-  if (concerns.has('depression')) add('phq9', 'PHQ-9', 1,
-    'Depressive symptoms or low mood were selected. PHQ-9 measures recent depression symptoms and can support clinician follow-up.',
-    recommendationSources.depression, 'available');
-  if (concerns.has('anxiety')) add('gad7', 'GAD-7', 1,
-    'Anxiety or persistent worry was selected. GAD-7 focuses on generalized anxiety symptoms.',
-    recommendationSources.anxiety, 'not_implemented',
-    context.ageGroup === '65plus' ? 'Routine anxiety screening evidence is insufficient for adults 65 or older; clinician judgment is needed.' : '');
-  if (concerns.has('traumaSymptoms') && context.traumaExposure === 'confirmed') add('pcl5', 'PCL-5', 1,
-    'Trauma-related symptoms and a clinician-confirmed qualifying trauma exposure were selected. PCL-5 measures PTSD symptoms.',
-    recommendationSources.ptsd, 'not_implemented', 'Use a specific index event and clinician interpretation.');
-  if (concerns.has('traumaSymptoms') && context.traumaExposure !== 'confirmed') add('pcl5', 'PCL-5', 3,
-    'Trauma-related symptoms were selected, but qualifying exposure has not been confirmed. Review the trauma history before using PCL-5.',
-    recommendationSources.ptsd, 'requires_trauma_review');
-  if (concerns.has('stress') || (concerns.has('depression') && concerns.has('anxiety'))) add('dass21', 'DASS-21', 2,
-    'Stress or overlapping depression and anxiety concerns were selected. DASS-21 measures three symptom dimensions over the past week.',
-    recommendationSources.dass, 'separate_prototype', 'DASS-21 is not a diagnostic instrument.');
-
-  if (!recommendations.length) {
-    add('phq9', 'PHQ-9', 2, 'No specific concern was selected. Adult depression screening can be considered with a plan for follow-up.',
-      recommendationSources.depression, 'available');
-    if (context.ageGroup === '19to64') add('gad7', 'GAD-7', 2,
-      'No specific concern was selected. Adult anxiety screening can be considered with a plan for follow-up.',
-      recommendationSources.anxiety, 'not_implemented');
-  }
-
   recommendations.sort((a, b) => a.priority - b.priority || a.title.localeCompare(b.title));
   return {
     status: 'suggestions',

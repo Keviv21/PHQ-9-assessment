@@ -9,7 +9,10 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env src/server.js",
     "start": "node --env-file-if-exists=.env src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "import:assessments": "node scripts/import-assessment-bundle.mjs",
+    "audit:assessments": "node scripts/audit-assessment-bundle.mjs",
+    "smoke:live": "node scripts/smoke-draft-live.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",

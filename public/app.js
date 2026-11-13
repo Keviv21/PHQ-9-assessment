@@ -10,11 +10,18 @@ const ui = {
   preview: $('preview'), cameraPlaceholder: $('camera-placeholder'), micToggle: $('mic-toggle'),
   cameraToggle: $('camera-toggle'), transcript: $('transcript'), liveLabel: $('live-label'), recent: $('recent-results'),
   language: $('language'), selectedLanguage: $('selected-language'), textForm: $('text-form'),
-  textInput: $('text-input'), sendText: $('send-text'),
+  textInput: $('text-input'), sendText: $('send-text'), patientContext: $('patient-context'),
+  assessmentTitle: $('assessment-title'), assessmentAvatar: $('assessment-avatar'),
+  assessmentPeriod: $('assessment-period'), assessmentIntro: $('assessment-intro'), questionCount: $('question-count'),
+  footer: document.querySelector('[data-i18n="footer"]'),
 };
 
 let form;
 let language = 'en';
+let formId = 'phq9';
+const prescriptionId = new URLSearchParams(location.search).get('prescriptionId');
+let demoPatientId = null;
+let demoPatientLabel = null;
 const t = (key) => copy[language][key];
 function localizePage() {
   document.documentElement.lang = language;
@@ -25,6 +32,19 @@ function localizePage() {
   if (config) ui.keyNote.textContent = t(config.geminiConfigured ? 'keyDetected' : 'keyMissing');
   ui.selectedLanguage.textContent = ui.language.selectedOptions[0].textContent;
   ui.textInput.placeholder = t('textPlaceholder');
+  if (demoPatientLabel) ui.patientContext.textContent = `${t('selectedPatient')}: ${demoPatientLabel}`;
+  if (form) {
+    const name = formId.toUpperCase();
+    document.title = `${name} Assessment | OpenMind`;
+    ui.assessmentTitle.textContent = name;
+    ui.assessmentAvatar.textContent = formId === 'phq9' ? 'PH' : formId === 'gad7' ? 'GA' : 'PC';
+    ui.assessmentPeriod.textContent = `ASSESSMENT · ${form.referencePeriod.toUpperCase()}`;
+    ui.assessmentIntro.textContent = form.instructions;
+    ui.questionCount.textContent = String(form.questions.length);
+    const badge = ui.questionArea.querySelector('.question-number');
+    if (badge) badge.textContent = name;
+    if (formId !== 'phq9') ui.footer.textContent = 'Review the completed report with a qualified clinician.';
+  }
   refreshRecent().catch(() => {});
 }
 let config;
@@ -32,6 +52,7 @@ let socket;
 let state;
 let pending;
 let mode;
+let lockedMode = null;
 let reviewValues;
 let finalizeButton;
 let microphone;
@@ -42,12 +63,19 @@ let cameraTimer;
 let muted = false;
 let playbackTime = 0;
 const playbackSources = new Set();
+const transcriptRows = new Map();
 
 function setStatus(message) { ui.connection.textContent = message; }
 function send(value) { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(value)); }
-function appendTranscript(speaker, text) {
+function appendTranscript(speaker, text, messageId = null) {
   if (!text?.trim()) return;
   if (ui.transcript.querySelector('.empty')) ui.transcript.textContent = '';
+  const existing = messageId ? transcriptRows.get(messageId) : null;
+  if (existing?.isConnected) {
+    existing.querySelector('span').textContent = text;
+    ui.transcript.scrollTop = ui.transcript.scrollHeight;
+    return;
+  }
   const line = document.createElement('div');
   line.className = `line ${speaker === 'participant' ? 'person' : ''}`;
   const name = document.createElement('strong');
@@ -55,8 +83,16 @@ function appendTranscript(speaker, text) {
   const body = document.createElement('span');
   body.textContent = text;
   line.append(name, body);
+  if (messageId) {
+    line.dataset.messageId = messageId;
+    transcriptRows.set(messageId, line);
+  }
   ui.transcript.append(line);
-  while (ui.transcript.children.length > 24) ui.transcript.firstChild.remove();
+  while (ui.transcript.children.length > 24) {
+    const first = ui.transcript.firstChild;
+    if (first.dataset.messageId) transcriptRows.delete(first.dataset.messageId);
+    first.remove();
+  }
   ui.transcript.scrollTop = ui.transcript.scrollHeight;
 }
 
@@ -80,7 +116,7 @@ function renderState(next) {
   const heading = document.createElement('h2');
   heading.textContent = completed ? t('assessmentComplete') : form.questions[questionNumber - 1].text;
   const helper = document.createElement('p');
-  helper.textContent = completed ? t('savedLocally') : t('howMuch');
+  helper.textContent = completed ? t('savedLocally') : form.instructions;
   ui.questionArea.append(badge, heading, helper);
   ui.options.replaceChildren();
   ui.results.classList.toggle('hidden', !completed);
@@ -129,9 +165,9 @@ function renderReview(next) {
   badge.className = 'question-number';
   badge.textContent = t('finalReview');
   const heading = document.createElement('h2');
-  heading.textContent = t('reviewTitle');
+  heading.textContent = formId === 'phq9' ? t('reviewTitle') : `Review your ${form.questions.length} answers`;
   const helper = document.createElement('p');
-  helper.textContent = t('reviewIntro');
+  helper.textContent = formId === 'phq9' ? t('reviewIntro') : 'Check each answer and make any final changes before generating the report.';
   ui.questionArea.append(badge, heading, helper);
   ui.options.replaceChildren();
   ui.results.classList.remove('hidden');
@@ -145,7 +181,7 @@ function renderReview(next) {
   notice.className = 'phq-report-alert';
   notice.setAttribute('role', 'alert');
   notice.textContent = t('followUpNotice');
-  notice.hidden = reviewValues[8] === 0;
+  notice.hidden = formId !== 'phq9' || reviewValues[8] === 0;
   ui.results.append(notice);
 
   const list = document.createElement('div');
@@ -168,7 +204,7 @@ function renderReview(next) {
       input.checked = reviewValues[index] === option.value;
       input.addEventListener('change', () => {
         reviewValues[index] = option.value;
-        notice.hidden = reviewValues[8] === 0;
+        notice.hidden = formId !== 'phq9' || reviewValues[8] === 0;
       });
       const text = document.createElement('span');
       text.textContent = option.label;
@@ -318,6 +354,7 @@ async function start(nextMode) {
   ui.sendText.disabled = true;
   ui.textInput.value = '';
   ui.transcript.replaceChildren();
+  transcriptRows.clear();
   const emptyTranscript = document.createElement('p'); emptyTranscript.className = 'empty'; emptyTranscript.textContent = t('conversationEmpty'); ui.transcript.append(emptyTranscript);
   ui.startLive.disabled = true;
   ui.startDemo.disabled = true;
@@ -333,17 +370,21 @@ async function start(nextMode) {
       return;
     }
   }
-  const connection = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws?mode=${nextMode}&language=${language}`);
+  const prescriptionQuery = `&prescriptionId=${encodeURIComponent(prescriptionId)}`;
+  const connection = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws?mode=${nextMode}&language=${language}${prescriptionQuery}`);
   socket = connection;
   connection.onopen = () => setStatus(nextMode === 'demo' ? t('demoInProgress') : t('connecting'));
   connection.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    if (message.type === 'state') renderState(message.assessment);
+    if (message.type === 'state') {
+      lockedMode = nextMode;
+      renderState(message.assessment);
+    }
     else if (message.type === 'proposal') renderProposal(message);
     else if (message.type === 'proposal_cleared') { pending = null; ui.confirmation.classList.add('hidden'); [...ui.options.children].forEach((button) => button.classList.remove('selected')); }
     else if (message.type === 'audio') playPcm(message.data);
     else if (message.type === 'audio_interrupt') stopPlayback();
-    else if (message.type === 'transcript') appendTranscript(message.speaker, message.text);
+    else if (message.type === 'transcript') appendTranscript(message.speaker, message.text, message.messageId);
     else if (message.type === 'live_status') {
       ui.liveLabel.textContent = message.status.toUpperCase();
       if (message.status === 'connected') { setStatus(t('connected')); ui.textInput.disabled = false; ui.sendText.disabled = false; }
@@ -355,9 +396,9 @@ async function start(nextMode) {
   connection.onerror = () => appendTranscript('system', t('connectionError'));
   connection.onclose = () => {
     if (socket !== connection) return;
-    ui.startLive.disabled = !config.geminiConfigured;
-    ui.startDemo.disabled = false;
-    ui.language.disabled = false;
+    ui.startLive.disabled = !config.geminiConfigured || (lockedMode && lockedMode !== 'live') || state?.status === 'completed';
+    ui.startDemo.disabled = (lockedMode && lockedMode !== 'demo') || state?.status === 'completed';
+    ui.language.disabled = Boolean(lockedMode) || formId !== 'phq9';
     ui.textInput.disabled = true;
     ui.sendText.disabled = true;
     if (state?.status !== 'completed') { setStatus(t('disconnected')); stopMedia(); }
@@ -365,7 +406,8 @@ async function start(nextMode) {
 }
 
 async function refreshRecent() {
-  const response = await fetch('/api/results');
+  if (!demoPatientId) return;
+  const response = await fetch(`/api/demo-patients/${encodeURIComponent(demoPatientId)}/reports`);
   const results = await response.json();
   ui.recent.replaceChildren();
   if (!results.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = t('resultsEmpty'); ui.recent.append(empty); return; }
@@ -374,7 +416,8 @@ async function refreshRecent() {
     row.href = `/report.html?id=${encodeURIComponent(item.id)}`;
     row.setAttribute('aria-label', `${t('openReport')} ${new Date(item.completedAt).toLocaleString(item.language === 'hi' ? 'hi-IN' : 'en-IN')}`);
     const kind = item.collectionMethod === 'conversational_inference' ? t('conversation') : item.mode === 'live' ? t('previousLive') : t('formTest');
-    const title = document.createElement('strong'); title.textContent = `${kind} · ${item.language?.toUpperCase() || 'EN'} · ${item.scores.rawTotal} / 27${item.scores.requiresHumanFollowUp ? ` · ${t('followUpNeeded')}` : ''}`;
+    const patientName = item.demoPatientId ? ` · ${t('selectedPatient')} ${item.demoPatientId.slice(-1).toUpperCase()}` : '';
+    const title = document.createElement('strong'); title.textContent = `${item.formId.toUpperCase()} · ${kind}${patientName} · ${item.language?.toUpperCase() || 'EN'} · ${item.scores.rawTotal} / ${item.scores.maxTotal || 27}${item.scores.requiresHumanFollowUp ? ` · ${t('followUpNeeded')}` : ''}`;
     const date = document.createElement('span'); date.textContent = new Date(item.completedAt).toLocaleString(item.language === 'hi' ? 'hi-IN' : 'en-IN');
     row.append(title, date); ui.recent.append(row);
   }
@@ -394,7 +437,7 @@ ui.language.addEventListener('change', async () => {
   const selected = ui.language.value;
   ui.language.disabled = true;
   try {
-    const response = await fetch(`/api/form?language=${encodeURIComponent(selected)}`);
+    const response = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(selected)}`);
     if (!response.ok) throw new Error(t('formLoadFailed'));
     form = await response.json();
     language = selected;
@@ -423,15 +466,35 @@ ui.micToggle.addEventListener('click', () => {
 window.addEventListener('beforeunload', stopMedia);
 
 try {
-  [form, config] = await Promise.all([fetch('/api/form?language=en').then((response) => response.json()), fetch('/api/config').then((response) => response.json())]);
+  if (!prescriptionId) throw new Error('A prescription is required. Return to NovoPsych assessments.');
+  [form, config] = await Promise.all([fetch('/api/form?formId=phq9&language=en').then((response) => response.json()), fetch('/api/config').then((response) => response.json())]);
+  const prescriptionResponse = await fetch(`/api/prescriptions/${encodeURIComponent(prescriptionId)}`);
+  if (!prescriptionResponse.ok) throw new Error('Prescription not found.');
+  const prescription = await prescriptionResponse.json();
+  if (prescription.status === 'completed') throw new Error('This prescription is completed. Open its report from View test reports.');
+  formId = prescription.formId;
+  form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(prescription.language || 'en')}`).then((response) => response.json());
+  demoPatientId = prescription.demoPatientId;
+  demoPatientLabel = prescription.patient.label;
+  ui.patientContext.hidden = false;
+  if (prescription.status === 'in_progress') {
+    lockedMode = prescription.mode;
+    language = prescription.language;
+    form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
+    ui.language.value = language;
+    ui.language.disabled = true;
+  }
   localizePage();
-  ui.startLive.disabled = !config.geminiConfigured;
+  ui.progressLabel.textContent = `0 / ${form.questions.length}`;
+  if (formId !== 'phq9') { ui.language.value = 'en'; ui.language.disabled = true; }
+  ui.startLive.disabled = !config.geminiConfigured || (prescription.status === 'in_progress' && prescription.mode !== 'live');
+  ui.startDemo.disabled = prescription.status === 'in_progress' && prescription.mode !== 'demo';
   ui.keyNote.textContent = config.geminiConfigured
     ? t('keyDetected')
     : t('keyMissing');
   await refreshRecent();
 } catch (error) {
-  setStatus(t('serverUnavailable'));
+  setStatus(error.message);
   ui.keyNote.textContent = `${t('couldNotLoad')}: ${error.message}`;
   ui.startLive.disabled = true; ui.startDemo.disabled = true;
 }

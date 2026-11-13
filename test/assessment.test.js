@@ -56,7 +56,7 @@ test('final review updates answers before scoring and locks the report', () => {
     assert.equal(state.status, 'review');
     assert.equal(state.scores, null);
     assert.equal(store.results().length, 0);
-    assert.throws(() => store.finalize(state.id, Array(8).fill(0)), /nine answers/);
+    assert.throws(() => store.finalize(state.id, Array(8).fill(0)), /not ready for final review/);
     assert.equal(store.get(state.id).status, 'review');
     const finalValues = [0, 2, 0, 0, 0, 0, 0, 0, 0];
     state = store.finalize(state.id, finalValues);
