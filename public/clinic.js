@@ -1,354 +1,581 @@
-const $ = (id) => document.getElementById(id);
-const patients = [];
-let selectedPatientId = '';
-let suggestion = null;
-let selectedFormId = '';
-let loadNumber = 0;
-const sidebar = document.querySelector('.sidebar');
-const clinicApp = document.querySelector('.clinic-app');
-const sidebarToggle = $('sidebar-toggle');
-const sidebarStorageKey = 'openmind-assessment-sidebar-collapsed';
-let sidebarPinnedClosed = false;
-let sidebarHovered = false;
-try { sidebarPinnedClosed = localStorage.getItem(sidebarStorageKey) === 'true'; } catch { /* Storage may be unavailable. */ }
-
-function renderSidebar() {
-  const collapsed = sidebarPinnedClosed && !sidebarHovered;
-  clinicApp.classList.toggle('sidebar-collapsed', collapsed);
-  sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
-  const action = collapsed ? 'Expand sidebar' : sidebarPinnedClosed ? 'Keep sidebar expanded' : 'Collapse sidebar';
-  sidebarToggle.setAttribute('aria-label', action);
-  sidebarToggle.title = action;
+import { $, el, api, date, reportLinks } from "./workspace-common.js";
+let patients = [],
+  catalogue = [],
+  selectedPatientId = "",
+  patient = null,
+  selection = "",
+  doctorMessages = [],
+  version = 0,
+  recommendBusy = false,
+  manual = false,
+  config;
+const sidebar = $("sidebar-toggle");
+sidebar.onclick = () => {
+  const collapsed = document
+    .querySelector(".clinic-app")
+    .classList.toggle("sidebar-collapsed");
+  sidebar.setAttribute("aria-expanded", String(!collapsed));
+};
+function error(area, message) {
+  area.replaceChildren(el("p", message, "notice alert"));
 }
-
-sidebarToggle.addEventListener('click', () => {
-  sidebarPinnedClosed = !sidebarPinnedClosed;
-  sidebarHovered = false;
-  try { localStorage.setItem(sidebarStorageKey, String(sidebarPinnedClosed)); } catch { /* Storage may be unavailable. */ }
-  renderSidebar();
-});
-sidebar.addEventListener('mouseenter', () => {
-  if (window.matchMedia('(min-width: 651px)').matches && sidebarPinnedClosed) {
-    sidebarHovered = true;
-    renderSidebar();
+function step(n) {
+  $("choose-patient").hidden = n !== 1;
+  $("confirm-step").hidden = n !== 2;
+  $("step-one").className = `step ${n === 1 ? "current" : "done"}`;
+  $("step-two").className = `step ${n === 2 ? "current" : ""}`;
+}
+function clearConsultation() {
+  version++;
+  doctorMessages = [];
+  $("doctor-text").value = "";
+  $("doctor-messages").replaceChildren();
+  $("doctor-suggestions").replaceChildren();
+  recommendBusy = false;
+}
+function view(name, patientId = selectedPatientId) {
+  clearConsultation();
+  for (const id of ["prescribe", "reports", "analytics", "library"]) {
+    $(`${id}-view`).hidden = id !== name;
+    $(`nav-${id}`).classList.toggle("active", id === name);
   }
-});
-sidebar.addEventListener('mouseleave', () => {
-  sidebarHovered = false;
-  renderSidebar();
-});
-sidebar.addEventListener('focusin', () => {
-  if (window.matchMedia('(min-width: 651px)').matches && sidebarPinnedClosed) { sidebarHovered = true; renderSidebar(); }
-});
-sidebar.addEventListener('focusout', (event) => {
-  if (!sidebar.contains(event.relatedTarget)) { sidebarHovered = false; renderSidebar(); }
-});
-renderSidebar();
-
-function el(tag, text, className) {
-  const node = document.createElement(tag);
-  if (text !== undefined) node.textContent = text;
-  if (className) node.className = className;
-  return node;
-}
-
-function notice(message, alert = false) {
-  return el('p', message, `notice${alert ? ' alert' : ''}`);
-}
-
-function sourceLabel(source) {
-  const labels = {
-    'recent_clinician_summary.mood': 'Recent clinician summary · Mood',
-    'recent_clinician_summary.function': 'Recent clinician summary · Function',
-    'recent_clinician_summary.anxiety': 'Recent clinician summary · Anxiety',
-    'recent_clinician_summary.stress': 'Recent clinician summary · Stress',
-    'recent_clinician_summary.trauma_symptoms': 'Recent clinician summary · Trauma symptoms',
-    'clinical__notes_summary.longitudinal_summary': 'Longitudinal clinical notes',
-    'clinical__notes_summary.clinical_inference.aura_analysis': 'Neurological history · Aura',
-    'clinical__notes_summary.clinical_inference.sleep_analysis': 'Neurological history · Sleep',
-  };
-  return labels[source] || 'Clinical summary';
-}
-
-function setView(view, updateUrl = true) {
-  const reports = view === 'reports';
-  const library = view === 'library';
-  const analytics = view === 'analytics';
-  $('prescribe-view').hidden = reports || library || analytics;
-  $('reports-view').hidden = !reports;
-  $('library-view').hidden = !library;
-  $('analytics-view').hidden = !analytics;
-  $('nav-prescribe').classList.toggle('active', !reports && !library && !analytics);
-  $('nav-reports').classList.toggle('active', reports);
-  $('nav-library').classList.toggle('active', library);
-  $('nav-analytics').classList.toggle('active', analytics);
-  if (updateUrl) {
-    const url = new URL(location.href);
-    if (reports || library || analytics) url.searchParams.set('view', view);
-    else url.searchParams.delete('view');
-    if (!reports && !analytics) url.searchParams.delete('patient');
-    history.pushState({}, '', url);
+  const url = new URL(location.href);
+  url.searchParams.set("view", name);
+  if (patientId) url.searchParams.set("patient", patientId);
+  history.replaceState({}, "", url);
+  if (name === "reports") {
+    $("report-patient").value = patientId;
+    loadReports();
   }
-  if (reports && $('report-patient').value) loadReports($('report-patient').value);
-  if (analytics) window.dispatchEvent(new Event('clinic:analytics'));
+  if (name === "analytics") {
+    $("analytics-patient").value = patientId;
+    loadAnalytics();
+  }
 }
-
-function setStep(number) {
-  $('choose-patient').hidden = number !== 1;
-  $('confirm-step').hidden = number !== 2;
-  $('step-one').className = `step ${number === 1 ? 'current' : 'done'}`;
-  $('step-two').className = `step ${number === 2 ? 'current' : ''}`;
-}
-
-function renderPatientList() {
-  const query = $('patient-search').value.trim().toLowerCase();
-  const list = $('patient-list');
+function renderPatients() {
+  const q = $("patient-search").value.toLowerCase();
+  const list = $("patient-list");
   list.replaceChildren();
-  for (const patient of patients.filter((item) => item.label.toLowerCase().includes(query))) {
-    const row = el('label', undefined, `patient-row${patient.id === selectedPatientId ? ' selected' : ''}`);
-    const radio = el('input');
-    radio.type = 'radio'; radio.name = 'demo-patient'; radio.value = patient.id;
-    radio.checked = patient.id === selectedPatientId;
-    radio.addEventListener('change', () => {
-      selectedPatientId = patient.id;
-      suggestion = null;
-      selectedFormId = '';
-      $('prescription-result').replaceChildren();
-      $('next-step').disabled = false;
-      renderPatientList();
-    });
-    const avatar = el('span', patient.id.slice(-1).toUpperCase(), 'patient-avatar');
-    const name = el('span', patient.label, 'patient-name');
-    name.append(el('small', 'Patient summary available', 'patient-subtitle'));
-    row.append(radio, avatar, name);
+  for (const p of patients.filter((p) => p.name.toLowerCase().includes(q))) {
+    const row = el(
+      "label",
+      undefined,
+      `patient-row ${selectedPatientId === p.id ? "selected" : ""}`,
+    );
+    const input = el("input");
+    input.type = "radio";
+    input.name = "patient";
+    input.value = p.id;
+    input.checked = p.id === selectedPatientId;
+    input.onchange = () => {
+      selectedPatientId = p.id;
+      $("next-step").disabled = false;
+      renderPatients();
+    };
+    const name = el("span", p.name, "patient-name");
+    name.append(
+      el(
+        "small",
+        p.source === "NeuroTwin"
+          ? "Imported NeuroTwin record"
+          : p.source === "Sample"
+            ? "Sample patient"
+            : "Patient history available",
+        "patient-subtitle",
+      ),
+    );
+    row.append(
+      input,
+      el(
+        "span",
+        p.name
+          .split(" ")
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join(""),
+        "patient-avatar",
+      ),
+      name,
+    );
     list.append(row);
   }
-  if (!list.children.length) list.append(el('p', 'No patients match this search.', 'empty-state'));
+  if (!list.children.length)
+    list.append(el("p", "No matching patients.", "empty-state"));
 }
-
-function renderSummary(result) {
-  const area = $('patient-summary');
-  area.replaceChildren(el('h3', result.patient.label), el('p', result.patient.summary.overview));
-  const meta = el('div', undefined, 'meta');
-  const age = { under19: 'Under 19', '19to64': 'Adult 19–64', '65plus': 'Adult 65+', unknown: 'Age unknown' };
-  const safety = { notReviewed: 'Safety review needed', noneReported: 'Safety reviewed', concern: 'Immediate safety concern' };
-  meta.append(el('span', age[result.context.ageGroup]), el('span', safety[result.context.safetyStatus]));
-  area.append(meta, el('h3', 'Summary observations'));
-  const list = el('ul', undefined, 'summary-list');
-  for (const observation of result.patient.summary.observations) {
-    const item = el('li', `${observation.description} (${observation.status})`);
-    item.append(el('small', sourceLabel(observation.source)));
-    list.append(item);
-  }
-  area.append(list);
-  if (result.ignoredObservations?.length) {
-    area.append(el('h3', 'Additional context'));
-    const ignored = el('ul', undefined, 'summary-list');
-    for (const item of result.ignoredObservations) {
-      const line = el('li', `${item.description} — ${item.reason}`);
-      line.append(el('small', sourceLabel(item.source)));
-      ignored.append(line);
-    }
-    area.append(ignored);
+async function loadPatients() {
+  patients = await api("patients");
+  renderPatients();
+  for (const id of ["report-patient", "analytics-patient"]) {
+    const selected = $(id).value;
+    $(id).replaceChildren(new Option("Choose a patient", ""));
+    patients.forEach((p) => $(id).add(new Option(p.name, p.id)));
+    $(id).value = selected;
   }
 }
-
-function renderSuggestions(result) {
-  const area = $('suggestion-output');
-  area.replaceChildren(notice(result.message, result.status !== 'suggestions'));
-  const selected = result.recommendations.find((item) => item.id === result.primaryAssessmentId);
-  if (selected) area.append(el('h3', `Suggested first: ${selected.title}`));
-  for (const item of result.recommendations) {
-    const card = el('div', undefined, `result${item.id === result.primaryAssessmentId ? ' primary' : ''}`);
-    card.append(el('h3', item.title), el('span', item.availability === 'available' ? 'Available to prescribe' : item.availability === 'requires_trauma_review' ? 'Needs trauma review' : 'Not available for prescription', 'tag'), el('p', item.purpose), el('p', item.reason));
-    if (item.note) card.append(el('p', item.note));
-    for (const missing of item.missingInformation || []) card.append(notice(missing, true));
-    if (item.evidence.length) {
-      card.append(el('strong', 'Matched summary observations'));
-      const list = el('ul', undefined, 'evidence-list');
-      for (const evidence of item.evidence) list.append(el('li', `${evidence.description} — ${sourceLabel(evidence.source)}`));
-      card.append(list);
+function populateAssessments() {
+  const select = $("assessment-select");
+  select.replaceChildren(
+    new Option(`Choose from ${catalogue.length} assessments…`, ""),
+  );
+  for (const available of [true, false]) {
+    const group = el("optgroup");
+    group.label = available
+      ? "Available questionnaires"
+      : "Unsupported or incomplete content";
+    for (const a of catalogue.filter((a) => a.runnable === available)) {
+      const option = new Option(
+        a.title + (available ? "" : " — needs review"),
+        a.id,
+      );
+      group.append(option);
     }
-    const source = el('a', 'Clinical reference');
-    source.href = item.source; source.target = '_blank'; source.rel = 'noopener noreferrer';
-    card.append(source);
+    select.append(group);
+  }
+  select.disabled = false;
+}
+function selectAssessment(id, from = "manual") {
+  selection = id;
+  manual = from === "manual";
+  $("assessment-select").value = id;
+  const a = catalogue.find((a) => a.id === id),
+    area = $("selection-details");
+  area.replaceChildren();
+  $("prescription-result").replaceChildren();
+  $("prescribe-button").disabled = !a?.runnable;
+  $("selection-source").textContent =
+    from === "manual"
+      ? "You can choose any available assessment."
+      : `Selected from ${from}. You can choose another assessment.`;
+  if (a) {
+    area.append(
+      el("h3", a.title),
+      el("p", a.description),
+      el(
+        "p",
+        `${a.questionCount} questions · ${a.scoringEnabled ? "Scoring available" : "Responses only · no validated score"}`,
+        "tag",
+      ),
+    );
+    if (!a.runnable) area.append(el("p", a.reason, "notice alert"));
+  }
+}
+function suggestionCards(result, area, source) {
+  area.replaceChildren();
+  if (source === "patient history") area.append(el("p", result.reply));
+  result.suggestions.forEach((s, index) => {
+    const a = catalogue.find((a) => a.id === s.assessmentId);
+    if (!a) return;
+    const card = el(
+      "article",
+      undefined,
+      `suggestion-card ${index === 0 ? "leading" : ""}`,
+    );
+    if (index === 0)
+      card.append(el("span", "Leading suggestion · Gemini", "tag"));
+    card.append(el("h3", a.title), el("p", s.reason));
+    if (s.caution) card.append(el("p", s.caution, "muted-text"));
+    const choose = el(
+      "button",
+      a.runnable ? "Choose this assessment" : "Content needs review",
+      "button outline",
+    );
+    choose.type = "button";
+    choose.disabled = !a.runnable;
+    choose.onclick = () => {
+      selectAssessment(a.id, source);
+      $("assessment-select").scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    };
+    card.append(choose);
     area.append(card);
+  });
+  if (!manual) {
+    const a = catalogue.find((a) => a.id === result.primaryAssessmentId);
+    selectAssessment(a?.runnable ? a.id : "", source);
   }
-  if (selected && selected.availability !== 'available') area.append(notice(`${selected.title} is relevant but cannot be prescribed here. Review the eligible tests below before making a selection.`));
 }
-
-function renderDecision(result) {
-  const question = result.clarification?.question;
-  $('clarification-panel').hidden = !question;
-  if (question) {
-    $('clarification-prompt').textContent = question.prompt;
-    const focusSelect = $('clarification-focus');
-    focusSelect.replaceChildren(new Option('Use summary priorities', ''));
-    for (const option of question.options) focusSelect.add(new Option(option.label, option.value));
-    focusSelect.value = result.clarification.focus;
+async function suggest(source, refresh = false) {
+  if (recommendBusy) return;
+  const token = version,
+    id = selectedPatientId;
+  const area =
+    source === "history" ? $("suggestion-output") : $("doctor-suggestions");
+  let next = doctorMessages;
+  const text = $("doctor-text").value.trim();
+  if (source === "doctor") {
+    if (!text) return;
+    next = [...doctorMessages.slice(-28), { role: "user", text }];
   }
-  selectedFormId = '';
-  const select = $('assessment-select');
-  select.replaceChildren(new Option('Select an assessment', ''));
-  for (const choice of result.prescriptionChoices || []) {
-    const label = choice.availability !== 'available' ? `${choice.title} — needs review` :
-      `${choice.title} — ${choice.priority === 1 ? 'recommended' : choice.priority === 2 ? 'secondary option' : 'clinician option'}`;
-    const option = new Option(label, choice.id);
-    option.disabled = choice.availability !== 'available';
-    select.add(option);
+  recommendBusy = true;
+  $("refresh-suggestions").disabled = true;
+  $("doctor-send").disabled = true;
+  area.replaceChildren(
+    el(
+      "p",
+      "Matching history and observations with the assessment catalogue…",
+      "loading-state",
+    ),
+  );
+  try {
+    const result = await api(`patients/${id}/recommendations`, {
+      method: "POST",
+      body: JSON.stringify({
+        source,
+        refresh,
+        messages: source === "doctor" ? next : [],
+      }),
+    });
+    if (token !== version) return;
+    if (source === "doctor") {
+      doctorMessages = [...next, { role: "assistant", text: result.reply }];
+      $("doctor-messages").replaceChildren();
+      for (const m of doctorMessages) {
+        const row = el("div", undefined, `chat-message ${m.role}`);
+        row.append(
+          el("strong", m.role === "user" ? "Doctor" : "Gemini"),
+          el("p", m.text),
+        );
+        $("doctor-messages").append(row);
+      }
+      $("doctor-text").value = "";
+    }
+    suggestionCards(
+      result,
+      area,
+      source === "history" ? "patient history" : "doctor conversation",
+    );
+  } catch (e) {
+    if (token === version) error(area, e.message);
+  } finally {
+    if (token === version) {
+      recommendBusy = false;
+      $("refresh-suggestions").disabled = !config.geminiConfigured;
+      $("doctor-send").disabled = !config.geminiConfigured;
+    }
   }
-  select.disabled = !result.prescriptionChoices?.some((choice) => choice.availability === 'available');
-  $('selection-details').replaceChildren(notice(select.disabled ? 'No test can be prescribed until the required review is complete.' : 'Select a test to see why it is available. The doctor makes the final choice.', select.disabled));
-  $('prescribe-button').disabled = true;
-  $('prescribe-button').textContent = 'Confirm & Prescribe';
 }
-
-function updateSelectedChoice() {
-  selectedFormId = $('assessment-select').value;
-  const choice = suggestion?.prescriptionChoices.find((item) => item.id === selectedFormId && item.availability === 'available');
-  $('prescribe-button').disabled = !choice;
-  $('prescribe-button').textContent = choice ? `Confirm & prescribe ${choice.title}` : 'Confirm & Prescribe';
-  const area = $('selection-details');
-  if (!choice) {
-    area.replaceChildren(notice('Select a test to see why it is available. The doctor makes the final choice.'));
+async function openPatient() {
+  clearConsultation();
+  const token = version;
+  manual = false;
+  selectAssessment("", "patient history");
+  step(2);
+  $("patient-summary").replaceChildren(el("p", "Loading patient…"));
+  try {
+    const p = await api(`patients/${selectedPatientId}`);
+    if (token !== version) return;
+    patient = p;
+    const box = $("patient-summary");
+    box.replaceChildren(
+      el("h2", p.name),
+      el(
+        "p",
+        `${p.recordedAge == null ? "Age not recorded" : p.recordedAge + " years"} · ${p.gender || "Gender not recorded"}`,
+        "muted-text",
+      ),
+    );
+    const details = el("details");
+    details.open = true;
+    details.append(
+      el("summary", "Patient history summary"),
+      el("p", p.historySummary, "summary-text"),
+    );
+    box.append(details);
+    if (p.sourceProfile) {
+      const full = el("details");
+      full.append(el("summary", "Complete imported record"));
+      const pre = el("pre", JSON.stringify(p.sourceProfile, null, 2));
+      pre.className = "source-record";
+      full.append(pre);
+      box.append(full);
+    }
+    $("refresh-suggestions").disabled = !config.geminiConfigured;
+    $("doctor-send").disabled = !config.geminiConfigured;
+    if (config.geminiConfigured) await suggest("history");
+    else
+      error(
+        $("suggestion-output"),
+        "Gemini is not configured. Choose an assessment manually to continue.",
+      );
+  } catch (e) {
+    if (token === version) error($("patient-summary"), e.message);
+  }
+}
+async function prescribe() {
+  const id = selectedPatientId,
+    token = version;
+  $("prescribe-button").disabled = true;
+  try {
+    const rx = await api(`patients/${id}/prescriptions`, {
+      method: "POST",
+      body: JSON.stringify({ assessmentId: selection }),
+    });
+    if (token !== version) return;
+    const box = $("prescription-result");
+    box.replaceChildren(
+      el(
+        "p",
+        "Assessment prescribed. Choose the language and response mode on the next screen.",
+        "notice",
+      ),
+    );
+    const link = el("a", "Open patient assessment →", "button primary");
+    link.href = `/workspace-session.html?prescriptionId=${rx.id}`;
+    box.append(link);
+  } catch (e) {
+    if (token === version) error($("prescription-result"), e.message);
+  } finally {
+    if (token === version) $("prescribe-button").disabled = false;
+  }
+}
+async function loadReports() {
+  const id = $("report-patient").value,
+    area = $("report-content");
+  if (!id) {
+    area.replaceChildren(el("p", "Choose a patient to view reports."));
     return;
   }
-  area.replaceChildren(el('p', choice.reason));
-  if (choice.evidence.length) area.append(el('p', `Summary evidence: ${choice.evidence.map((item) => item.description).join('; ')}`));
-  if (choice.note) area.append(notice(choice.note));
-}
-
-async function loadSuggestion(focus = '') {
-  const current = ++loadNumber;
-  $('patient-summary').replaceChildren(el('p', 'Loading summary…'));
-  $('suggestion-output').replaceChildren(el('p', 'Preparing suggestion…'));
-  $('prescribe-button').disabled = true;
-  $('prescription-result').replaceChildren();
+  area.replaceChildren(el("p", "Loading reports…"));
   try {
-    const query = focus ? `?focus=${encodeURIComponent(focus)}` : '';
-    const response = await fetch(`/api/demo-patients/${encodeURIComponent(selectedPatientId)}/recommendations${query}`);
-    if (!response.ok) throw new Error('Could not load this patient summary.');
-    const result = await response.json();
-    if (current !== loadNumber) return;
-    suggestion = result;
-    renderSummary(result);
-    renderSuggestions(result);
-    renderDecision(result);
-  } catch (error) {
-    if (current !== loadNumber) return;
-    $('patient-summary').replaceChildren();
-    $('suggestion-output').replaceChildren(notice(error.message, true));
-  }
-}
-
-async function showConfirmation() {
-  if (!selectedPatientId) return;
-  setStep(2);
-  await loadSuggestion();
-}
-
-async function prescribe() {
-  if (!suggestion || suggestion.patient.id !== selectedPatientId ||
-      !suggestion.prescriptionChoices.some((item) => item.id === selectedFormId && item.availability === 'available')) return;
-  $('prescribe-button').disabled = true;
-  $('prescription-result').replaceChildren();
-  try {
-    const response = await fetch(`/api/demo-patients/${encodeURIComponent(selectedPatientId)}/prescriptions`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ formId: selectedFormId }),
-    });
-    const record = await response.json();
-    if (!response.ok) throw new Error(record.error || 'Could not prescribe the test.');
-    const card = el('div', undefined, 'prescribed-card');
-    card.append(el('h3', `${record.formId.toUpperCase()} prescribed`), el('p', `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
-    const actions = el('div', undefined, 'prescribed-actions');
-    const url = new URL(`/assessment.html?prescriptionId=${encodeURIComponent(record.id)}`, location.href);
-    const open = el('a', 'Open patient assessment', 'button primary');
-    open.href = url.href;
-    const copy = el('button', 'Copy patient link', 'button outline');
-    copy.type = 'button';
-    copy.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(url.href); copy.textContent = 'Copied'; }
-      catch { copy.textContent = 'Copy unavailable; open the link instead'; }
-    });
-    actions.append(open, copy);
-    card.append(actions);
-    $('prescription-result').append(card);
-  } catch (error) {
-    $('prescription-result').replaceChildren(notice(error.message, true));
-    $('prescribe-button').disabled = false;
-  }
-}
-
-async function loadReports(patientId) {
-  const current = ++loadNumber;
-  const area = $('report-content');
-  if (!patientId) { area.replaceChildren(el('p', 'Choose a patient to view their test reports.', 'empty-state')); return; }
-  area.replaceChildren(el('p', 'Loading reports…', 'empty-state'));
-  try {
-    const [prescriptionsResponse, reportsResponse] = await Promise.all([
-      fetch(`/api/demo-patients/${encodeURIComponent(patientId)}/prescriptions`),
-      fetch(`/api/demo-patients/${encodeURIComponent(patientId)}/reports`),
-    ]);
-    if (!prescriptionsResponse.ok || !reportsResponse.ok) throw new Error('Could not load patient reports.');
-    const [prescriptions, reports] = await Promise.all([prescriptionsResponse.json(), reportsResponse.json()]);
-    if (current !== loadNumber) return;
-    area.replaceChildren(el('h2', `${reports.length} completed report${reports.length === 1 ? '' : 's'}`));
-    const list = el('div', undefined, 'report-list');
-    for (const report of reports) {
-      const row = el('div', undefined, 'report-row');
-      const info = el('div');
-      info.append(el('strong', `${report.formId.toUpperCase()} · ${report.scores.rawTotal} / ${report.scores.maxTotal || 27}`), el('small', `Completed ${new Date(report.completedAt).toLocaleString()}`));
-      const link = el('a', 'View report'); link.href = `/report.html?id=${encodeURIComponent(report.id)}`;
-      row.append(info, link); list.append(row);
+    const sessions = await api(`patients/${id}/sessions`);
+    if ($("report-patient").value !== id) return;
+    area.replaceChildren();
+    for (const s of sessions) {
+      const card = el("article", undefined, "panel");
+      card.append(
+        el("h3", s.definition.title),
+        el(
+          "p",
+          `${s.status === "completed" ? "Completed" : "In progress"} · ${date(s.completedAt || s.startedAt)} · ${s.language}`,
+        ),
+      );
+      if (s.status === "completed") card.append(reportLinks(s.id));
+      else {
+        const link = el("a", "Resume assessment", "button outline");
+        link.href = `/workspace-session.html?prescriptionId=${s.prescriptionId}`;
+        card.append(link);
+      }
+      area.append(card);
     }
-    for (const record of prescriptions.filter((item) => item.status !== 'completed')) {
-      const row = el('div', undefined, 'report-row');
-      const info = el('div');
-      info.append(el('strong', `${record.formId.toUpperCase()} · ${record.status === 'assigned' ? 'Assigned' : 'In progress'}`), el('small', `Prescribed ${new Date(record.createdAt).toLocaleString()}`));
-      const link = el('a', 'Open patient assessment');
-      link.href = `/assessment.html?prescriptionId=${encodeURIComponent(record.id)}`;
-      row.append(info, link); list.append(row);
-    }
-    if (list.children.length) area.append(list);
-    else area.append(el('p', 'No prescriptions or completed reports for this patient yet.', 'empty-state'));
-  } catch (error) {
-    if (current === loadNumber) area.replaceChildren(notice(error.message, true));
+    if (!sessions.length)
+      area.append(
+        el("p", "No saved assessments for this patient yet.", "empty-state"),
+      );
+  } catch (e) {
+    error(area, e.message);
   }
 }
-
-$('nav-prescribe').addEventListener('click', () => setView('prescribe'));
-$('nav-reports').addEventListener('click', () => setView('reports'));
-$('nav-analytics').addEventListener('click', () => setView('analytics'));
-$('nav-library').addEventListener('click', () => setView('library'));
-$('patient-search').addEventListener('input', renderPatientList);
-$('next-step').addEventListener('click', showConfirmation);
-$('back-step').addEventListener('click', () => { ++loadNumber; setStep(1); });
-$('clarification-focus').addEventListener('change', () => loadSuggestion($('clarification-focus').value));
-$('assessment-select').addEventListener('change', updateSelectedChoice);
-$('prescribe-button').addEventListener('click', prescribe);
-$('report-patient').addEventListener('change', () => {
-  const url = new URL(location.href);
-  if ($('report-patient').value) url.searchParams.set('patient', $('report-patient').value);
-  else url.searchParams.delete('patient');
-  history.replaceState({}, '', url);
-  loadReports($('report-patient').value);
-});
-window.addEventListener('popstate', () => setView(new URL(location.href).searchParams.get('view'), false));
-
+function completionBar(title, count, max) {
+  const row = el("div", undefined, "completion-bar");
+  row.append(el("strong", `${title}: ${count} completed`));
+  const bar = el("progress");
+  bar.max = Math.max(1, max);
+  bar.value = count;
+  bar.setAttribute("aria-label", `${title}: ${count} completed`);
+  row.append(bar);
+  return row;
+}
+async function loadAnalytics() {
+  const id = $("analytics-patient").value,
+    area = $("analytics-patient-content");
+  $("analytics-summary").replaceChildren();
+  $("analytics-months").replaceChildren();
+  $("analytics-by-form").replaceChildren();
+  if (!id) {
+    area.replaceChildren(el("p", "Choose a patient to view their progress."));
+    return;
+  }
+  try {
+    const data = await api(`patients/${id}/analytics`);
+    if ($("analytics-patient").value !== id) return;
+    area.replaceChildren();
+    $("analytics-summary").append(
+      el("div", `${data.completed} completed assessments`, "panel"),
+      el("div", `${data.drafts} in-progress assessments`, "panel"),
+    );
+    const groups = data.groups
+      .map((g) => ({
+        ...g,
+        results: g.results.filter(
+          (r) =>
+            $("analytics-range").value === "all" ||
+            Date.now() - Date.parse(r.completedAt) <=
+              Number($("analytics-range").value) * 86400000,
+        ),
+      }))
+      .filter((g) => g.results.length);
+    const monthly = new Map();
+    for (const g of groups) {
+      $("analytics-by-form").append(
+        completionBar(
+          g.title,
+          g.results.length,
+          Math.max(...groups.map((item) => item.results.length)),
+        ),
+      );
+      for (const r of g.results) {
+        const month = r.completedAt.slice(0, 7);
+        monthly.set(month, (monthly.get(month) || 0) + 1);
+      }
+      const card = el("section", undefined, "panel");
+      card.append(
+        el("h3", g.title),
+        el(
+          "p",
+          `${g.version} · ${g.language} · ${g.results.length} visit(s)`,
+          "muted-text",
+        ),
+      );
+      if (g.scored) {
+        const valid = g.results.filter(
+          (r) => Number.isFinite(r.score) && r.max > 0,
+        );
+        if (valid.length) {
+          const svg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+          );
+          svg.setAttribute("viewBox", "0 0 600 160");
+          svg.setAttribute("role", "img");
+          svg.setAttribute(
+            "aria-label",
+            "Score trend; exact values are in the table below.",
+          );
+          const line = document.createElementNS(svg.namespaceURI, "polyline");
+          line.setAttribute(
+            "points",
+            valid
+              .map(
+                (r, i) =>
+                  `${30 + (i * 540) / Math.max(1, valid.length - 1)},${140 - (r.score / r.max) * 120}`,
+              )
+              .join(" "),
+          );
+          line.setAttribute("fill", "none");
+          line.setAttribute("stroke", "#138aff");
+          line.setAttribute("stroke-width", "3");
+          svg.append(line);
+          card.append(svg);
+        }
+      } else
+        card.append(
+          el(
+            "p",
+            "Response history only. The source disables scoring, so no clinical score or severity trend is calculated.",
+            "notice",
+          ),
+        );
+      const table = el("table");
+      const head = el("tr");
+      ["Completed", "Responses", "Score", "Report"].forEach((t) =>
+        head.append(el("th", t)),
+      );
+      table.append(head);
+      for (const r of g.results) {
+        const tr = el("tr");
+        tr.append(
+          el("td", date(r.completedAt)),
+          el("td", `${r.questionCount} saved`),
+          el("td", r.score == null ? "Not scored" : `${r.score} / ${r.max}`),
+        );
+        const td = el("td");
+        const link = el("a", "View report");
+        link.href = `/api/workspace/sessions/${r.id}/report`;
+        link.target = "_blank";
+        link.rel = "noopener";
+        td.append(link);
+        tr.append(td);
+        table.append(tr);
+      }
+      const scroll = el("div", undefined, "table-scroll");
+      scroll.append(table);
+      card.append(scroll);
+      area.append(card);
+    }
+    for (const [month, count] of [...monthly].sort())
+      $("analytics-months").append(
+        completionBar(month, count, Math.max(...monthly.values())),
+      );
+    if (!groups.length)
+      area.append(
+        el(
+          "p",
+          "No completed assessments in this period. Complete an assessment to see its history here.",
+          "empty-state",
+        ),
+      );
+  } catch (e) {
+    error(area, e.message);
+  }
+}
+for (const name of ["prescribe", "reports", "analytics", "library"])
+  $(`nav-${name}`).onclick = () => view(name);
+$("patient-search").oninput = renderPatients;
+$("next-step").onclick = openPatient;
+$("back-step").onclick = () => {
+  clearConsultation();
+  step(1);
+};
+$("assessment-select").onchange = () =>
+  selectAssessment($("assessment-select").value);
+$("refresh-suggestions").onclick = () => suggest("history", true);
+$("doctor-form").onsubmit = (e) => {
+  e.preventDefault();
+  suggest("doctor");
+};
+$("prescribe-button").onclick = prescribe;
+$("patient-analytics").onclick = () => view("analytics");
+$("patient-reports").onclick = () => view("reports");
+$("report-patient").onchange = loadReports;
+$("analytics-patient").onchange = loadAnalytics;
+$("analytics-range").onchange = loadAnalytics;
+$("add-patient").onclick = () => {
+  $("patient-form-error").textContent = "";
+  $("patient-dialog").showModal();
+};
+$("close-patient").onclick = () => $("patient-dialog").close();
+$("add-patient-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const button = e.submitter;
+  button.disabled = true;
+  try {
+    const p = await api("patients", {
+      method: "POST",
+      body: JSON.stringify(Object.fromEntries(new FormData(e.target))),
+    });
+    selectedPatientId = p.id;
+    await loadPatients();
+    $("patient-search").value = "";
+    renderPatients();
+    $("next-step").disabled = false;
+    e.target.reset();
+    $("patient-dialog").close();
+  } catch (err) {
+    $("patient-form-error").textContent = err.message;
+  } finally {
+    button.disabled = false;
+  }
+};
 try {
-  const response = await fetch('/api/demo-patients');
-  if (!response.ok) throw new Error('Could not load the patient list.');
-  patients.push(...await response.json());
-  for (const patient of patients) {
-    const option = el('option', patient.label); option.value = patient.id; $('report-patient').append(option);
+  config = await api("catalogue");
+  catalogue = config.catalogue;
+  populateAssessments();
+  await loadPatients();
+  const q = new URL(location.href).searchParams;
+  selectedPatientId = patients.some((p) => p.id === q.get("patient"))
+    ? q.get("patient")
+    : "";
+  if (selectedPatientId) {
+    $("next-step").disabled = false;
+    renderPatients();
   }
-  renderPatientList();
-  const query = new URL(location.href).searchParams;
-  const patientId = query.get('patient');
-  if (patients.some((item) => item.id === patientId)) $('report-patient').value = patientId;
-  setView(query.get('view'), false);
-} catch (error) {
-  $('patient-list').replaceChildren(notice(error.message, true));
-  $('report-content').replaceChildren(notice(error.message, true));
+  view(
+    ["reports", "analytics", "library"].includes(q.get("view"))
+      ? q.get("view")
+      : "prescribe",
+  );
+} catch (e) {
+  error($("patient-list"), e.message);
 }

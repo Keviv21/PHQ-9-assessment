@@ -1,4 +1,30 @@
-# PHQ-9, GAD-7 and PCL-5 Gemini Live prototype
+# Chandrika assessment workspace
+
+The `chandrika` branch keeps the main application's SQLite backend and adds the patient workspace at `/`. Main and sagar are unchanged. This workspace adapts the platform's assessment layout, complete-option translation validation and live-answer handling, and sagar's history recommendation, doctor consultation, right-side session controls and per-patient analytics flow.
+
+- The first patient is imported from `local-data/neurotwin-patient.json` (or `NEUROTWIN_PATIENT_FILE`), followed by four sample patients. The clinical JSON is ignored by Git; keep it local. Added patients and their summaries are saved in SQLite.
+- `data/workspace-assessments.json` contains 186 normalized entries from the supplied final export. All appear in the prescription dropdown; 133 single-choice questionnaires can run, and 53 remain blocked for missing or unsupported response content. Definitions retain their source hashes and review status.
+- Clicking Next requests Gemini suggestions from the patient summary and catalogue. The leading runnable recommendation is selected automatically. Doctor follow-up conversations can refine suggestions, and manual selection remains available. Doctor conversations are not saved. Cached history suggestions are invalidated when the summary, demographics, catalogue or model changes.
+- Confirm & Prescribe creates a patient-linked prescription. The next page offers language, Chat, Voice and On-screen choices. Translations include every option label; sessions freeze the complete definition and keep the chosen mode/language when resumed. Clear answers save automatically, with a final editable review.
+- Patient reports and analytics are accessible from the patient sidebar and completed session. Reports can be downloaded as HTML or printed to PDF. Analytics separates instruments, versions and languages. The supplied final catalogue disables scoring, so its results have response history and completion counts, not clinical scores, norms or severity estimates. Legacy scored assessments remain accessible through their original endpoints.
+- The right-side camera is a local preview only. Voice audio and typed live responses are sent to Gemini; this app does not retain audio, video or live transcripts. Known direct identifiers are removed from recommendation inputs; this is not full de-identification.
+
+Run `npm run dev`, then open `http://localhost:4174`. Stop any other process on that port first. The main branch's `DB_PATH` (default `data/prototype.sqlite`) is used; this workspace does not switch to sagar's PostgreSQL database. New `workspace_*` tables keep patient sessions separate from existing legacy demo and library-review tables.
+
+`GEMINI_API_KEY` enables recommendations and live sessions. Optional `GEMINI_RECOMMENDATION_MODEL`, `GEMINI_TRANSLATION_MODEL` and `GEMINI_LIVE_MODEL` override their defaults. Without Gemini, English on-screen questionnaires remain available. Provider availability/quota still governs AI features.
+
+```bash
+cd /home/chandrikak/Pod_Dev/PHQ-9-assessment
+npm run dev
+```
+
+Validation: `npm test`. The workspace tests cover patient imports, catalogue choices, recommendation grounding and caching, temporary doctor messages, translation integrity, saved session revisions, reports and analytics. Provider responses are mocked in tests.
+
+## Legacy prototype reference
+
+The notes below describe the original main-branch routes and separate library previews; the patient workspace above supersedes their prescription screen.
+
+### PHQ-9, GAD-7 and PCL-5 Gemini Live prototype
 
 Standalone Casebook-style conversational prototype for **PHQ-9**, **GAD-7**, and **PCL-5**. It uses its own code and SQLite file, separate from the earlier DASS-21 prototype.
 
@@ -45,7 +71,7 @@ To try a live review, restart the server, open **Assessment Library**, search fo
 
 To regenerate `data/draft-assessments.json` from an approved source bundle, run `npm run import:assessments -- <source-json-path> <output-json-path> data/draft-assessments.json`, using a temporary output path and replacing the catalogue only after reviewing the import. The importer keeps existing runnable forms and their IDs unchanged so previously saved answer indexes retain their meaning. It uses repaired content for records that were previously unavailable. It does not import scoring rules or source assets. Confirm the scope of the client's content rights before distributing the imported catalogue or using any draft assessment with patients.
 
-Demo patient D suggests DASS-21, which remains a separate prototype and cannot be prescribed here. Demo patient E is patterned after the *structure and themes* of the supplied Digital Twin report, without copying its patient data: historical low mood, seizure-related fear, and sleep disruption do not automatically become current psychiatric concerns. Because its immediate safety status is not reviewed, the engine pauses recommendations. The earlier patient suggestion page remains at <http://127.0.0.1:4174/patient-suggest.html>; the manual context screen remains at <http://127.0.0.1:4174/recommend.html>.
+Demo patient D suggests DASS-21, which remains a separate prototype and cannot be prescribed here. Demo patient E is patterned after the _structure and themes_ of the supplied Digital Twin report, without copying its patient data: historical low mood, seizure-related fear, and sleep disruption do not automatically become current psychiatric concerns. Because its immediate safety status is not reviewed, the engine pauses recommendations. The earlier patient suggestion page remains at <http://127.0.0.1:4174/patient-suggest.html>; the manual context screen remains at <http://127.0.0.1:4174/recommend.html>.
 
 After the last answer (9 for PHQ-9, 7 for GAD-7, or 20 for PCL-5), review every selected option. Change any response, then click **Confirm answers and generate report**. The report appears on the assessment page; **Open printable report** supports browser **Print / Save as PDF**. Reports do not reproduce NovoPsych percentile calculations or comparison charts.
 

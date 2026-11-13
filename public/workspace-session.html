@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Patient assessment | OpenMind</title>
+    <link rel="stylesheet" href="/clinic.css" />
+    <link rel="stylesheet" href="/workspace.css" />
+  </head>
+  <body>
+    <header class="session-topbar">
+      <a href="/" class="session-logo"
+        ><img src="/openmind-mark.svg" alt="" />OpenMind</a
+      ><a id="back-patient" href="/">← Back to patient</a>
+    </header>
+    <main class="session-page">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">PATIENT ASSESSMENT</p>
+          <h1 id="session-title">Preparing assessment…</h1>
+          <p id="session-patient"></p>
+        </div>
+      </div>
+      <p id="session-error" role="alert" class="notice alert" hidden></p>
+      <section id="session-setup" class="panel session-setup">
+        <h2>How would you like to respond?</h2>
+        <label class="language-select"
+          >Conversation language<select id="session-language"></select
+        ></label>
+        <fieldset id="session-modes" class="response-modes">
+          <legend>Response mode</legend>
+          <label class="response-card"
+            ><input type="radio" name="mode" value="chat" checked /><span
+              ><strong>Chat with Gemini</strong
+              ><small
+                >Type naturally or choose an answer. No microphone.</small
+              ></span
+            ></label
+          ><label class="response-card"
+            ><input type="radio" name="mode" value="voice" /><span
+              ><strong>Voice conversation</strong
+              ><small
+                >Speak and listen to Gemini. Answer choices stay visible.</small
+              ></span
+            ></label
+          ><label class="response-card"
+            ><input type="radio" name="mode" value="screen" /><span
+              ><strong>On-screen questionnaire</strong
+              ><small
+                >Choose responses yourself. No live AI conversation.</small
+              ></span
+            ></label
+          >
+        </fieldset>
+        <p id="setup-note" class="muted-text">
+          Questions and response labels use the selected language. Clear answers
+          save automatically.
+        </p>
+        <button id="session-start" class="button primary" disabled>
+          Start with chat
+        </button>
+        <p id="session-status" role="status"></p>
+      </section>
+      <div class="assessment-workspace">
+        <div class="assessment-main">
+          <div id="question-chat-grid" class="question-chat-grid" hidden>
+            <section
+              class="panel question-panel"
+              aria-label="Assessment question"
+            >
+              <div class="panel-heading">
+                <span id="question-progress" class="eyebrow"></span
+                ><span id="saved-indicator" class="tag"
+                  >Saved automatically</span
+                >
+              </div>
+              <progress
+                id="question-progress-bar"
+                max="100"
+                value="0"
+              ></progress>
+              <h2 id="question-title"></h2>
+              <p id="question-period" class="muted-text"></p>
+              <div
+                id="question-options"
+                class="workspace-options"
+                role="radiogroup"
+                aria-label="Answer choices"
+              ></div>
+              <p id="question-hint" class="muted-text"></p>
+              <details>
+                <summary>Original wording</summary>
+                <div id="original-question"></div>
+              </details>
+            </section>
+            <section id="session-chat" class="panel session-chat">
+              <h2>Assessment conversation</h2>
+              <div
+                id="session-transcript"
+                class="chat-log"
+                role="log"
+                aria-label="Assessment conversation"
+              ></div>
+              <form id="session-chat-form">
+                <label for="session-text">Your answer</label
+                ><textarea
+                  id="session-text"
+                  maxlength="1000"
+                  rows="3"
+                  placeholder="Type your response…"
+                  disabled
+                ></textarea
+                ><button id="session-send" class="button primary" disabled>
+                  Send answer
+                </button>
+              </form>
+            </section>
+          </div>
+          <section id="session-review" class="panel" hidden>
+            <h2 id="review-title">Review your answers</h2>
+            <p id="review-hint">You can edit each response before saving.</p>
+            <div id="review-answers"></div>
+            <button id="save-assessment" class="button primary">
+              Save assessment
+            </button>
+          </section>
+          <section id="session-complete" class="panel completion-panel" hidden>
+            <span class="completion-icon">✓</span>
+            <h2>Assessment saved</h2>
+            <p>Responses are saved to this patient's record.</p>
+            <div id="completed-report"></div>
+            <a id="completed-analytics" class="button primary" href="#"
+              >View patient analytics</a
+            ><a id="completed-patient" class="button outline" href="#"
+              >Back to patient reports</a
+            >
+          </section>
+        </div>
+        <aside class="workspace-side session-sidebar">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Session controls</h2>
+              <span id="mode-badge" class="tag">Not started</span>
+            </div>
+            <div class="camera-preview">
+              <video
+                id="camera-preview"
+                autoplay
+                muted
+                playsinline
+                hidden
+              ></video
+              ><span id="camera-placeholder">Camera off</span>
+            </div>
+            <button id="microphone-toggle" class="button outline" disabled>
+              Mute microphone</button
+            ><button id="camera-toggle" class="button outline">
+              Turn camera on</button
+            ><button id="disconnect-session" class="button outline" disabled>
+              Disconnect conversation
+            </button>
+            <p class="muted-text">
+              Camera is an optional local preview only. Voice audio is sent to
+              Gemini only during a connected voice session. This app does not
+              store audio, video or chat transcripts.
+            </p>
+          </section>
+          <section class="panel guide">
+            <h2>How this works</h2>
+            <ol>
+              <li>Answer by typing, speaking or choosing an option.</li>
+              <li>Clear responses save automatically.</li>
+              <li>Review your answers before completing.</li>
+            </ol>
+            <p>
+              Imported questionnaire content and assisted translations need
+              clinician review.
+            </p>
+            <a id="side-analytics" href="#">Patient analytics →</a>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <script type="module" src="/workspace-session.js"></script>
+  </body>
+</html>

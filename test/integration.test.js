@@ -24,7 +24,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     }
     assert.equal(ready, true, 'server started');
     const page = await (await fetch(`${base}/`)).text();
-    assert.match(page, /NovoPsych Assessment/);
+    assert.match(page, /Assessments/);
     assert.match(page, /Prescribe Test/);
     assert.match(page, /View Test Reports/);
     assert.match(page, /clinic\.js/);

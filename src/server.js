@@ -1,3 +1,4 @@
+import { createWorkspaceApi } from './workspace/api.js';
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -20,15 +21,17 @@ const draftStore = openDraftStore(dbPath);
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
+const allowedStatic = new Set(['/workspace.css', '/workspace-session.html', '/workspace-session.js', '/workspace-common.js', '/workspace-audio.js', '/workspace-presentation.js', '/workspace-languages.js', '/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
 const activeAssessments = new Set();
+const workspace = createWorkspaceApi(dbPath, {apiKey, model, port});
 
 function json(response, status, value) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
   response.end(JSON.stringify(value));
 }
 
-const server = http.createServer((request, response) => {
+const server = http.createServer(async (request, response) => {
+  if (request.url.startsWith('/api/workspace/') && await workspace.handle(request, response)) return;
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
   if (url.pathname === '/api/draft-sessions' && request.method === 'POST') {
     if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
@@ -305,7 +308,7 @@ server.on('upgrade', (request, socket, head) => {
   let pathname;
   try { pathname = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`).pathname; }
   catch { socket.destroy(); return; }
-  const target = pathname === '/ws' ? wss : pathname === '/draft-ws' ? draftWss : null;
+  const target = pathname === '/workspace-ws' ? workspace.wss : pathname === '/ws' ? wss : pathname === '/draft-ws' ? draftWss : null;
   if (!target) { socket.destroy(); return; }
   target.handleUpgrade(request, socket, head, (client) => target.emit('connection', client, request));
 });
@@ -407,6 +410,7 @@ server.listen(port, '127.0.0.1', () => {
 });
 
 function shutdown() {
+  workspace.close();
   for (const client of wss.clients) client.close();
   for (const client of draftWss.clients) client.close();
   wss.close();
