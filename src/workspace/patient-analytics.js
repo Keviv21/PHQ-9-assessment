@@ -1,3 +1,10 @@
+import {
+  answerError,
+  answerType,
+  visibleQuestion,
+  isSkipped,
+  responseLabel,
+} from "../../public/workspace-answers.js";
 import { createHash } from "node:crypto";
 import { presentation } from "./presentation.js";
 // Adapted from sagar: group repeat visits by instrument, version and language.
@@ -66,8 +73,11 @@ export function groupPatientAssessments(states) {
       severity: score !== null ? s.severity : null,
       answers: s.answers,
       questionCount: d.questions.length,
-      answeredCount: d.questions.filter((q, i) =>
-        q.options.some((o) => o.value === s.answers[i]),
+      answeredCount: d.questions.filter(
+        (q, i) =>
+          visibleQuestion(d, s.answers, q) &&
+          !isSkipped(s.answers[i]) &&
+          !answerError(q, s.answers[i]),
       ).length,
       elapsedSeconds:
         Number.isFinite(elapsed) && elapsed >= 0 ? Math.round(elapsed) : null,
@@ -75,10 +85,13 @@ export function groupPatientAssessments(states) {
       responses: rendered.questions.map((q, i) => ({
         id: q.id,
         summary: s.answerDetails?.[i]?.summary || null,
-        question: q.text,
-        response:
-          q.options.find((o) => o.value === s.answers[i])?.label ||
-          "Not recorded",
+        question: [q.context_text, q.text].filter(Boolean).join(" — "),
+        responseType: answerType(q),
+        skipped: !visibleQuestion(d, s.answers, q) || isSkipped(s.answers[i]),
+        feedback: answerType(q) === "text",
+        response: visibleQuestion(d, s.answers, q)
+          ? responseLabel(q, s.answers[i])
+          : "Not applicable (condition)",
       })),
     });
   }

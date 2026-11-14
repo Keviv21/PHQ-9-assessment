@@ -66,7 +66,7 @@ test("Workspace imports NeuroTwin first, keeps four samples and saves added pati
 test("The final catalogue is fully listed; patient sessions freeze definitions, reject stale writes and retain unscored results", () => {
   const entries = catalogue();
   assert.equal(entries.length, 186);
-  assert.equal(entries.filter((a) => a.runnable).length, 148);
+  assert.equal(entries.filter((a) => a.runnable).length, 181);
   const dir = mkdtempSync(join(tmpdir(), "workspace-db-")),
     db = join(dir, "test.sqlite");
   let store = openWorkspaceStore(db, { seed: false });

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { copy } from '../public/i18n.js';
 
 test('browser scripts parse and the assessment screen has its referenced controls', () => {
-  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'analytics.js', 'workspace-analytics.js', 'workspace-session.js', 'workspace-media.js', 'workspace-library.js', 'workspace-audio.js', 'assessment-library.js', 'draft-live.js']) {
+  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'analytics.js', 'workspace-analytics.js', 'workspace-session.js', 'workspace-answers.js', 'workspace-answer-input.js', 'workspace-media.js', 'workspace-library.js', 'workspace-audio.js', 'assessment-library.js', 'draft-live.js']) {
     const path = fileURLToPath(new URL(`../public/${name}`, import.meta.url));
     execFileSync(process.execPath, ['--check', path], { stdio: 'pipe' });
   }

@@ -21,9 +21,13 @@ export const translationSchema = object({
     items: object({
       id: string,
       text: string,
+      contextText: string,
       options: {
         type: "array",
-        items: object({ value: { type: "integer" }, label: string }),
+        items: object({
+          value: { anyOf: [{ type: "integer" }, { type: "string" }] },
+          label: string,
+        }),
       },
     }),
   },
@@ -55,6 +59,7 @@ export function validateTranslation(source, translated) {
       !t ||
       t.id !== q.id ||
       !validText(t.text) ||
+      ((q.contextText || q.context_text) && !validText(t.contextText)) ||
       !Array.isArray(t.options) ||
       t.options.length !== q.options.length
     )
@@ -82,6 +87,7 @@ export function validateTranslation(source, translated) {
     questions: source.questions.map((q, i) => ({
       id: q.id,
       text: translated.questions[i].text,
+      contextText: translated.questions[i].contextText || "",
       options: q.options.map((o, j) => ({
         value: o.value,
         label: translated.questions[i].options[j].label,
@@ -116,6 +122,7 @@ export function createTranslationsService(
         questions: definition.questions.map((q) => ({
           id: q.id,
           text: q.text,
+          contextText: q.context_text || "",
           options: q.options.map(({ value, label }) => ({ value, label })),
         })),
         ui: SESSION_LABELS,

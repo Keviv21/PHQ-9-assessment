@@ -1,3 +1,10 @@
+import {
+  answerError,
+  answerType,
+  currentQuestionIndex,
+  visibleQuestion,
+  responseLabel,
+} from "../../public/workspace-answers.js";
 import { presentation } from "./presentation.js";
 import { groupPatientAssessments } from "./patient-analytics.js";
 import { DatabaseSync } from "node:sqlite";
@@ -241,15 +248,17 @@ export function openWorkspaceStore(
         "The answer changed. Refresh this session before trying again.",
       );
     const index = s.definition.questions.findIndex((q) => q.id === questionId);
-    if (
-      index < 0 ||
-      !s.definition.questions[index].options.some((o) => o.value === value)
-    )
-      throw new HttpError(400, "Choose a valid response.");
-    if (
-      index > s.answers.findIndex((v) => v === null) &&
-      s.answers.some((v) => v === null)
-    )
+    if (index < 0) throw new HttpError(400, "Unknown question.");
+    const question = s.definition.questions[index];
+    if (!visibleQuestion(s.definition, s.answers, question))
+      throw new HttpError(
+        400,
+        `${questionId}: this conditional question is not currently applicable.`,
+      );
+    const invalid = answerError(question, value);
+    if (invalid) throw new HttpError(400, invalid);
+    const current = currentQuestionIndex(s.definition, s.answers);
+    if (current !== -1 && index > current)
       throw new HttpError(409, "Answer the current question first.");
     if (
       method === "gemini" &&
@@ -260,15 +269,16 @@ export function openWorkspaceStore(
     const at = new Date().toISOString();
     s.answerDetails ||= s.answers.map(() => null);
     s.answerRevisions ||= [];
-    if (s.answers[index] !== null && s.answers[index] !== value) {
+    if (
+      s.answers[index] !== null &&
+      JSON.stringify(s.answers[index]) !== JSON.stringify(value)
+    ) {
       s.answerRevisions.push({
         questionId,
         previousValue: s.answers[index],
         value,
-        previousLabel: rendered.options.find(
-          (o) => o.value === s.answers[index],
-        )?.label,
-        responseLabel: rendered.options.find((o) => o.value === value)?.label,
+        previousLabel: responseLabel(rendered, s.answers[index]),
+        responseLabel: responseLabel(rendered, value),
         method,
         at,
         revision: s.revision + 1,
@@ -278,8 +288,32 @@ export function openWorkspaceStore(
       method,
       at,
       summary: method === "gemini" ? summary.trim() : null,
+      feedback: answerType(question) === "text",
     };
     s.answers[index] = value;
+    // Re-evaluate in source order; changing a parent clears newly inapplicable descendants.
+    s.definition.questions.forEach((q, i) => {
+      if (
+        s.answers[i] !== null &&
+        !visibleQuestion(s.definition, s.answers, q)
+      ) {
+        s.answerRevisions.push({
+          questionId: q.id,
+          previousValue: s.answers[i],
+          value: null,
+          previousLabel: responseLabel(
+            presentation(s.definition, s.language).questions[i],
+            s.answers[i],
+          ),
+          responseLabel: "Not applicable (condition)",
+          method: "condition",
+          at,
+          revision: s.revision + 1,
+        });
+        s.answers[i] = null;
+        s.answerDetails[i] = null;
+      }
+    });
     s.revision++;
     return update(s);
   }
@@ -288,9 +322,15 @@ export function openWorkspaceStore(
     if (s.status === "completed") return s;
     if (s.revision !== revision)
       throw new HttpError(409, "Answers changed; review them again.");
-    if (s.answers.includes(null))
+    if (currentQuestionIndex(s.definition, s.answers) !== -1)
       throw new HttpError(400, "Answer every question before saving.");
-    Object.assign(s, scoreDefinition(s.definition, s.answers), {
+    let result;
+    try {
+      result = scoreDefinition(s.definition, s.answers);
+    } catch (error) {
+      throw new HttpError(400, error.message);
+    }
+    Object.assign(s, result, {
       status: "completed",
       completedAt: new Date().toISOString(),
     });

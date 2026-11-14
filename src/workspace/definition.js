@@ -1,10 +1,18 @@
-// Runtime contract: reviewed single-choice, summed-score forms, not raw extractions.
+import {
+  questionIssue,
+  answerError,
+  answerType,
+  visibleQuestion,
+  conditionState,
+  isSkipped,
+} from "../../public/workspace-answers.js";
+// Definitions and answers share the browser/server contract; scoring stays explicit.
 export function validateDefinition(d) {
   const fail = () => {
     throw new Error("Invalid or unsupported assessment definition.");
   };
   if (
-    ![1, 2].includes(d?.schemaVersion) ||
+    ![1, 2, 3].includes(d?.schemaVersion) ||
     !d.id ||
     !d.version ||
     !d.title ||
@@ -18,30 +26,22 @@ export function validateDefinition(d) {
   let min = 0,
     max = 0;
   for (const q of d.questions) {
-    if (
-      !q.id ||
-      ids.has(q.id) ||
-      typeof q.text !== "string" ||
-      !q.text.trim() ||
-      !Array.isArray(q.options) ||
-      q.options.length < 2
-    )
-      fail();
+    const issue = questionIssue(q, d.questions);
+    if (!q.id || ids.has(q.id) || issue)
+      throw new Error(issue || "Duplicate question ID.");
     ids.add(q.id);
-    const values = new Set();
-    for (const o of q.options) {
+    // Written feedback and numeric measurements have no implicit scoring rule.
+    if (d.scoring?.enabled !== false && answerType(q) !== "text") {
       if (
-        !Number.isInteger(o.value) ||
-        (d.scoring?.enabled !== false && !Number.isInteger(o.score)) ||
-        typeof o.label !== "string" ||
-        !o.label.trim() ||
-        values.has(o.value)
+        answerType(q) !== "single_choice" ||
+        q.display_if ||
+        q.allowSkip ||
+        q.options.some((o) => !Number.isInteger(o.score))
       )
         fail();
-      values.add(o.value);
+      min += Math.min(...q.options.map((o) => o.score));
+      max += Math.max(...q.options.map((o) => o.score));
     }
-    min += Math.min(...q.options.map((o) => o.score));
-    max += Math.max(...q.options.map((o) => o.score));
   }
   if (d.scoring?.enabled === false) return d;
   if (d.scoring?.method !== "sum") fail();
@@ -73,11 +73,20 @@ export function scoreDefinition(definition, answers) {
   if (!Array.isArray(answers) || answers.length !== definition.questions.length)
     throw new Error("Answer every question before saving.");
   const score = definition.questions.reduce((sum, question, index) => {
-    const option = question.options.find(
-      (o) => Number.isInteger(answers[index]) && o.value === answers[index],
-    );
-    if (!option) throw new Error("Choose a valid response for every question.");
-    return sum + (option.score ?? 0);
+    const visibility = conditionState(question.display_if, definition, answers);
+    if (visibility === null)
+      throw new Error(`${question.id}: conditional dependency is unresolved.`);
+    if (!visibleQuestion(definition, answers, question)) {
+      if (answers[index] !== null)
+        throw new Error(`${question.id}: hidden question has an answer.`);
+      return sum;
+    }
+    const error = answerError(question, answers[index]);
+    if (error) throw new Error(error);
+    if (isSkipped(answers[index]) || answerType(question) === "text")
+      return sum;
+    const option = question.options.find((o) => o.value === answers[index]);
+    return sum + (option?.score ?? 0);
   }, 0);
   if (definition.scoring.enabled === false)
     return { score: null, severity: null };

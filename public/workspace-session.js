@@ -1,4 +1,10 @@
 import {
+  answerType,
+  currentQuestionIndex,
+  visibleQuestion,
+} from "./workspace-answers.js";
+import { answerInput } from "./workspace-answer-input.js";
+import {
   BrowserSpeech,
   matchSpokenOption,
   speechLocale,
@@ -107,10 +113,12 @@ function stopCamera() {
 function render() {
   if (!state) return;
   const d = presentation(state.definition, state.language),
-    index = state.answers.findIndex((v) => v === null),
+    index = currentQuestionIndex(state.definition, state.answers),
     complete = state.status === "completed",
     review = index === -1 && !complete;
   $("session-title").textContent = d.title;
+  $("session-patient").textContent =
+    `For ${rx.patient.name} · ${d.questions.length} questions`;
   $("session-setup").classList.add("started");
   $("session-language").value = state.language;
   $("session-language").disabled = true;
@@ -162,16 +170,18 @@ function render() {
     const box = $("review-answers");
     box.replaceChildren();
     d.questions.forEach((q, i) => {
-      const row = el("label", undefined, "review-row");
+      if (!visibleQuestion(state.definition, state.answers, q)) return;
+      const row = el("div", undefined, "review-row");
+      if (q.context_text) row.append(el("p", q.context_text, "muted-text"));
       row.append(el("strong", `${i + 1}. ${q.text}`));
-      const select = el("select");
-      select.setAttribute("aria-label", `Review ${q.id}`);
-      q.options.forEach((o) =>
-        select.add(new Option(o.label, String(o.value))),
+      row.append(
+        answerInput(q, {
+          value: state.answers[i],
+          disabled: busy,
+          labels: sessionLabels(state.definition, state.language),
+          onSave: (value) => saveAnswer(q.id, value),
+        }),
       );
-      select.value = String(state.answers[i]);
-      select.onchange = () => saveAnswer(q.id, Number(select.value));
-      row.append(select);
       box.append(row);
     });
     return;
@@ -179,28 +189,31 @@ function render() {
   const q = d.questions[index];
   $("question-progress").textContent = label("progress", {
     count: state.answers.filter((v) => v !== null).length,
-    total: d.questions.length,
+    total: d.questions.filter((q) =>
+      visibleQuestion(state.definition, state.answers, q),
+    ).length,
   });
-  $("question-progress-bar").max = d.questions.length;
+  $("question-progress-bar").max = d.questions.filter((q) =>
+    visibleQuestion(state.definition, state.answers, q),
+  ).length;
   $("question-progress-bar").value = state.answers.filter(
     (v) => v !== null,
   ).length;
+  $("question-context").textContent = q.context_text || "";
+  $("question-context").hidden = !q.context_text;
   $("question-title").textContent = q.text;
   $("question-title").lang = state.language;
   $("question-period").textContent = d.referencePeriod || d.instructions;
-  $("question-hint").textContent = label("autoSave");
-  $("question-options").replaceChildren();
-  q.options.forEach((o) => {
-    const row = el("label", undefined, "workspace-option"),
-      input = el("input");
-    input.type = "radio";
-    input.name = "answer";
-    input.value = String(o.value);
-    input.disabled = busy;
-    input.onchange = () => saveAnswer(q.id, o.value);
-    row.append(input, el("span", o.label));
-    $("question-options").append(row);
-  });
+  $("question-hint").textContent = label(
+    answerType(q) === "single_choice" ? "autoSave" : "reviewHint",
+  );
+  $("question-options").replaceChildren(
+    answerInput(q, {
+      disabled: busy,
+      labels: sessionLabels(state.definition, state.language),
+      onSave: (value) => saveAnswer(q.id, value),
+    }),
+  );
   $("original-question").replaceChildren(
     el("p", state.definition.questions[index].text),
     el(
@@ -209,7 +222,8 @@ function render() {
     ),
   );
   $("browser-speech-controls").hidden = state.sessionMode !== "screen";
-  $("speak-option").disabled = busy || !speech.supported;
+  $("speak-option").disabled =
+    busy || !speech.supported || answerType(q) !== "single_choice";
   $("read-question").disabled = !globalThis.speechSynthesis;
   $("share-camera").disabled =
     !camera || !connected || paused || state.sessionMode !== "voice";
@@ -346,7 +360,7 @@ $("session-start").onclick = async () => {
     render();
     if (
       state.status === "draft" &&
-      state.answers.includes(null) &&
+      currentQuestionIndex(state.definition, state.answers) !== -1 &&
       state.sessionMode !== "screen"
     )
       await connect();
@@ -474,7 +488,7 @@ const speech = new BrowserSpeech({
     )
       return;
     const q = presentation(state.definition, state.language).questions[
-      state.answers.findIndex((v) => v === null)
+      currentQuestionIndex(state.definition, state.answers)
     ];
     if (!q) return;
     const value = matchSpokenOption(text, q.options);
@@ -500,10 +514,15 @@ $("read-question").onclick = () => {
   speech.stop();
   globalThis.speechSynthesis?.cancel();
   const d = presentation(state.definition, state.language),
-    q = d.questions[state.answers.findIndex((v) => v === null)];
+    q = d.questions[currentQuestionIndex(state.definition, state.answers)];
   if (!q || !globalThis.speechSynthesis) return;
   const utterance = new SpeechSynthesisUtterance(
-    [d.referencePeriod, q.text, ...q.options.map((o) => o.label)]
+    [
+      d.referencePeriod,
+      q.context_text,
+      q.text,
+      ...q.options.map((o) => o.label),
+    ]
       .filter(Boolean)
       .join(". "),
   );

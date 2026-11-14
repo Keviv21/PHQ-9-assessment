@@ -772,3 +772,5 @@ td {
   color: #7184a0;
   margin-top: 6px;
 }
+
+.typed-answer fieldset{border:0;padding:0;margin:0;display:grid;gap:12px;min-width:0}.typed-answer legend{font-weight:600;margin-bottom:12px}.typed-answer textarea,.typed-answer input[type=number]{box-sizing:border-box;width:100%;border:1px solid #c9d7e7;border-radius:10px;padding:12px;font:inherit;background:#fff;color:inherit}.typed-answer textarea{resize:vertical;min-height:110px}.typed-answer button{justify-self:start}.typed-answer .answer-validation{color:#a52a34;margin:8px 0;white-space:pre-wrap}.typed-answer input:focus-visible,.typed-answer textarea:focus-visible{outline:2px solid #1688ed;outline-offset:2px}.review-row .typed-answer{margin-top:12px}

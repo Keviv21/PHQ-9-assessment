@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { questionIssue } from "../../public/workspace-answers.js";
 import { validateDefinition } from "./definition.js";
 // Preserve the application's existing identifier when the source bundle renames GAD-7.
 const sourceAliases = {
@@ -23,57 +24,58 @@ export function normalizeAssessment(raw) {
     order.some((id) => !items.some((q) => q.id === id))
   )
     warnings.push("Question order is incomplete or ambiguous.");
-  const questions = items.map((q) => ({
-    id: q.id,
-    text: text(q.text),
-    options: (sets.get(q.response_set_id) || []).map((o) => ({
-      value: Object.hasOwn(o, "response_value")
-        ? o.response_value
-        : o.printed_value,
-      label: text(o.display_label) || text(o.label),
-      score: Number.isInteger(o.score) ? o.score : null,
-    })),
-    source: q.source || null,
-  }));
-  if (items.some((q) => q.display_if))
-    warnings.push("This questionnaire requires conditional questions that are not yet supported.");
+  const questions = items
+    .map((q) => {
+      const sourceOptions = sets.get(q.response_set_id) || q.options || [];
+      const values = sourceOptions.map((o) =>
+        Object.hasOwn(o, "response_value") ? o.response_value : o.printed_value,
+      );
+      const retainValues =
+        values.every(Number.isInteger) &&
+        new Set(values).size === values.length;
+      return {
+        id: q.id,
+        text: text(q.text),
+        context_text: text(q.context_text),
+        context_source: q.context_source || null,
+        response_type: q.response_type || "choice",
+        selection_mode:
+          q.selection_mode || q.input_spec?.selection_mode || null,
+        input_spec: q.input_spec || null,
+        display_if: q.display_if || null,
+        allowSkip:
+          q.input_spec?.allow_not_applicable === true ||
+          /\bskip if not applicable\b/i.test(q.text),
+        options: sourceOptions.map((o, i) => ({
+          id: o.id,
+          value: retainValues ? values[i] : o.id,
+          printed_value: o.printed_value ?? null,
+          label: text(o.display_label) || text(o.label) || text(o.text),
+          score: Number.isInteger(o.score) ? o.score : null,
+        })),
+        source: q.source || null,
+      };
+    })
+    .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   if (!questions.length) warnings.push("No captured questions are available.");
   if (questions.length > 250)
     warnings.push(
       "This questionnaire exceeds the supported 250-question limit.",
     );
   if (
-    items.some(
-      (q) =>
-        (q.response_type &&
-          !["choice", "single_choice"].includes(q.response_type)) ||
-        (q.selection_mode && q.selection_mode !== "single"),
-    )
-  )
-    warnings.push(
-      "This questionnaire contains unverified or unsupported response types.",
-    );
-  if (
     questions.length !== raw.questionnaire?.item_count ||
     new Set(questions.map((q) => q.id)).size !== questions.length
   )
     warnings.push("Question count or identifiers need review.");
-  if (
-    questions.some(
-      (q) =>
-        !q.id ||
-        !q.text ||
-        q.options.length < 2 ||
-        q.options.some((o) => !Number.isInteger(o.value) || !o.label) ||
-        new Set(q.options.map((o) => o.value)).size !== q.options.length,
-    )
-  )
-    warnings.push("One or more questions lack complete response choices.");
+  for (const q of questions) {
+    const issue = questionIssue(q, questions);
+    if (issue) warnings.push(issue);
+  }
   if (!text(raw.administration?.instructions))
     warnings.push("Administration instructions are missing.");
   const period = raw.assessment.reference_period;
   const definition = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: sourceAliases[raw.assessment_id] || raw.assessment_id,
     version: raw.definition_version || "unversioned",
     title: raw.assessment.name,
@@ -147,6 +149,8 @@ export function normalizeAssessment(raw) {
   }
   return {
     definition,
-    sourceHash: createHash("sha256").update(JSON.stringify(raw)).digest("hex"),
+    sourceHash: createHash("sha256")
+      .update(JSON.stringify({ importerVersion: 3, raw }))
+      .digest("hex"),
   };
 }

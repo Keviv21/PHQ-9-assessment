@@ -30,6 +30,12 @@ export const SESSION_LABELS = {
   startChat: "Start with chat",
   startVoice: "Start with voice",
   startChoices: "Start with on-screen choices",
+  saveResponse: "Save response",
+  skip: "Skip — not applicable",
+  skipped: "Skipped — not applicable",
+  multipleHint: "Select all responses that apply, then save.",
+  textHint: "Write your feedback, then save. Written responses are not scored.",
+  numberHint: "Enter a number within the limits shown, then save.",
   databaseSaved: "Responses saved to the database",
 };
 export function presentation(definition, language = "en") {
@@ -45,6 +51,7 @@ export function presentation(definition, language = "en") {
       return {
         ...q,
         text: translated.text,
+        context_text: translated.contextText ?? q.context_text,
         options: q.options.map((o) => ({
           ...o,
           label: translated.options.find((item) => item.value === o.value)
@@ -56,7 +63,7 @@ export function presentation(definition, language = "en") {
 }
 export function sessionLabels(definition, language) {
   return definition?.localized?.language === language
-    ? definition.localized.ui
+    ? { ...SESSION_LABELS, ...definition.localized.ui }
     : SESSION_LABELS;
 }
 export function formatLabel(text, values) {

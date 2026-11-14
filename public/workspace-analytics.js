@@ -155,9 +155,16 @@ export function createPatientAnalytics(root) {
       detail.append(node("p", `Recorded descriptor: ${r.severity}`));
     detail.append(reportLinks(r.id));
     const counts = new Map();
-    r.responses.forEach((a) =>
-      counts.set(a.response, (counts.get(a.response) || 0) + 1),
-    );
+    r.responses
+      .filter(
+        (a) =>
+          !a.feedback &&
+          !a.skipped &&
+          (!a.responseType || a.responseType.endsWith("choice")),
+      )
+      .forEach((a) =>
+        counts.set(a.response, (counts.get(a.response) || 0) + 1),
+      );
     detail.append(
       node("h3", "Response distribution"),
       node(

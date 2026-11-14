@@ -1,3 +1,4 @@
+import { answerType, canSkip } from "./workspace-answers.js";
 import { $, el, api } from "./workspace-common.js";
 let records = [],
   page = 0,
@@ -88,7 +89,27 @@ async function openDetail(id) {
     const list = el("ol", undefined, "catalogue-questions");
     for (const q of d.questions) {
       const item = el("li");
+      if (q.context_text) item.append(el("p", q.context_text, "muted-text"));
       item.append(el("strong", q.text));
+      item.append(
+        el(
+          "p",
+          {
+            single_choice: "Choose one",
+            multiple_choice: "Select all that apply",
+            text: "Written feedback",
+            integer: "Whole number",
+            number: "Number",
+          }[answerType(q)] || q.response_type,
+          "muted-text",
+        ),
+      );
+      if (canSkip(q))
+        item.append(el("p", "May be skipped if not applicable.", "muted-text"));
+      if (q.display_if)
+        item.append(
+          el("p", "Shown only when its source condition is met.", "muted-text"),
+        );
       const opts = el("ul");
       q.options.forEach((o) => opts.append(el("li", o.label)));
       item.append(opts);
