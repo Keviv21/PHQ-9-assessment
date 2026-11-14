@@ -352,6 +352,23 @@
                   </article>
                   <section class="panel decision-panel">
                     <h2>Doctor's final selection</h2>
+                    <div class="assessment-filters">
+                      <label
+                        >Find an assessment<input
+                          id="assessment-search"
+                          type="search"
+                          placeholder="Name or purpose" /></label
+                      ><label
+                        >Category<select id="assessment-category">
+                          <option value="">All categories</option>
+                        </select></label
+                      >
+                    </div>
+                    <p
+                      id="assessment-match-count"
+                      class="muted-text"
+                      aria-live="polite"
+                    ></p>
                     <label for="assessment-select">Choose an assessment</label
                     ><select
                       id="assessment-select"
@@ -390,6 +407,12 @@
                     >
                       View patient reports
                     </button>
+                  </article>
+                  <article class="panel">
+                    <h2>Recent assessments</h2>
+                    <div id="patient-recent-results">
+                      <p>Select a patient to see saved sessions.</p>
+                    </div>
                   </article>
                   <article class="panel guide">
                     <h2>How this works</h2>
@@ -470,9 +493,10 @@
               </div>
             </div>
             <p class="library-notice">
-              These imported records are awaiting clinical review and are not
-              prescribed to patients. Question previews do not save answers.
-              Live reviews save confirmed answers locally without scores.
+              Browse the same questionnaire definitions used for patient
+              sessions. Preview questions and answer choices, then select an
+              assessment for a patient. Categories help browsing; they do not
+              establish suitability.
             </p>
             <div id="library-catalogue">
               <div class="library-toolbar">
@@ -485,11 +509,16 @@
                 ><label class="search-label" for="library-filter"
                   >Show<select id="library-filter">
                     <option value="all">All assessments</option>
-                    <option value="preview">Preview available</option>
+                    <option value="preview">Available questionnaires</option>
                     <option value="incomplete">Needs source content</option>
                   </select></label
                 >
               </div>
+              <label class="search-label"
+                >Category<select id="library-category">
+                  <option value="">All categories</option>
+                </select></label
+              >
               <p id="library-count" class="library-count" aria-live="polite">
                 Loading assessment library…
               </p>
@@ -582,6 +611,6 @@
     </dialog>
     <script type="module" src="/clinic.js"></script>
 
-    <script type="module" src="/assessment-library.js"></script>
+    <script type="module" src="/workspace-library.js"></script>
   </body>
 </html>

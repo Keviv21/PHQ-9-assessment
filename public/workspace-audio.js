@@ -1,3 +1,4 @@
+import { PcmResampler } from "./workspace-media.js";
 // Raw PCM transport: 16 kHz input, 24 kHz Gemini output. No audio is retained.
 export class LiveAudio {
   constructor(onAudio) {
@@ -18,7 +19,12 @@ export class LiveAudio {
         "Microphone access requires localhost or HTTPS. You can still type your answers.",
       );
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true },
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
       video: false,
     });
     if (this.closed) {
@@ -26,13 +32,26 @@ export class LiveAudio {
       return;
     }
     this.stream = stream;
-    await this.context.audioWorklet.addModule("/audio-worklet.js");
-    if (this.closed) return;
+    try {
+      await this.context.audioWorklet.addModule("/audio-worklet.js");
+      if (this.closed) return;
+      this.capture = new AudioWorkletNode(this.context, "pcm16-capture");
+      this.capture.port.onmessage = (event) => {
+        if (!this.closed && this.enabled) this.onAudio(event.data);
+      };
+    } catch (error) {
+      if (this.closed) return;
+      if (!this.context.createScriptProcessor) throw error;
+      this.capture = this.context.createScriptProcessor(4096, 1, 1);
+      const resampler = new PcmResampler(this.context.sampleRate, (buffer) => {
+        if (!this.closed && this.enabled) this.onAudio(buffer);
+      });
+      this.capture.onaudioprocess = (event) => {
+        event.outputBuffer.getChannelData(0).fill(0);
+        if (!this.closed) resampler.push(event.inputBuffer.getChannelData(0));
+      };
+    }
     this.source = this.context.createMediaStreamSource(stream);
-    this.capture = new AudioWorkletNode(this.context, "pcm16-capture");
-    this.capture.port.onmessage = (event) => {
-      if (!this.closed && this.enabled) this.onAudio(event.data);
-    };
     this.source.connect(this.capture);
     this.capture.connect(this.context.destination);
   }

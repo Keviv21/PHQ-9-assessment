@@ -154,6 +154,29 @@ export function createPatientAnalytics(root) {
     if (r.severity)
       detail.append(node("p", `Recorded descriptor: ${r.severity}`));
     detail.append(reportLinks(r.id));
+    const counts = new Map();
+    r.responses.forEach((a) =>
+      counts.set(a.response, (counts.get(a.response) || 0) + 1),
+    );
+    detail.append(
+      node("h3", "Response distribution"),
+      node(
+        "p",
+        "Counts of saved response labels, not a clinical score or population percentile.",
+        "pa-note",
+      ),
+    );
+    const distribution = node("div", undefined, "response-distribution");
+    for (const [text, count] of counts) {
+      const row = node("label"),
+        bar = node("progress");
+      bar.max = r.questionCount;
+      bar.value = count;
+      bar.setAttribute("aria-label", `${text}: ${count} responses`);
+      row.append(node("span", text), bar, node("strong", String(count)));
+      distribution.append(row);
+    }
+    detail.append(distribution);
     const answers = node("details");
     answers.open = true;
     answers.append(node("summary", "Saved answers"));
@@ -161,10 +184,28 @@ export function createPatientAnalytics(root) {
     for (const a of r.responses) {
       const li = node("li");
       li.append(node("strong", a.question), node("p", a.response));
+      if (a.summary) li.append(node("small", `Response summary: ${a.summary}`));
       list.append(li);
     }
     answers.append(list);
     detail.append(answers);
+    if (r.answerRevisions?.length) {
+      const revisions = node("details");
+      revisions.append(
+        node("summary", `Answer corrections (${r.answerRevisions.length})`),
+      );
+      const list = node("ul");
+      r.answerRevisions.forEach((a) =>
+        list.append(
+          node(
+            "li",
+            `${a.questionId}: ${a.previousLabel} → ${a.responseLabel} · ${date(a.at)}`,
+          ),
+        ),
+      );
+      revisions.append(list);
+      detail.append(revisions);
+    }
   }
   function drawTrend(group) {
     const width = plot.clientWidth;

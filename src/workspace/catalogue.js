@@ -1,3 +1,4 @@
+import { categorizeAssessment } from "./categories.js";
 import { readFileSync } from "node:fs";
 const bundle = JSON.parse(
   readFileSync(
@@ -11,6 +12,7 @@ export function catalogue() {
     .map(({ definition: d, metadata }) => ({
       id: d.id,
       title: d.title,
+      category: categorizeAssessment(d.title, d.description),
       description: d.description,
       questionCount: d.questions.length,
       runnable: d.runnable,

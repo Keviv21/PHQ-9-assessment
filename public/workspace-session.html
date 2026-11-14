@@ -88,6 +88,23 @@
                 aria-label="Answer choices"
               ></div>
               <p id="question-hint" class="muted-text"></p>
+              <div id="browser-speech-controls" class="session-assist" hidden>
+                <button id="read-question" type="button" class="button outline">
+                  Read question and choices
+                </button>
+                <button id="speak-option" type="button" class="button outline">
+                  Speak an answer choice
+                </button>
+                <button id="stop-speech" type="button" class="button outline">
+                  Stop speech
+                </button>
+                <p id="speech-status" role="status" class="muted-text"></p>
+                <p class="muted-text">
+                  Optional browser speech tools. Speak a full answer label to
+                  save it. Your browser may send audio to its speech service;
+                  this does not call Gemini.
+                </p>
+              </div>
               <details>
                 <summary>Original wording</summary>
                 <div id="original-question"></div>
@@ -159,10 +176,18 @@
             ><button id="disconnect-session" class="button outline" disabled>
               Disconnect conversation
             </button>
+            <label class="camera-share-label"
+              ><input id="share-camera" type="checkbox" disabled /> Share camera
+              frames with Gemini during this voice session</label
+            >
+            <p id="camera-sharing-status" class="muted-text">
+              Camera preview stays on this device unless sharing is enabled.
+            </p>
             <p class="muted-text">
-              Camera is an optional local preview only. Voice audio is sent to
-              Gemini only during a connected voice session. This app does not
-              store audio, video or chat transcripts.
+              Voice audio is sent to Gemini during a connected voice session.
+              Answers and brief assessment response summaries are saved. Audio,
+              video and full chat transcripts are not stored. Camera frames
+              never determine responses or scores.
             </p>
           </section>
           <section class="panel guide">

@@ -189,6 +189,16 @@ test("Completed workspace reports escape patient content and reject unfinished s
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}/api/workspace`;
   try {
+    const preview = await fetch(`${base}/catalogue/GAD7`);
+    assert.equal(preview.status, 200);
+    assert.deepEqual(
+      (await preview.json()).questions,
+      definition("GAD7").questions,
+    );
+    assert.equal(
+      (await fetch(`${base}/catalogue/not-an-assessment`)).status,
+      404,
+    );
     assert.equal((await fetch(`${base}/sessions/${s.id}/report`)).status, 409);
     for (const q of s.definition.questions)
       s = store.answer(s.id, {

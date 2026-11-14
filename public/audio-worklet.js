@@ -24,7 +24,7 @@ class Pcm16Capture extends AudioWorkletProcessor {
           this.outputLength = 0;
         }
       }
-      const consumed = Math.floor(this.next);
+      const consumed = Math.min(Math.floor(this.next), this.source.length);
       if (consumed) {
         this.source.splice(0, consumed);
         this.next -= consumed;

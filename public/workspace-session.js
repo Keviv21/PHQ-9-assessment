@@ -1,3 +1,8 @@
+import {
+  BrowserSpeech,
+  matchSpokenOption,
+  speechLocale,
+} from "./workspace-media.js";
 import { $, el, api, reportLinks } from "./workspace-common.js";
 import { LiveAudio } from "./workspace-audio.js";
 import {
@@ -11,6 +16,9 @@ let rx,
   connection,
   audio,
   camera,
+  cameraTimer,
+  cameraGeneration = 0,
+  currentTurn = null,
   connected = false,
   muted = false,
   busy = false,
@@ -37,7 +45,17 @@ function error(message) {
 function status(message) {
   $("session-status").textContent = message;
 }
-function addMessage(speaker, text) {
+function addMessage(speaker, text, chunk = false) {
+  if (!text?.trim()) return;
+  if (
+    chunk &&
+    currentTurn?.speaker === speaker &&
+    currentTurn.body.isConnected
+  ) {
+    currentTurn.body.textContent += text;
+    $("session-transcript").scrollTop = $("session-transcript").scrollHeight;
+    return;
+  }
   const log = $("session-transcript"),
     row = el(
       "div",
@@ -49,11 +67,14 @@ function addMessage(speaker, text) {
     el("p", text),
   );
   log.append(row);
+  currentTurn = chunk ? { speaker, body: row.querySelector("p") } : null;
   while (log.children.length > 80) log.firstChild.remove();
   log.scrollTop = log.scrollHeight;
 }
 function disconnect() {
   generation++;
+  currentTurn = null;
+  stopCameraSharing();
   connected = false;
   const ws = connection;
   connection = null;
@@ -65,7 +86,17 @@ function disconnect() {
   $("session-text").disabled = true;
   $("session-send").disabled = true;
 }
+function stopCameraSharing() {
+  clearInterval(cameraTimer);
+  cameraTimer = null;
+  $("share-camera").checked = false;
+  $("share-camera").disabled = true;
+  $("camera-sharing-status").textContent =
+    "Camera preview stays on this device unless sharing is enabled.";
+}
 function stopCamera() {
+  cameraGeneration++;
+  stopCameraSharing();
   camera?.getTracks().forEach((t) => t.stop());
   camera = null;
   $("camera-preview").srcObject = null;
@@ -87,7 +118,11 @@ function render() {
   document.querySelector(
     `input[name="mode"][value="${state.sessionMode}"]`,
   ).checked = true;
-  $("mode-badge").textContent = state.sessionMode;
+  $("mode-badge").textContent = {
+    screen: "On-screen",
+    chat: "Chat",
+    voice: "Voice",
+  }[state.sessionMode];
   $("setup-note").textContent =
     `${config.languages.find((l) => l.code === state.language)?.name || state.language} · ${{ chat: "Chat with Gemini", voice: "Voice conversation", screen: "On-screen questionnaire" }[state.sessionMode]}`;
   $("session-start").hidden =
@@ -97,6 +132,8 @@ function render() {
   $("session-review").hidden = !review;
   $("session-complete").hidden = !complete;
   if (complete) {
+    speech.stop();
+    globalThis.speechSynthesis?.cancel();
     $("completed-analytics").href =
       `/?view=analytics&patient=${state.patientId}&session=${state.id}`;
     disconnect();
@@ -114,6 +151,9 @@ function render() {
     return;
   }
   if (review) {
+    speech.stop();
+    globalThis.speechSynthesis?.cancel();
+    stopCamera();
     disconnect();
     $("session-start").hidden = true;
     $("review-title").textContent = label("review");
@@ -168,6 +208,11 @@ function render() {
       state.definition.questions[index].options.map((o) => o.label).join(" · "),
     ),
   );
+  $("browser-speech-controls").hidden = state.sessionMode !== "screen";
+  $("speak-option").disabled = busy || !speech.supported;
+  $("read-question").disabled = !globalThis.speechSynthesis;
+  $("share-camera").disabled =
+    !camera || !connected || paused || state.sessionMode !== "voice";
   $("session-chat").hidden = state.sessionMode === "screen";
   $("question-chat-grid").classList.toggle(
     "screen-only",
@@ -185,6 +230,8 @@ function render() {
 async function saveAnswer(questionId, value) {
   if (busy) return;
   busy = true;
+  speech.stop();
+  globalThis.speechSynthesis?.cancel();
   error("");
   render();
   try {
@@ -245,13 +292,16 @@ async function connect() {
         render();
       } else if (m.type === "audio") audio?.play(m.data);
       else if (m.type === "audio_interrupt") audio?.interrupt();
+      else if (m.type === "turn_complete") currentTurn = null;
       else if (m.type === "transcript")
         addMessage(
-          ["user", "participant"].includes(m.speaker) ? "you" : "gemini",
+          ["you", "user", "participant"].includes(m.speaker) ? "you" : "gemini",
           m.text,
+          true,
         );
       else if (m.type === "paused") {
         paused = true;
+        stopCameraSharing();
         audio?.mute(true);
         error(m.message);
         $("session-text").disabled = true;
@@ -347,12 +397,18 @@ $("camera-toggle").onclick = async () => {
     stopCamera();
     return;
   }
+  const cameraToken = ++cameraGeneration;
+  $("camera-toggle").disabled = true;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+      video: { width: 320, height: 240, frameRate: 1 },
       audio: false,
     });
-    if (leaving) {
+    if (
+      leaving ||
+      cameraToken !== cameraGeneration ||
+      state?.status === "completed"
+    ) {
       stream.getTracks().forEach((t) => t.stop());
       return;
     }
@@ -361,11 +417,98 @@ $("camera-toggle").onclick = async () => {
     $("camera-preview").hidden = false;
     $("camera-placeholder").hidden = true;
     $("camera-toggle").textContent = "Turn camera off";
+    $("share-camera").disabled =
+      !connected || paused || state?.sessionMode !== "voice";
   } catch {
     error(
       "Camera preview is unavailable. The assessment can continue without it.",
     );
+  } finally {
+    $("camera-toggle").disabled = false;
   }
+};
+$("share-camera").onchange = () => {
+  clearInterval(cameraTimer);
+  if (!$("share-camera").checked) {
+    $("camera-sharing-status").textContent =
+      "Camera sharing stopped. Preview stays on this device.";
+    return;
+  }
+  if (!camera || !connected || paused || state?.sessionMode !== "voice") {
+    stopCameraSharing();
+    return;
+  }
+  $("camera-sharing-status").textContent =
+    "Sharing camera frames with Gemini. Turn off sharing at any time.";
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 240;
+  cameraTimer = setInterval(() => {
+    const video = $("camera-preview");
+    if (
+      !camera ||
+      !$("share-camera").checked ||
+      !connected ||
+      paused ||
+      connection?.readyState !== 1 ||
+      video.readyState < 2 ||
+      connection.bufferedAmount > 64000
+    )
+      return;
+    canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+    const data = canvas.toDataURL("image/jpeg", 0.45).split(",")[1];
+    if (data.length <= 48000)
+      connection.send(JSON.stringify({ type: "camera", data }));
+  }, 1500);
+};
+const speech = new BrowserSpeech({
+  onStatus: (message) => {
+    $("speech-status").textContent = message;
+  },
+  onText: (text) => {
+    if (
+      !state ||
+      state.status !== "draft" ||
+      busy ||
+      state.sessionMode !== "screen"
+    )
+      return;
+    const q = presentation(state.definition, state.language).questions[
+      state.answers.findIndex((v) => v === null)
+    ];
+    if (!q) return;
+    const value = matchSpokenOption(text, q.options);
+    if (value === null) {
+      speech.stop();
+      $("speech-status").textContent =
+        `Heard: “${text}”. Please choose a response on screen; no answer was saved.`;
+      return;
+    }
+    saveAnswer(q.id, value);
+  },
+});
+$("speak-option").onclick = () => {
+  globalThis.speechSynthesis?.cancel();
+  speech.listen(state.language);
+};
+$("stop-speech").onclick = () => {
+  speech.stop();
+  globalThis.speechSynthesis?.cancel();
+  $("speech-status").textContent = "Speech stopped.";
+};
+$("read-question").onclick = () => {
+  speech.stop();
+  globalThis.speechSynthesis?.cancel();
+  const d = presentation(state.definition, state.language),
+    q = d.questions[state.answers.findIndex((v) => v === null)];
+  if (!q || !globalThis.speechSynthesis) return;
+  const utterance = new SpeechSynthesisUtterance(
+    [d.referencePeriod, q.text, ...q.options.map((o) => o.label)]
+      .filter(Boolean)
+      .join(". "),
+  );
+  utterance.lang = speechLocale(state.language);
+  speechSynthesis.speak(utterance);
 };
 $("save-assessment").onclick = async () => {
   if (busy) return;
@@ -386,6 +529,8 @@ $("save-assessment").onclick = async () => {
 };
 addEventListener("pagehide", () => {
   leaving = true;
+  speech.stop();
+  globalThis.speechSynthesis?.cancel();
   disconnect();
   stopCamera();
 });

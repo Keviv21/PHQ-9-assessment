@@ -5,17 +5,10 @@ import { openWorkspaceStore } from "./store.js";
 import { createRecommender } from "./recommendations.js";
 import { createTranslationsService } from "./translations.js";
 import { GeminiBridge } from "./live-bridge.js";
-import { presentation } from "./presentation.js";
+import { assessmentReport, reportHtml } from "./report.js";
+import { definition } from "./catalogue.js";
 import { HttpError } from "./errors.js";
 import { doctorGuidance } from "./doctor-guidance.js";
-const esc = (value) =>
-  String(value ?? "").replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        c
-      ],
-  );
 export function createWorkspaceApi(
   dbPath,
   {
@@ -70,13 +63,16 @@ export function createWorkspaceApi(
         .split("/")
         .map(decodeURIComponent);
       let data;
-      if (req.method === "GET" && p[0] === "catalogue")
+      if (req.method === "GET" && p[0] === "catalogue" && p.length === 1)
         data = {
           catalogue: catalogue(),
           languages: LANGUAGES,
           geminiConfigured: Boolean(apiKey?.trim()),
         };
-      else if (p[0] === "patients" && p.length === 1 && req.method === "GET")
+      else if (p[0] === "catalogue" && p.length === 2 && req.method === "GET") {
+        data = definition(p[1]);
+        if (!data) throw new HttpError(404, "Assessment not found.");
+      } else if (p[0] === "patients" && p.length === 1 && req.method === "GET")
         data = store.listPatients();
       else if (p[0] === "patients" && p.length === 1 && req.method === "POST")
         data = store.createPatient(await body(req));
@@ -169,13 +165,7 @@ export function createWorkspaceApi(
         req.method === "GET"
       ) {
         const s = store.get(p[1]);
-        if (s.status !== "completed")
-          throw new HttpError(
-            409,
-            "Complete the assessment before downloading its report.",
-          );
-        const d = presentation(s.definition, s.language),
-          patient = store.patient(s.patientId);
+        const report = assessmentReport(s, store.patient(s.patientId));
         res.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
           "cache-control": "no-store",
@@ -185,9 +175,7 @@ export function createWorkspaceApi(
               }
             : {}),
         });
-        res.end(
-          `<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Assessment report</title><style>body{font:16px/1.6 system-ui;max-width:960px;margin:40px auto;padding:24px;color:#203349}table{border-collapse:collapse;width:100%}td,th{padding:12px;border:1px solid #ddd;text-align:left}@media print{button,a{display:none}}</style><button onclick="window.print()">Print / Save as PDF</button><h1>${esc(d.title)}</h1><p>${esc(patient.name)} · ${esc(s.completedAt)} · ${esc(s.language)} · ${esc(s.sessionMode)}</p><p>${s.score === null ? "Responses only. This definition does not provide validated scoring." : `Score: ${esc(s.score)} / ${esc(d.scoring.max)}`}</p><table><thead><tr><th>Question</th><th>Response</th></tr></thead><tbody>${d.questions.map((q, i) => `<tr><td>${esc(q.text)}</td><td>${esc(q.options.find((o) => o.value === s.answers[i])?.label)}</td></tr>`).join("")}</tbody></table><p>For clinician review. Source questionnaire and assisted translations require review.</p></html>`,
-        );
+        res.end(reportHtml(report));
         return true;
       } else throw new HttpError(404, "Endpoint not found.");
       reply(res, 200, data);
@@ -244,6 +232,8 @@ export function createWorkspaceApi(
           const m = JSON.parse(payload.toString());
           if (m.type === "text") bridge.sendText(m.text);
           else if (m.type === "audio_end") bridge.endAudio();
+          else if (m.type === "camera" && state.sessionMode === "voice")
+            bridge.sendImage(m.data);
           else throw new Error();
         } catch {
           send({

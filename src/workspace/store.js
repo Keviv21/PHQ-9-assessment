@@ -1,3 +1,4 @@
+import { presentation } from "./presentation.js";
 import { groupPatientAssessments } from "./patient-analytics.js";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -205,6 +206,8 @@ export function openWorkspaceStore(
       sessionMode: mode,
       definition: localized,
       answers: localized.questions.map(() => null),
+      answerDetails: localized.questions.map(() => null),
+      answerRevisions: [],
       revision: 0,
       status: "draft",
       startedAt: new Date().toISOString(),
@@ -226,7 +229,11 @@ export function openWorkspaceStore(
     );
     return state;
   }
-  function answer(id, { questionId, value, revision }, method = "screen") {
+  function answer(
+    id,
+    { questionId, value, revision, summary },
+    method = "screen",
+  ) {
     const s = get(id);
     if (s.status !== "draft" || revision !== s.revision)
       throw new HttpError(
@@ -244,6 +251,34 @@ export function openWorkspaceStore(
       s.answers.some((v) => v === null)
     )
       throw new HttpError(409, "Answer the current question first.");
+    if (
+      method === "gemini" &&
+      (typeof summary !== "string" || !summary.trim() || summary.length > 240)
+    )
+      throw new HttpError(400, "Provide a brief response summary.");
+    const rendered = presentation(s.definition, s.language).questions[index];
+    const at = new Date().toISOString();
+    s.answerDetails ||= s.answers.map(() => null);
+    s.answerRevisions ||= [];
+    if (s.answers[index] !== null && s.answers[index] !== value) {
+      s.answerRevisions.push({
+        questionId,
+        previousValue: s.answers[index],
+        value,
+        previousLabel: rendered.options.find(
+          (o) => o.value === s.answers[index],
+        )?.label,
+        responseLabel: rendered.options.find((o) => o.value === value)?.label,
+        method,
+        at,
+        revision: s.revision + 1,
+      });
+    }
+    s.answerDetails[index] = {
+      method,
+      at,
+      summary: method === "gemini" ? summary.trim() : null,
+    };
     s.answers[index] = value;
     s.revision++;
     return update(s);

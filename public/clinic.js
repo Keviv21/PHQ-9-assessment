@@ -5,6 +5,7 @@ let patients = [],
   selectedPatientId = "",
   patient = null,
   selection = "",
+  pendingLibrarySelection = "",
   doctorMessages = [],
   version = 0,
   recommendBusy = false,
@@ -129,7 +130,16 @@ function populateAssessments() {
     group.label = available
       ? "Available questionnaires"
       : "Unsupported or incomplete content";
-    for (const a of catalogue.filter((a) => a.runnable === available)) {
+    for (const a of catalogue.filter(
+      (a) =>
+        a.runnable === available &&
+        (a.id === selection ||
+          ((!$("assessment-category").value ||
+            a.category === $("assessment-category").value) &&
+            `${a.title} ${a.description}`
+              .toLowerCase()
+              .includes($("assessment-search").value.toLowerCase().trim()))),
+    )) {
       const option = new Option(
         a.title + (available ? "" : " — needs review"),
         a.id,
@@ -138,11 +148,15 @@ function populateAssessments() {
     }
     select.append(group);
   }
+  select.value = selection;
+  $("assessment-match-count").textContent =
+    `${select.options.length - 1} of ${catalogue.length} assessments shown`;
   select.disabled = false;
 }
 function selectAssessment(id, from = "manual") {
   selection = id;
   manual = from === "manual";
+  populateAssessments();
   $("assessment-select").value = id;
   const a = catalogue.find((a) => a.id === id),
     area = $("selection-details");
@@ -423,7 +437,42 @@ $("guidance-form").onchange = (e) => {
     "Review details changed. Select “Suggest from doctor review” to update suggestions.";
 };
 
-async function openPatient() {
+async function loadRecentSessions(id, token) {
+  const box = $("patient-recent-results");
+  box.replaceChildren(el("p", "Loading saved sessions…"));
+  try {
+    const sessions = await api(`patients/${id}/sessions`);
+    if (token !== version) return;
+    box.replaceChildren();
+    for (const s of sessions.slice(0, 5)) {
+      const row = el("article", undefined, "recent-session");
+      const link = el("a", s.definition.title);
+      link.href =
+        s.status === "completed"
+          ? `/api/workspace/sessions/${s.id}/report`
+          : `/workspace-session.html?prescriptionId=${s.prescriptionId}`;
+      if (s.status === "completed") {
+        link.target = "_blank";
+        link.rel = "noopener";
+      }
+      row.append(
+        link,
+        el(
+          "small",
+          `${s.status === "completed" ? "Completed" : "Resume draft"} · ${date(s.completedAt || s.startedAt)}`,
+        ),
+      );
+      box.append(row);
+    }
+    if (!sessions.length)
+      box.append(
+        el("p", "No saved sessions for this patient yet.", "muted-text"),
+      );
+  } catch (e) {
+    if (token === version) error(box, e.message);
+  }
+}
+async function openPatient(requestSuggestions = true) {
   clearConsultation();
   const token = version;
   manual = false;
@@ -434,6 +483,7 @@ async function openPatient() {
     const p = await api(`patients/${selectedPatientId}`);
     if (token !== version) return;
     patient = p;
+    loadRecentSessions(p.id, token);
     const box = $("patient-summary");
     box.replaceChildren(
       el("h2", p.name),
@@ -445,10 +495,21 @@ async function openPatient() {
     );
     const details = el("details");
     details.open = true;
-    details.append(
-      el("summary", "Patient history summary"),
-      el("p", p.historySummary, "summary-text"),
-    );
+    details.append(el("summary", "Patient history summary"));
+    const lines = p.historySummary.split(/\n+/).filter(Boolean);
+    const list = el("ul", undefined, "summary-list");
+    lines.slice(0, 2).forEach((line) => list.append(el("li", line)));
+    details.append(list);
+    if (lines.length > 2) {
+      const more = el("details");
+      more.append(
+        el("summary", `Show ${lines.length - 2} more history entries`),
+      );
+      const rest = el("ul", undefined, "summary-list");
+      lines.slice(2).forEach((line) => rest.append(el("li", line)));
+      more.append(rest);
+      details.append(more);
+    }
     box.append(details);
     if (p.sourceProfile) {
       const full = el("details");
@@ -462,8 +523,12 @@ async function openPatient() {
     $("doctor-send").disabled = !config.geminiConfigured;
     await loadGuidance(p.id, token);
     if (token !== version) return;
-    if (config.geminiConfigured) await suggest("history");
-    else
+    if (pendingLibrarySelection) {
+      selectAssessment(pendingLibrarySelection);
+      pendingLibrarySelection = "";
+    }
+    if (config.geminiConfigured && requestSuggestions) await suggest("history");
+    else if (!config.geminiConfigured)
       error(
         $("suggestion-output"),
         "Gemini is not configured. Choose an assessment manually to continue.",
@@ -553,11 +618,28 @@ addEventListener("pagehide", () => {
 for (const name of ["prescribe", "reports", "analytics", "library"])
   $(`nav-${name}`).onclick = () => view(name);
 $("patient-search").oninput = renderPatients;
-$("next-step").onclick = openPatient;
+$("next-step").onclick = () => openPatient();
 $("back-step").onclick = () => {
   clearConsultation();
   step(1);
 };
+$("assessment-search").oninput = populateAssessments;
+$("assessment-category").onchange = populateAssessments;
+addEventListener("choose-library-assessment", async ({ detail }) => {
+  if (!catalogue.some((a) => a.id === detail && a.runnable)) return;
+  if (!selectedPatientId) {
+    pendingLibrarySelection = detail;
+    view("prescribe");
+    step(1);
+    $("patient-search").focus();
+    $("patient-search").placeholder =
+      "Select a patient first, then choose the assessment";
+    return;
+  }
+  view("prescribe");
+  await openPatient(false);
+  if (patient?.id === selectedPatientId) selectAssessment(detail);
+});
 $("assessment-select").onchange = () =>
   selectAssessment($("assessment-select").value);
 $("refresh-suggestions").onclick = () => suggest("history", true);
@@ -606,6 +688,11 @@ $("add-patient-form").onsubmit = async (e) => {
 try {
   config = await api("catalogue");
   catalogue = config.catalogue;
+  [...new Set(catalogue.map((a) => a.category))]
+    .sort()
+    .forEach((category) =>
+      $("assessment-category").add(new Option(category, category)),
+    );
   populateAssessments();
   await loadPatients();
   const q = new URL(location.href).searchParams;

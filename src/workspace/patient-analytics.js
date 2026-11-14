@@ -71,8 +71,10 @@ export function groupPatientAssessments(states) {
       ).length,
       elapsedSeconds:
         Number.isFinite(elapsed) && elapsed >= 0 ? Math.round(elapsed) : null,
+      answerRevisions: s.answerRevisions || [],
       responses: rendered.questions.map((q, i) => ({
         id: q.id,
+        summary: s.answerDetails?.[i]?.summary || null,
         question: q.text,
         response:
           q.options.find((o) => o.value === s.answers[i])?.label ||
