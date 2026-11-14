@@ -24,12 +24,7 @@ export function createWorkspaceApi(
     port = 4174,
     store = openWorkspaceStore(dbPath),
     recommend = createRecommender(store),
-    translations = createTranslationsService(store, {
-      model:
-        process.env.GEMINI_TRANSLATION_MODEL ||
-        process.env.GEMINI_MODEL ||
-        "gemini-2.5-flash",
-    }),
+    translations = createTranslationsService(store),
   } = {},
 ) {
   const live = new Map(),

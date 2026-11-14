@@ -1,3 +1,4 @@
+import { translationModel, geminiError } from "./gemini-config.js";
 import { createHash } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { HttpError } from "./errors.js";
@@ -96,9 +97,7 @@ export function createTranslationsService(
   {
     client,
     apiKey = process.env.GEMINI_API_KEY,
-    model = process.env.GEMINI_TRANSLATION_MODEL ||
-      process.env.GEMINI_RECOMMENDATION_MODEL ||
-      "gemini-3.8-flash",
+    model = translationModel(),
   } = {},
 ) {
   const provider =
@@ -149,11 +148,9 @@ export function createTranslationsService(
             });
             translated = validateTranslation(source, JSON.parse(response.text));
           } catch (error) {
-            throw new HttpError(
-              error.status === 429 ? 429 : 502,
-              error.status === 429
-                ? "Gemini quota reached while preparing this language. Retry later or choose English."
-                : "The complete questionnaire translation could not be prepared. Retry or choose English; no answers have been changed.",
+            throw geminiError(
+              error,
+              "The complete questionnaire translation could not be prepared. Retry or choose English; no answers have been changed.",
             );
           }
           const localized = {

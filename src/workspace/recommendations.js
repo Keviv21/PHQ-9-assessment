@@ -2,14 +2,13 @@ import { GoogleGenAI } from "@google/genai";
 import { createHash } from "node:crypto";
 import { catalogue, records } from "./catalogue.js";
 import { HttpError } from "./errors.js";
+import { recommendationModel, geminiError } from "./gemini-config.js";
 export function createRecommender(
   store,
   {
     client,
     apiKey = process.env.GEMINI_API_KEY,
-    model = process.env.GEMINI_RECOMMENDATION_MODEL ||
-      process.env.GEMINI_MODEL ||
-      "gemini-2.5-flash",
+    model = recommendationModel(),
   } = {},
 ) {
   const ai = client || (apiKey?.trim() ? new GoogleGenAI({ apiKey }) : null),
@@ -122,21 +121,33 @@ export function createRecommender(
             },
             required: ["reply", "suggestions"],
           },
-          httpOptions: { timeout: 45000, retryOptions: { attempts: 1 } },
+          httpOptions: { timeout: 45000, retryOptions: { attempts: 2 } },
           abortSignal: AbortSignal.timeout(45000),
         },
       });
-      const out = JSON.parse(response.text);
+      const invalidResponse = () =>
+        new HttpError(
+          502,
+          "Gemini returned an invalid assessment suggestion. Retry or choose an assessment manually.",
+        );
+      let out;
+      try {
+        out = JSON.parse(response.text);
+      } catch {
+        throw invalidResponse();
+      }
       if (
+        !out ||
         typeof out.reply !== "string" ||
         !out.reply.trim() ||
         out.reply.length > 6000 ||
         !Array.isArray(out.suggestions) ||
         out.suggestions.length > 4 ||
-        new Set(out.suggestions.map((s) => s.assessmentId)).size !==
+        new Set(out.suggestions.map((s) => s?.assessmentId)).size !==
           out.suggestions.length ||
         out.suggestions.some(
           (s) =>
+            !s ||
             !records.has(s.assessmentId) ||
             typeof s.reason !== "string" ||
             !s.reason.trim() ||
@@ -145,7 +156,7 @@ export function createRecommender(
             s.caution.length > 1500,
         )
       )
-        throw new Error("Invalid response");
+        throw invalidResponse();
       const result = {
         ...out,
         primaryAssessmentId: out.suggestions[0]?.assessmentId || null,
@@ -156,12 +167,9 @@ export function createRecommender(
         store.saveRecommendation(patientId, hash, result);
       return result;
     } catch (error) {
-      if (error instanceof HttpError) throw error;
-      throw new HttpError(
-        error.status === 429 ? 429 : 502,
-        error.status === 429
-          ? "Gemini quota reached. Retry later or choose manually."
-          : "Gemini could not provide suggestions. Retry or choose an assessment manually.",
+      throw geminiError(
+        error,
+        "Could not reach Gemini for suggestions. Check the server connection and retry, or choose an assessment manually.",
       );
     } finally {
       active.delete(patientId);
