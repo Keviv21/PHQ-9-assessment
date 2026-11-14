@@ -30,11 +30,13 @@ export function normalizeAssessment(raw) {
       value: Object.hasOwn(o, "response_value")
         ? o.response_value
         : o.printed_value,
-      label: text(o.label),
+      label: text(o.display_label) || text(o.label),
       score: Number.isInteger(o.score) ? o.score : null,
     })),
     source: q.source || null,
   }));
+  if (items.some((q) => q.display_if))
+    warnings.push("This questionnaire requires conditional questions that are not yet supported.");
   if (!questions.length) warnings.push("No captured questions are available.");
   if (questions.length > 250)
     warnings.push(
