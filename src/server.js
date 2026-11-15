@@ -11,6 +11,8 @@ import { recommendAssessments } from './recommendation.js';
 import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from './demo-patients.js';
 import { getDraftAssessment, getLiveDraftForm, listDraftAssessments } from './draft-library.js';
 import { openDraftStore } from './draft-store.js';
+import { answerDoctor, fallbackDoctor, validateDoctorMessage } from './doctor-chat.js';
+import { getCatalogEntry } from './assessment-catalog.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
@@ -19,8 +21,10 @@ const store = openStore(dbPath);
 const draftStore = openDraftStore(dbPath);
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
+const textModel = process.env.GEMINI_TEXT_MODEL?.trim() || 'gemini-3.5-flash-lite';
+const scoredDraftIds = new Set(['phq9', 'gad7', 'pcl5'].map((id) => getCatalogEntry(id).catalogDraftId));
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
+const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
 const activeAssessments = new Set();
 
 function json(response, status, value) {
@@ -36,8 +40,9 @@ const server = http.createServer((request, response) => {
     request.on('data', (chunk) => { body += chunk; if (body.length > 1000) request.destroy(); });
     request.on('end', () => {
       try {
-        const { draftId, mode } = JSON.parse(body);
-        return json(response, 201, draftStore.create(draftId, mode));
+        const { draftId, mode, prescriptionId } = JSON.parse(body);
+        const state = prescriptionId ? draftStore.startPrescription(prescriptionId, mode) : draftStore.create(draftId, mode);
+        return json(response, prescriptionId && state.answers.length ? 200 : 201, state);
       } catch (error) { return json(response, 400, { error: error.message }); }
     });
     return;
@@ -53,10 +58,46 @@ const server = http.createServer((request, response) => {
       catch { return json(response, 400, { error: 'Choose an assessment.' }); }
       const suggestion = suggestForDemoPatient(patientPrescriptionsRoute[1]);
       if (!suggestion) return json(response, 404, { error: 'Demo patient not found.' });
-      if (suggestion.status !== 'suggestions' || !suggestion.prescriptionChoices.some((item) => item.id === formId && item.availability === 'available')) {
+      if (suggestion.status !== 'suggestions') {
         return json(response, 409, { error: 'This assessment cannot be prescribed from the current patient summary.' });
       }
+      if (typeof formId === 'string' && formId.startsWith('draft:')) {
+        const draftId = formId.slice('draft:'.length);
+        if (scoredDraftIds.has(draftId)) return json(response, 409, { error: 'Choose the scored version of this assessment.' });
+        if (!getLiveDraftForm(draftId)) return json(response, 409, { error: 'This imported assessment needs complete source content before assignment.' });
+        return json(response, 201, draftStore.prescribe(patientPrescriptionsRoute[1], draftId));
+      }
+      if (!suggestion.prescriptionChoices.some((item) => item.id === formId && item.availability === 'available')) {
+        return json(response, 409, { error: 'This assessment is not available for assignment.' });
+      }
       return json(response, 201, store.prescribe(patientPrescriptionsRoute[1], formId));
+    });
+    return;
+  }
+  const doctorChatRoute = /^\/api\/demo-patients\/(demo-[a-z])\/doctor-chat$/.exec(url.pathname);
+  if (doctorChatRoute && request.method === 'POST') {
+    if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
+    const patient = getDemoPatient(doctorChatRoute[1]);
+    if (!patient) return json(response, 404, { error: 'Demo patient not found.' });
+    let body = '';
+    let tooLarge = false;
+    request.on('data', (chunk) => { body += chunk; if (body.length > 10000) tooLarge = true; });
+    request.on('end', async () => {
+      if (tooLarge) return json(response, 413, { error: 'Conversation is too long.' });
+      let input;
+      try { input = JSON.parse(body); validateDoctorMessage(input.message, input.history); }
+      catch (error) { return json(response, 400, { error: error.message }); }
+      const routing = suggestForDemoPatient(patient.id);
+      if (routing.status !== 'suggestions') return json(response, 200, {
+        reply: routing.message, suggestions: [], reviewedByDoctor: false,
+      });
+      if (!apiKey) return json(response, 503, { error: 'Configure GEMINI_API_KEY to use the doctor conversation.' });
+      try {
+        return json(response, 200, await answerDoctor({ patient, ...input, apiKey, model: textModel }));
+      } catch (error) {
+        console.error('Doctor conversation failed:', error.message);
+        return json(response, 200, fallbackDoctor(patient, input.message, input.history));
+      }
     });
     return;
   }
@@ -103,7 +144,9 @@ const server = http.createServer((request, response) => {
   }
   if (patientPrescriptionsRoute) {
     return getDemoPatient(patientPrescriptionsRoute[1])
-      ? json(response, 200, store.patientPrescriptions(patientPrescriptionsRoute[1]))
+      ? json(response, 200, [...store.patientPrescriptions(patientPrescriptionsRoute[1]),
+        ...draftStore.patientPrescriptions(patientPrescriptionsRoute[1])]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   const patientReportsRoute = /^\/api\/demo-patients\/(demo-[a-z])\/reports$/.exec(url.pathname);
@@ -114,7 +157,7 @@ const server = http.createServer((request, response) => {
   }
   const prescriptionRoute = /^\/api\/prescriptions\/([0-9a-f-]{36})$/i.exec(url.pathname);
   if (prescriptionRoute) {
-    const prescription = store.getPrescription(prescriptionRoute[1]);
+    const prescription = store.getPrescription(prescriptionRoute[1]) || draftStore.getPrescription(prescriptionRoute[1]);
     return prescription ? json(response, 200, { ...prescription, patient: getDemoPatient(prescription.demoPatientId) })
       : json(response, 404, { error: 'Prescription not found.' });
   }

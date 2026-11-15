@@ -68,3 +68,24 @@ test('completed imported review survives reopening the SQLite database', () => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('an imported review can be assigned to a sample patient and resumed', () => {
+  const store = openDraftStore(':memory:');
+  try {
+    const form = getLiveDraftForm(listDraftAssessments().find((item) => item.title === 'Flourishing Scale (FS)').id);
+    const assignment = store.prescribe('demo-a', form.formId);
+    assert.equal(assignment.kind, 'draft');
+    assert.equal(assignment.status, 'assigned');
+    const session = store.startPrescription(assignment.id, 'demo');
+    assert.equal(session.demoPatientId, 'demo-a');
+    assert.equal(session.prescriptionId, assignment.id);
+    assert.equal(store.startPrescription(assignment.id, 'demo').id, session.id);
+    assert.throws(() => store.startPrescription(assignment.id, 'live'));
+    form.questions.forEach((_, index) => store.record(session.id, index + 1, 0, 'demo'));
+    store.finalize(session.id, form.questions.map(() => 0));
+    assert.equal(store.getPrescription(assignment.id).status, 'completed');
+    assert.equal(store.patientPrescriptions('demo-a').length, 1);
+    assert.equal(store.patientPrescriptions('demo-b').length, 0);
+    assert.equal(store.get(session.id).scores, null);
+  } finally { store.close(); }
+});

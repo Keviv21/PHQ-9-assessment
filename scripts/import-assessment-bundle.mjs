@@ -57,6 +57,7 @@ const records = source.assessments.map((entry) => {
   const record = {
     id,
     title,
+    description: String(entry.assessment?.description || '').trim(),
     referencePeriod: typeof referencePeriod === 'string' ? referencePeriod.trim() :
       typeof referencePeriod?.structured === 'string' ? referencePeriod.structured.trim() : '',
     instructions: String(entry.administration?.instructions || '').trim(),
@@ -72,6 +73,7 @@ const records = source.assessments.map((entry) => {
   // reinterpret answers, so keep complete forms until sessions have versioned snapshots.
   return old?.previewAvailable ? {
     ...old,
+    description: record.description,
     referencePeriod: old.referencePeriod === '[object Object]' ? record.referencePeriod : old.referencePeriod,
   } : record;
 });

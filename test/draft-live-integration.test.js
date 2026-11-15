@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
+import { getCatalogEntry } from '../src/assessment-catalog.js';
 
 test('imported questionnaire supports a saved unscored WebSocket session', { timeout: 20000 }, async () => {
   const port = 45000 + Math.floor(Math.random() * 1000);
@@ -64,6 +65,35 @@ test('imported questionnaire supports a saved unscored WebSocket session', { tim
     const saved = await (await fetch(`${base}/api/draft-sessions/${created.id}`)).json();
     assert.equal(saved.reviewChangeCount, 1);
     assert.equal(saved.scores, null);
+    const assignmentResponse = await fetch(`${base}/api/demo-patients/demo-a/prescriptions`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ formId: `draft:${selected.id}` }),
+    });
+    assert.equal(assignmentResponse.status, 201);
+    const assignment = await assignmentResponse.json();
+    assert.equal(assignment.kind, 'draft');
+    assert.equal(assignment.status, 'assigned');
+    const linked = await fetch(`${base}/api/draft-sessions`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prescriptionId: assignment.id, mode: 'demo' }),
+    });
+    assert.equal(linked.status, 201);
+    const linkedSession = await linked.json();
+    assert.equal(linkedSession.demoPatientId, 'demo-a');
+    assert.equal(linkedSession.prescriptionId, assignment.id);
+    assert.equal((await (await fetch(`${base}/api/prescriptions/${assignment.id}`)).json()).assessmentId, linkedSession.id);
+    assert.equal((await (await fetch(`${base}/api/demo-patients/demo-a/prescriptions`)).json())[0].kind, 'draft');
+    const blocked = catalogue.find((item) => !item.previewAvailable);
+    const blockedResponse = await fetch(`${base}/api/demo-patients/demo-a/prescriptions`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ formId: `draft:${blocked.id}` }),
+    });
+    assert.equal(blockedResponse.status, 409);
+    const duplicateResponse = await fetch(`${base}/api/demo-patients/demo-a/prescriptions`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ formId: `draft:${getCatalogEntry('phq9').catalogDraftId}` }),
+    });
+    assert.equal(duplicateResponse.status, 409);
   } finally {
     socket?.close();
     child.kill();

@@ -9,9 +9,9 @@ if (!Array.isArray(data.records) || data.records.length !== data.sourceCount ||
 const records = new Map(data.records.map((record) => [record.id, record]));
 
 export function listDraftAssessments() {
-  return data.records.map(({ id, title, referencePeriod, sourceUrl, extractedItemCount,
+  return data.records.map(({ id, title, description, referencePeriod, sourceUrl, extractedItemCount,
     incompleteItems, previewAvailable, reviewStatus }) => ({
-    id, title, referencePeriod, sourceUrl, extractedItemCount,
+    id, title, description, referencePeriod, sourceUrl, extractedItemCount,
     incompleteItems, previewAvailable, reviewStatus,
   }));
 }

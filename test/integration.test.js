@@ -33,6 +33,8 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal((await fetch(`${base}/clinic.js`)).status, 200);
     assert.equal((await fetch(`${base}/analytics.js`)).status, 200);
     assert.equal((await fetch(`${base}/analytics.css`)).status, 200);
+    assert.equal((await fetch(`${base}/doctor-chat.js`)).status, 200);
+    assert.equal((await fetch(`${base}/doctor-chat.css`)).status, 200);
     assert.match(page, /Assessment Analytics/);
     const emptyOverview = await (await fetch(`${base}/api/analytics/overview`)).json();
     assert.equal(emptyOverview.totals.prescribed, 0);
@@ -66,6 +68,11 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     const demoPatients = await (await fetch(`${base}/api/demo-patients`)).json();
     assert.equal(demoPatients.length, 5);
     assert.deepEqual(Object.keys(demoPatients[0]).sort(), ['id', 'label']);
+    const chatUnavailable = await fetch(`${base}/api/demo-patients/demo-a/doctor-chat`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ message: 'What else should I consider?', history: [] }),
+    });
+    assert.equal(chatUnavailable.status, 503);
     const demoSuggestion = await (await fetch(`${base}/api/demo-patients/demo-a/recommendations`)).json();
     assert.equal(demoSuggestion.primaryAssessmentId, 'phq9');
     assert.equal(demoSuggestion.recommendations[0].evidence.length, 2);

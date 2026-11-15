@@ -12,7 +12,8 @@
     "test": "node --test",
     "import:assessments": "node scripts/import-assessment-bundle.mjs",
     "audit:assessments": "node scripts/audit-assessment-bundle.mjs",
-    "smoke:live": "node scripts/smoke-draft-live.mjs"
+    "smoke:live": "node scripts/smoke-draft-live.mjs",
+    "smoke:doctor": "node --env-file-if-exists=.env scripts/smoke-doctor-chat.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",

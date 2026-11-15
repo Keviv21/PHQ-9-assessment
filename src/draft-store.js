@@ -19,9 +19,25 @@ export function openDraftStore(path) {
     started_at TEXT NOT NULL,
     completed_at TEXT
   ) STRICT`);
-  const insert = db.prepare("INSERT INTO draft_sessions (id, draft_id, mode, status, answers_json, started_at) VALUES (?, ?, ?, 'in_progress', '[]', ?)");
-  const select = db.prepare('SELECT * FROM draft_sessions WHERE id = ?');
+  db.exec(`CREATE TABLE IF NOT EXISTS draft_prescriptions (
+    id TEXT PRIMARY KEY,
+    demo_patient_id TEXT NOT NULL,
+    draft_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  ) STRICT`);
+  if (!db.prepare('PRAGMA table_info(draft_sessions)').all().some((column) => column.name === 'prescription_id')) {
+    db.exec('ALTER TABLE draft_sessions ADD COLUMN prescription_id TEXT');
+  }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS draft_session_prescription ON draft_sessions(prescription_id) WHERE prescription_id IS NOT NULL');
+  const insert = db.prepare("INSERT INTO draft_sessions (id, draft_id, mode, status, answers_json, started_at, prescription_id) VALUES (?, ?, ?, 'in_progress', '[]', ?, ?)");
+  const select = db.prepare(`SELECT s.*, p.demo_patient_id FROM draft_sessions s
+    LEFT JOIN draft_prescriptions p ON p.id = s.prescription_id WHERE s.id = ?`);
   const listRecent = db.prepare('SELECT id, draft_id, mode, status, started_at, completed_at FROM draft_sessions ORDER BY started_at DESC LIMIT 25');
+  const insertPrescription = db.prepare('INSERT INTO draft_prescriptions (id, demo_patient_id, draft_id, created_at) VALUES (?, ?, ?, ?)');
+  const selectPrescription = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode
+    FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id WHERE p.id = ?`);
+  const listPatientPrescriptions = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode
+    FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id WHERE p.demo_patient_id = ? ORDER BY p.created_at DESC`);
   const saveAnswers = db.prepare('UPDATE draft_sessions SET answers_json = ?, status = ? WHERE id = ?');
   const complete = db.prepare("UPDATE draft_sessions SET answers_json = ?, status = 'completed', review_change_count = ?, completed_at = ? WHERE id = ? AND status = 'review'");
 
@@ -32,6 +48,8 @@ export function openDraftStore(path) {
     return {
       id: row.id,
       formId: row.draft_id,
+      prescriptionId: row.prescription_id,
+      demoPatientId: row.demo_patient_id ?? null,
       formVersion: 'imported-draft-v1',
       language: 'en',
       mode: row.mode,
@@ -47,12 +65,51 @@ export function openDraftStore(path) {
     };
   }
 
-  function create(draftId, mode = 'live') {
+  function create(draftId, mode = 'live', prescriptionId = null) {
     if (!['demo', 'live'].includes(mode)) throw new RangeError('Unsupported mode.');
     if (!getLiveDraftForm(draftId)) throw new RangeError('This assessment does not have complete answer options.');
     const id = randomUUID();
-    insert.run(id, draftId, mode, new Date().toISOString());
+    insert.run(id, draftId, mode, new Date().toISOString(), prescriptionId);
     return get(id);
+  }
+
+  function prescriptionSummary(row) {
+    if (!row) return null;
+    return {
+      id: row.id, kind: 'draft', formId: row.draft_id,
+      demoPatientId: row.demo_patient_id, createdAt: row.created_at,
+      assessmentId: row.session_id, mode: row.session_mode,
+      status: row.session_status === 'completed' ? 'completed' : row.session_id ? 'in_progress' : 'assigned',
+      unscored: true,
+    };
+  }
+
+  function getPrescription(id) { return prescriptionSummary(selectPrescription.get(id)); }
+
+  function patientPrescriptions(patientId) {
+    return listPatientPrescriptions.all(patientId).map(prescriptionSummary);
+  }
+
+  function prescribe(patientId, draftId) {
+    if (!/^demo-[a-z]$/.test(patientId) || !getLiveDraftForm(draftId)) {
+      throw new RangeError('This imported assessment is unavailable for assignment.');
+    }
+    const id = randomUUID();
+    insertPrescription.run(id, patientId, draftId, new Date().toISOString());
+    return getPrescription(id);
+  }
+
+  function startPrescription(id, mode) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const prescription = getPrescription(id);
+      if (!prescription) throw new Error('Assignment not found.');
+      const session = prescription.assessmentId ? get(prescription.assessmentId) :
+        create(prescription.formId, mode, id);
+      if (session.mode !== mode || session.status === 'completed') throw new Error('Assignment cannot be started in this mode.');
+      db.exec('COMMIT');
+      return session;
+    } catch (error) { db.exec('ROLLBACK'); throw error; }
   }
 
   function record(id, number, value, method, summary = null) {
@@ -95,5 +152,6 @@ export function openDraftStore(path) {
     }));
   }
 
-  return { create, get, record, finalize, list, close: () => db.close() };
+  return { create, get, record, finalize, list, prescribe, getPrescription,
+    patientPrescriptions, startPrescription, close: () => db.close() };
 }

@@ -1,5 +1,11 @@
 const $ = (id) => document.getElementById(id);
 const patients = [];
+const catalogue = [];
+const scoredDraftIds = new Set([
+  'patient-health-questionnaire-depression-phq-9--8f81b7b3270c',
+  'GAD7',
+  'ptsd-checklist-5-pcl-5--5a88422b610e',
+]);
 let selectedPatientId = '';
 let suggestion = null;
 let selectedFormId = '';
@@ -72,19 +78,16 @@ function sourceLabel(source) {
 
 function setView(view, updateUrl = true) {
   const reports = view === 'reports';
-  const library = view === 'library';
   const analytics = view === 'analytics';
-  $('prescribe-view').hidden = reports || library || analytics;
+  $('prescribe-view').hidden = reports || analytics;
   $('reports-view').hidden = !reports;
-  $('library-view').hidden = !library;
   $('analytics-view').hidden = !analytics;
-  $('nav-prescribe').classList.toggle('active', !reports && !library && !analytics);
+  $('nav-prescribe').classList.toggle('active', !reports && !analytics);
   $('nav-reports').classList.toggle('active', reports);
-  $('nav-library').classList.toggle('active', library);
   $('nav-analytics').classList.toggle('active', analytics);
   if (updateUrl) {
     const url = new URL(location.href);
-    if (reports || library || analytics) url.searchParams.set('view', view);
+    if (reports || analytics) url.searchParams.set('view', view);
     else url.searchParams.delete('view');
     if (!reports && !analytics) url.searchParams.delete('patient');
     history.pushState({}, '', url);
@@ -113,6 +116,7 @@ function renderPatientList() {
       selectedPatientId = patient.id;
       suggestion = null;
       selectedFormId = '';
+      window.dispatchEvent(new CustomEvent('clinic:patient-change', { detail: { patientId: selectedPatientId } }));
       $('prescription-result').replaceChildren();
       $('next-step').disabled = false;
       renderPatientList();
@@ -177,6 +181,40 @@ function renderSuggestions(result) {
   if (selected && selected.availability !== 'available') area.append(notice(`${selected.title} is relevant but cannot be prescribed here. Review the eligible tests below before making a selection.`));
 }
 
+function defaultAssessmentId(result) {
+  if (result.status !== 'suggestions') return '';
+  if (result.primaryAssessmentId === 'dass21') {
+    const draftId = result.recommendations.find((item) => item.id === 'dass21')?.catalogDraftId;
+    return catalogue.some((item) => item.id === draftId && item.previewAvailable) ? `draft:${draftId}` : '';
+  }
+  const choice = result.prescriptionChoices.find((item) => item.id === result.primaryAssessmentId && item.availability === 'available');
+  return choice?.id || '';
+}
+
+function renderAssessmentOptions() {
+  const select = $('assessment-select');
+  const search = $('assessment-search').value.trim().toLowerCase();
+  const canAssign = suggestion?.status === 'suggestions';
+  const scored = suggestion?.prescriptionChoices || [];
+  const available = [
+    ...scored.map((item) => ({ id: item.id, title: item.title, enabled: item.availability === 'available',
+      label: `${item.title} · scored${item.id === suggestion.primaryAssessmentId ? ' · recommended' : ''}` })),
+    ...catalogue.filter((item) => !scoredDraftIds.has(item.id))
+      .map((item) => ({ id: `draft:${item.id}`, title: item.title, enabled: item.previewAvailable,
+        label: `${item.title} · ${item.previewAvailable ? 'unscored demo review' : 'needs source content'}` })),
+  ];
+  const matches = available.filter((item) => item.title.toLowerCase().includes(search) || item.id === selectedFormId);
+  select.replaceChildren(new Option('Select an assessment', ''));
+  for (const item of matches) {
+    const option = new Option(item.label, item.id);
+    option.disabled = !canAssign || !item.enabled;
+    select.add(option);
+  }
+  select.disabled = !canAssign || !matches.some((item) => item.enabled);
+  select.value = matches.some((item) => item.id === selectedFormId) ? selectedFormId : '';
+  updateSelectedChoice();
+}
+
 function renderDecision(result) {
   const question = result.clarification?.question;
   $('clarification-panel').hidden = !question;
@@ -187,30 +225,27 @@ function renderDecision(result) {
     for (const option of question.options) focusSelect.add(new Option(option.label, option.value));
     focusSelect.value = result.clarification.focus;
   }
-  selectedFormId = '';
-  const select = $('assessment-select');
-  select.replaceChildren(new Option('Select an assessment', ''));
-  for (const choice of result.prescriptionChoices || []) {
-    const label = choice.availability !== 'available' ? `${choice.title} — needs review` :
-      `${choice.title} — ${choice.priority === 1 ? 'recommended' : choice.priority === 2 ? 'secondary option' : 'clinician option'}`;
-    const option = new Option(label, choice.id);
-    option.disabled = choice.availability !== 'available';
-    select.add(option);
-  }
-  select.disabled = !result.prescriptionChoices?.some((choice) => choice.availability === 'available');
-  $('selection-details').replaceChildren(notice(select.disabled ? 'No test can be prescribed until the required review is complete.' : 'Select a test to see why it is available. The doctor makes the final choice.', select.disabled));
-  $('prescribe-button').disabled = true;
-  $('prescribe-button').textContent = 'Confirm & Prescribe';
+  selectedFormId = defaultAssessmentId(result);
+  $('assessment-search').value = '';
+  renderAssessmentOptions();
+  window.dispatchEvent(new CustomEvent('clinic:patient-context', { detail: { patientId: result.patient.id, status: result.status } }));
 }
 
 function updateSelectedChoice() {
   selectedFormId = $('assessment-select').value;
   const choice = suggestion?.prescriptionChoices.find((item) => item.id === selectedFormId && item.availability === 'available');
-  $('prescribe-button').disabled = !choice;
-  $('prescribe-button').textContent = choice ? `Confirm & prescribe ${choice.title}` : 'Confirm & Prescribe';
+  const draft = selectedFormId.startsWith('draft:') ? catalogue.find((item) => item.id === selectedFormId.slice(6) && item.previewAvailable) : null;
+  const allowed = suggestion?.status === 'suggestions' && Boolean(choice || draft);
+  $('prescribe-button').disabled = !allowed;
+  $('prescribe-button').textContent = allowed ? 'Confirm & Assign' : 'Confirm & Prescribe';
   const area = $('selection-details');
+  if (draft) {
+    area.replaceChildren(notice(`${draft.title} is an imported, unscored demo review. Its answers will be saved, but no clinical score or scored report will be generated.`));
+    return;
+  }
   if (!choice) {
-    area.replaceChildren(notice('Select a test to see why it is available. The doctor makes the final choice.'));
+    area.replaceChildren(notice(suggestion?.status === 'suggestions' ? 'Choose a test. The doctor makes the final assignment.' :
+      'Complete the required safety or age review before assigning a test.', suggestion?.status !== 'suggestions'));
     return;
   }
   area.replaceChildren(el('p', choice.reason));
@@ -248,8 +283,9 @@ async function showConfirmation() {
 }
 
 async function prescribe() {
-  if (!suggestion || suggestion.patient.id !== selectedPatientId ||
-      !suggestion.prescriptionChoices.some((item) => item.id === selectedFormId && item.availability === 'available')) return;
+  if (!suggestion || suggestion.patient.id !== selectedPatientId || suggestion.status !== 'suggestions' ||
+      !(suggestion.prescriptionChoices.some((item) => item.id === selectedFormId && item.availability === 'available') ||
+        (selectedFormId.startsWith('draft:') && catalogue.some((item) => item.id === selectedFormId.slice(6) && item.previewAvailable)))) return;
   $('prescribe-button').disabled = true;
   $('prescription-result').replaceChildren();
   try {
@@ -260,9 +296,12 @@ async function prescribe() {
     const record = await response.json();
     if (!response.ok) throw new Error(record.error || 'Could not prescribe the test.');
     const card = el('div', undefined, 'prescribed-card');
-    card.append(el('h3', `${record.formId.toUpperCase()} prescribed`), el('p', `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
+    const title = record.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId : record.formId.toUpperCase();
+    card.append(el('h3', `${title} assigned`), el('p', record.kind === 'draft' ?
+      `Unscored demo review assigned to ${suggestion.patient.label}. Its answers can be saved and reviewed without a clinical score.` :
+      `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
     const actions = el('div', undefined, 'prescribed-actions');
-    const url = new URL(`/assessment.html?prescriptionId=${encodeURIComponent(record.id)}`, location.href);
+    const url = new URL(`${record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`, location.href);
     const open = el('a', 'Open patient assessment', 'button primary');
     open.href = url.href;
     const copy = el('button', 'Copy patient link', 'button outline');
@@ -293,7 +332,8 @@ async function loadReports(patientId) {
     if (!prescriptionsResponse.ok || !reportsResponse.ok) throw new Error('Could not load patient reports.');
     const [prescriptions, reports] = await Promise.all([prescriptionsResponse.json(), reportsResponse.json()]);
     if (current !== loadNumber) return;
-    area.replaceChildren(el('h2', `${reports.length} completed report${reports.length === 1 ? '' : 's'}`));
+    const completedDrafts = prescriptions.filter((item) => item.kind === 'draft' && item.status === 'completed');
+    area.replaceChildren(el('h2', `${reports.length} scored report${reports.length === 1 ? '' : 's'} · ${completedDrafts.length} unscored review${completedDrafts.length === 1 ? '' : 's'}`));
     const list = el('div', undefined, 'report-list');
     for (const report of reports) {
       const row = el('div', undefined, 'report-row');
@@ -302,12 +342,22 @@ async function loadReports(patientId) {
       const link = el('a', 'View report'); link.href = `/report.html?id=${encodeURIComponent(report.id)}`;
       row.append(info, link); list.append(row);
     }
+    for (const record of completedDrafts) {
+      const row = el('div', undefined, 'report-row');
+      const info = el('div');
+      const title = catalogue.find((item) => item.id === record.formId)?.title || record.formId;
+      info.append(el('strong', `${title} · Unscored review`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
+      const link = el('a', 'View reviewed answers');
+      link.href = `/draft-live.html?prescriptionId=${encodeURIComponent(record.id)}`;
+      row.append(info, link); list.append(row);
+    }
     for (const record of prescriptions.filter((item) => item.status !== 'completed')) {
       const row = el('div', undefined, 'report-row');
       const info = el('div');
-      info.append(el('strong', `${record.formId.toUpperCase()} · ${record.status === 'assigned' ? 'Assigned' : 'In progress'}`), el('small', `Prescribed ${new Date(record.createdAt).toLocaleString()}`));
+      const title = record.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId : record.formId.toUpperCase();
+      info.append(el('strong', `${title} · ${record.status === 'assigned' ? 'Assigned' : 'In progress'}${record.kind === 'draft' ? ' · Unscored' : ''}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
       const link = el('a', 'Open patient assessment');
-      link.href = `/assessment.html?prescriptionId=${encodeURIComponent(record.id)}`;
+      link.href = `${record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`;
       row.append(info, link); list.append(row);
     }
     if (list.children.length) area.append(list);
@@ -320,12 +370,20 @@ async function loadReports(patientId) {
 $('nav-prescribe').addEventListener('click', () => setView('prescribe'));
 $('nav-reports').addEventListener('click', () => setView('reports'));
 $('nav-analytics').addEventListener('click', () => setView('analytics'));
-$('nav-library').addEventListener('click', () => setView('library'));
 $('patient-search').addEventListener('input', renderPatientList);
 $('next-step').addEventListener('click', showConfirmation);
 $('back-step').addEventListener('click', () => { ++loadNumber; setStep(1); });
 $('clarification-focus').addEventListener('change', () => loadSuggestion($('clarification-focus').value));
 $('assessment-select').addEventListener('change', updateSelectedChoice);
+$('assessment-search').addEventListener('input', renderAssessmentOptions);
+window.addEventListener('clinic:select-assessment', (event) => {
+  const id = event.detail?.id;
+  if (!id || !suggestion || suggestion.status !== 'suggestions') return;
+  selectedFormId = id;
+  $('assessment-search').value = '';
+  renderAssessmentOptions();
+  $('assessment-select').focus();
+});
 $('prescribe-button').addEventListener('click', prescribe);
 $('report-patient').addEventListener('change', () => {
   const url = new URL(location.href);
@@ -337,9 +395,10 @@ $('report-patient').addEventListener('change', () => {
 window.addEventListener('popstate', () => setView(new URL(location.href).searchParams.get('view'), false));
 
 try {
-  const response = await fetch('/api/demo-patients');
-  if (!response.ok) throw new Error('Could not load the patient list.');
+  const [response, catalogueResponse] = await Promise.all([fetch('/api/demo-patients'), fetch('/api/assessment-library')]);
+  if (!response.ok || !catalogueResponse.ok) throw new Error('Could not load the patient or assessment list.');
   patients.push(...await response.json());
+  catalogue.push(...await catalogueResponse.json());
   for (const patient of patients) {
     const option = el('option', patient.label); option.value = patient.id; $('report-patient').append(option);
   }

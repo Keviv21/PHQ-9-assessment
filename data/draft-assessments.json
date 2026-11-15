@@ -251,7 +251,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Acceptance and Action Questionnaire – version 2 (AAQ-II), is the most widely used measure of psychological flexibility. It can be used weekly track how individuals are applying flexibility skills to their daily lives and is often used to measure progress in Acceptance and Commitment Therapy (ACT)."
     },
     {
       "id": "adhd-clinical-outcome-scale-acos-clinician-version--de39a2c838f5",
@@ -655,7 +656,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The ADHD Clinical Outcome Scale (ACOS) is a 15-item routine clinical outcome measure of ADHD and related mental health problems and functional difficulties (Adamis et al., 2024)."
     },
     {
       "id": "adhd-clinical-outcome-scale-acos-self-report-version--96bf1d88cb47",
@@ -969,7 +971,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The ADHD Clinical Outcome Scale (ACOS) is a 15-item routine clinical outcome measure of ADHD and related mental health problems and functional difficulties (Adamis et al., 2024)."
     },
     {
       "id": "adolescent-dissociative-experiences-scale-a-des--3f3e763d3d96",
@@ -2483,7 +2486,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Adolescent Dissociative Experiences Scale (A-DES) is a 30-item self-report measure designed to assess both normal and pathological dissociative experiences in adolescents aged 11-18 years (Armstrong et al., 1997 )."
     },
     {
       "id": "adult-adhd-observer-report-scale-asrs-o--327f8833bed5",
@@ -2965,7 +2969,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Adult ADHD Observer-Report Scale (ASRS-O) is an 18-item informant-report questionnaire for mental health clinicians assessing adults (aged 18+) for attention-deficit/hyperactivity disorder. It is completed by someone who knows the adult well; such as a partner, parent, other close relative, or friend, or by a clinician or other professional who has had regular opportunity to observe the adult over the past 6 months."
     },
     {
       "id": "adult-adhd-self-report-scale-asrs--814829bfeff1",
@@ -3447,7 +3452,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Adult ADHD Self-Report Scale (ASRS v1.1) is an 18-item self-report questionnaire designed to assess Attention Deficit Hyperactivity Disorder (ADHD) symptoms in adults (18+)."
     },
     {
       "id": "adult-separation-anxiety-questionnaire--fa5fa6f7448f",
@@ -4055,7 +4061,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Adult Separation Anxiety Questionnaire (ASA-27) is a self-report measure used to assess symptoms of adult separation anxiety such as excessive worry, distress, and avoidance linked to separation from loved ones or familiar places (Manicavasagar et al., 2003) ."
     },
     {
       "id": "adverse-childhood-experiences-questionnaire-ace-q--e0ab8a5b8f82",
@@ -4195,7 +4202,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Adverse Childhood Experiences Questionnaire (ACE-Q) is a 10-item self-report measure designed to retrospectively assess exposure to potentially traumatic experiences from birth to age 18 years (Felitti et al., 1998). Developed within a public health framework, the ACE-Q evaluates two broad categories of adverse childhood experiences: abuse and neglect, and household dysfunction."
     },
     {
       "id": "agnew-relationship-measure-5-arm-5--4bf4e8f0b078",
@@ -4379,7 +4387,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Agnew Relationship Measure – 5 (ARM-5; Cahill et al., 2012) is a five-item, client-rated measure of the therapeutic alliance, developed as a short form of the 28-item ARM (Agnew-Davies et al., 1998). Completed in under a minute by clients aged 18 and over, it is designed for repeated use in Feedback Informed Treatment, where clinicians gather brief feedback on the working relationship and use it to adjust care while therapy is underway (Miller et al., 2016)."
     },
     {
       "id": "alcohol-use-disorders-identification-test-audit--9081412df36a",
@@ -4689,7 +4698,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Alcohol Use Disorders Identification Test (AUDIT) is a 12-item self-report screening questionnaire designed to measure harmful alcohol use (Saunders et al., 1993a). This includes the 10 standard questions of the AUDIT and 2 questions at the end to determine self-identified problem drinking and self-perceived difficulty in stopping drinking."
     },
     {
       "id": "alexian-brothers-urge-to-self-injure-scale-abusi--438bc2df7997",
@@ -4873,7 +4883,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Alexian Brothers Urge to Self-Injure Scale (ABUSI) is a 5-item self-report measure of the severity of the urge to engage in non-suicidal self-injury (NSSI) over the past week, for adolescents and adults aged 11 and over with known or suspected self-injury (Washburn et al., 2010). It captures how often the urge arose, how strong it became, how much time was spent thinking about it, how difficult it was to resist, and the overall average urge across the week."
     },
     {
       "id": "anxiety-depression-mood-scale-adams--6071c8716f16",
@@ -5503,7 +5514,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Anxiety, Depression, and Mood Scale (ADAMS) is an informant-report screening tool used to assess symptoms of anxiety, depression, and other mood disorders in individuals with intellectual disabilities (ID) (Esbensen et al., 2003)."
     },
     {
       "id": "appearance-anxiety-inventory-aai--1acac3b6354e",
@@ -5777,11 +5789,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Appearance Anxiety Inventory (AAI) is a 10 question self-report scale that measures the cognitive and behavioural aspects of body image anxiety in general, and body dysmorphic disorder (BDD) in particular. Appropriate for use with adults and adolescents as young as thirteen, the brief nature of the AAI can provide a quick snapshot of symptom severity to assist in the initial assessment and to monitor treatment progress over time."
     },
     {
       "id": "ask-suicide-screening-questionnaire-asq--738914ed7416",
       "title": "Ask Suicide-Screening Questionnaire (asQ)",
+      "description": "The Ask Suicide-Screening Questions (asQ; Horowitz et al., 2012) is a brief, clinician-administered suicide risk screening tool for use with individuals aged 8 and older. The asQ comprises four core screening questions, along with a fifth acuity question that grades the urgency of a positive screen. Developed at the United States National Institute of Mental Health (NIMH), it is included as the key component of the NIMH asQ Toolkit (National Institute of Mental Health, n.d.).",
       "referencePeriod": "",
       "instructions": "Ask the patient:",
       "sourceUrl": "https://novopsych.com/assessments/formulation/ask-suicide-screening-questionnaire-asq/",
@@ -6075,7 +6089,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Athens Insomnia Scale (AIS) is an 8-item self-report measure of insomnia severity in adults. It quantifies sleep difficulty against the ICD-10 diagnostic criteria for nonorganic insomnia, counting only difficulties that occurred at least three times a week over the past month."
     },
     {
       "id": "athlete-psychological-strain-questionnaire--e14b8a4d4416",
@@ -6349,7 +6364,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Athlete Psychological Strain Questionnaire (APSQ) is a 10-item self-report measure designed to assess psychological distress and strain specifically in elite athletes aged 18 years and older."
     },
     {
       "id": "athletic-coping-skills-inventory-acsi-28--7f2fb9189c36",
@@ -6979,7 +6995,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Athletic Coping Skills Inventory-28 (ACSI-28) is a 28-item self-report measure designed to assess the psychological skills and coping strategies employed by athletes in competitive sports settings (Smith et al., 1995). The ACSI-28 can be used with adolescents or adults (ages 14+)."
     },
     {
       "id": "attachment-style-questionnaire-short-form-asq-sf--422178493154",
@@ -7593,7 +7610,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Attachment Style Questionnaire – Short Form (ASQ-SF) is a 29-item self-report measure widely used to assess adult attachment patterns in both non-clinical and mental health contexts (Alexander et al., 2001; Karantzas et al., 2010)."
     },
     {
       "id": "autism-spectrum-quotient--a7efe89776be",
@@ -8707,7 +8725,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Autism Spectrum Quotient (AQ) is a 50 item self-report measure that assesses autistic traits in adults and people as young as 16 years."
     },
     {
       "id": "autism-spectrum-quotient-adolescent--89b2fc47c006",
@@ -9689,7 +9708,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Autism Spectrum Quotient Adolescent Version (AQ-Adolescent) is a 50 item parent-report measure that assesses autistic traits in adolescents between the ages of 12 and 15 years."
     },
     {
       "id": "autism-spectrum-quotient-child--9c9252442609",
@@ -10671,7 +10691,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Autism Spectrum Quotient Children’s Version (AQ-Child) is a 50 item parent-report measure that assesses autistic traits in children between the ages of 4 and 11 years."
     },
     {
       "id": "autism-treatment-evaluation-checklist-atec--45f7ca5c94cc",
@@ -10909,7 +10930,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Autism Treatment Evaluation Checklist (ATEC) assesses changes in Autistic characteristics over time in children aged 2 years and older, as well as adults."
     },
     {
       "id": "automatic-thoughts-questionnaire-believability-atq-b--7d498a17dd25",
@@ -11313,7 +11335,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Automatic Thoughts Questionnaire – Believability (ATQ-B-15) (Netemeyer et al., 2002) is a 15-item self-report measure designed to assess the degree of believability of cognitions associated with depression. The scale does not measure the frequency of unhelpful thoughts, but rather measures the extent to which the client believes the thoughts to be true."
     },
     {
       "id": "benevolent-childhood-experiences-bces-scale--77c29f4f387a",
@@ -11607,7 +11630,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Benevolent Childhood Experiences (BCEs) scale is a 20-item self-report measure designed to retrospectively assess positive childhood experiences from birth to age 18 years. Developed within a developmental psychopathology framework, the BCEs scale evaluates multisystem positive experiences that serve as assets and resources for developing children."
     },
     {
       "id": "binge-eating-scale-bes--e2aaed92c6e4",
@@ -11965,7 +11989,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Binge-Eating Scale (BES) is a 16-item self-report instrument designed to evaluate the presence and behavioural manifestations of binge-eating disorder (BED) (Gormally et al., 1982)."
     },
     {
       "id": "borderline-symptom-list-bsl-23--8c1defb2159d",
@@ -12623,7 +12648,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Borderline Symptom List – Short Version (BSL-23) is a 23-item self-rating instrument for specific assessment of borderline personality disorder (BPD) symptomatology in adults (18+). The scale assesses DSM BPD diagnostic criteria (e.g., affective instability, recurrent suicidal behaviour, gestures, or threats, or self-mutilating behaviour, and transient dissociative symptoms) in addition to items that are based on borderline-typical empirical findings regarding self-criticism, problems with trust, emotional vulnerability, and proneness to shame, self-disgust, loneliness, and helplessness (Kleindienst et al., 2020)."
     },
     {
       "id": "brief-2-way-social-support-scale--2bae3b03aa75",
@@ -12997,11 +13023,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief 2-Way Social Support Scale is a 12-item self-report measure for adults 18 years of age and older that comprehensively assesses the bidirectional nature of social support through the giving and receiving of both emotional and instrumental support."
     },
     {
       "id": "brief-addiction-monitor-bam--dce6e8665d04",
       "title": "Brief Addiction Monitor – Continuous (BAM)",
+      "description": "The Brief Addiction Monitor – Continuous (BAM) is a 17-item self-report or clinician-administered measure used to monitor substance use and related recovery factors in adults (18+) receiving treatment for substance use disorders (Cacciola et al., 2013).",
       "referencePeriod": "",
       "instructions": "This is a standard set of questions about several areas of your life such as your health, alcohol and drug use, etc. The questions generally ask about the past 30 days. Please consider each question and answer as accurately as possible.",
       "sourceUrl": "https://novopsych.com/assessments/addiction/brief-addiction-monitor-bam/",
@@ -13845,7 +13873,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief Early Schema Questionnaire (BESQ) is a 24-item screening tool that helps clinicians rapidly assess maladaptive patterns of thoughts, behaviours and emotions."
     },
     {
       "id": "brief-emotional-distress-scale-for-youth-bedsy--65f320b5b2b8",
@@ -14035,7 +14064,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief Emotional Distress Scale for Youth (BEDSY) is an 8-item self-report measure designed to assess emotional distress in young people (11-17 years). The scale assesses a general construct of emotional distress, as opposed to specific features of anxiety and depression symptoms."
     },
     {
       "id": "brief-emotional-intelligence-scale--71e06748d4fe",
@@ -14283,7 +14313,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief Emotional Intelligence Scale (BEIS-10) is a 10-item self-report measure designed to assess emotional intelligence (EI) in adults. The BEIS-10 was developed by Davies et al. (2010) as a shortened version of the 33-item Emotional Intelligence Scale (EIS; Schutte et al., 1998)."
     },
     {
       "id": "brief-experiential-avoidance-questionnaire-beaq--619fc855c180",
@@ -14597,7 +14628,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief Experiential Avoidance Questionnaire (BEAQ) assesses an individual’s tendency to avoid uncomfortable emotions, thoughts, memories, or sensations (Gámez et al., 2014)."
     },
     {
       "id": "brief-hierarchical-taxonomy-of-psychopathology-b-hitop--9a03347893c5",
@@ -15249,7 +15281,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief Hierarchical Taxonomy of Psychopathology (B-HiTOP), developed by the HiTOP Consortium, is a 45-item self-report measure designed to provide broad screening assessment of dimensions that span the hierarchical structure of psychopathology in adults (HiTOP Consortium, 2025)."
     },
     {
       "id": "brief-resilience-scale--cc5d54b07df8",
@@ -15419,7 +15452,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief Resilience Scale (BRS) is a 6-item self-report measure for adults aged 18 years and older designed to assess an individual’s ability to bounce back or recover from stress, adversity, and challenging life circumstances (Smith et al., 2008). Unlike broader resilience measures that evaluate multiple protective factors or resources, the BRS uniquely focuses on the core definitional aspect of resilience, the capacity for adaptive recovery and return to baseline functioning after experiencing difficulties."
     },
     {
       "id": "buss-perry-aggression-questionnaire-bpaq--de56900b41f4",
@@ -15875,7 +15909,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Buss and Perry Aggression Questionnaire (BPAQ) is self-report tool designed to measure various aspects of aggression, encompassing physical and verbal aggression, anger, and hostility."
     },
     {
       "id": "camouflaging-autistic-traits-questionnaire-cat-q--a3551a0ae362",
@@ -16739,7 +16774,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Camouflaging Autistic Traits Questionnaire (CAT-Q) is a 25-item self-report measure designed to assess camouflaging strategies in individuals aged 16 years and older (Hull et al., 2019). The CAT-Q assesses the extent to which camouflaging strategies are used and is particularly relevant for identifying Autism in females and gender diverse people, who may be underdiagnosed or misdiagnosed due to their ability to mask autistic traits."
     },
     {
       "id": "center-for-epidemiologic-studies-depression-scale-revised-cesd-r--658d368ffdb7",
@@ -17247,7 +17283,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Center for Epidemiologic Studies Depression Scale-Revised (CESD-R) is a 20-item self-report screening tool for depressive symptoms of Major Depressive Disorder (MDD). Its items map directly to DSM symptom domains, enabling it to function as both a severity measure and diagnostic screener. The CESD-R provides a total score with community percentiles, a five-level DSM-5 algorithmic classification, and a detailed symptom profile for targeted intervention planning."
     },
     {
       "id": "center-for-epidemiological-studies-depression-scale-for-children-ces-dc--c3f2ce445529",
@@ -17701,7 +17738,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Center for Epidemiological Studies Depression Scale for Children (CES-DC) is a 20 item self-report questionnaire for young people between the ages of 6 and 17."
     },
     {
       "id": "child-dissociative-checklist-scale-cdc--8ff8f11fd11c",
@@ -18075,7 +18113,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Child Dissociative Checklist (CDC) is a 20-item observer-report screening measure designed to identify dissociative symptoms in children aged 5-12 years. (Putnam et al., 1993 )."
     },
     {
       "id": "childhood-autism-spectrum-test-cast--ea08b0a813c3",
@@ -18229,7 +18268,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Childhood Autism Spectrum Test (CAST) is a screening tool designed to identify children who may have developmental differences in social and communication functioning. Parents, carers or teachers of children aged 4 to 11 answer a series of questions about a child’s development."
     },
     {
       "id": "children-eating-attitudes-test-cheat--2088aadb3275",
@@ -19023,11 +19063,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Children’s Eating Attitudes Test (ChEAT) is a 26 item questionnaire used to assess eating attitudes and disordered eating behaviours in children aged 8 to 15. For younger children it is administered by orally reading items to the child, while adolescents can self-report responses. It is a modified version of the Eating Attitudes Test (Garner & Garfinkle, 1979)"
     },
     {
       "id": "client-satisfaction-survey-css--5a9e654edbc6",
       "title": "Client Satisfaction Survey (CSS)",
+      "description": "This survey measures the level of satisfaction a client has with a mental health service, both satisfaction with their practitioner and their experience in general.",
       "referencePeriod": "",
       "instructions": "We value your feedback. Please let us know how your experience has been by answering the following questions.",
       "sourceUrl": "https://novopsych.com/assessments/feedback-informed/client-satisfaction-survey-css/",
@@ -19489,7 +19531,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Clinical Impairment Assessment questionnaire (CIA) is a 16-item self-report measure of the severity of psychosocial impairment due to eating disorder features (Bohn and Fairburn, 2008). It focuses on the past 28 days. It was developed as a measure of functional impairment in domains of life that are typically affected by an eating disorder which includes mood and perception of self, cognitive functioning, interpersonal functioning, and work performance. It has been normed in adults 17-65 years of age. The CIA is intended to assist in the clinical assessment of patients both before and after treatment for eating disorders (Bohn et al, 2008)."
     },
     {
       "id": "clinical-outcomes-in-routine-evaluation-core-om--40df925f6cec",
@@ -20387,7 +20430,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The CORE Outcome Measure (CORE-OM) is a self-report measure of psychological distress designed to be administered during a course of treatment to determine treatment response. The broad spectrum nature of the measure means it captures a wide variety of problems associated with mental health difficulties, beyond typical symptom measures. The copyright holder for the CORE-OM is the CORE System Trust."
     },
     {
       "id": "clinical-outcomes-in-routine-evaluation-10-core-10--2cb1074a1a81",
@@ -20661,7 +20705,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The CORE-10 is a 10 item assessment measure for common presentations of psychological distress in mental health settings and is designed to be used to track symptoms over the course of treatment."
     },
     {
       "id": "cognitive-flexibility-inventory-cfi--8703ad6e433e",
@@ -21355,7 +21400,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Cognitive Flexibility Inventory (CFI) is a 20-item self-report measure to monitor how often individuals engaged in cognitive behavioural thought challenging interventions (Dennis & Vander Wal, 2010). Cognitive flexibility enables individuals to think adaptively when encountering stressful life events, and is a core skill that helps individuals avoid becoming stuck in maladaptive patterns of thinking."
     },
     {
       "id": "compassion-motivation-and-action-scales-self-compassion-cmas-self--749b02174491",
@@ -21981,7 +22027,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Compassion Motivation and Action Scale (CMAS) is an 18-item self-report measure designed to assess compassion for oneself. There are two CMAS scales measuring two dimensions of compassion, self-compassion (CMAS-self) and compassion to other people ( CMAS-other: Steindl et al., 2021)."
     },
     {
       "id": "compassion-motivation-and-action-scales-compassion-cmas-other--4a884a66799a",
@@ -22403,11 +22450,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Compassion Motivation and Action Scale – Compassion (CMAS-other) measures compassionate intension and action towards other people. It is a companion measure to CMAS-self , which measures self-compassion (Steindl et al., 2021)."
     },
     {
       "id": "composite-caregiving-questionnaire-ccq--f9389578f2e8",
       "title": "Composite Caregiving Questionnaire (CCQ)",
+      "description": "The Composite Caregiving Questionnaire (CCQ) is a 42-item questionnaire completed by parents/caregivers of children aged 0 to 6 years. It measures five parenting constructs that are important in reducing attachment insecurity and promoting attachment security in young children:",
       "referencePeriod": "",
       "instructions": "Note: If you have more than one child, please answer all the questions thinking about the child you currently have most difficulty with.",
       "sourceUrl": "https://novopsych.com/assessments/child/composite-caregiving-questionnaire-ccq/",
@@ -24870,7 +24919,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Comprehensive Autistic Trait Inventory (CATI) is a 42-item self-report questionnaire designed to assess traits and characteristics relevant for the identification of adults with Autism. The CATI was intentionally developed as a neurodiversity affirming questionnaire."
     },
     {
       "id": "brief-cope--958c3779d611",
@@ -25500,7 +25550,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Brief-COPE is a 28 item self-report questionnaire designed to measure effective and ineffective ways to cope with a stressful life event. “Coping” is defined broadly as an effort used to minimise distress associated with negative life experiences."
     },
     {
       "id": "counselling-self-estimate-inventory-cose--bbf46b257095",
@@ -26624,7 +26675,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Counselling Self Estimate Inventory (COSE) is a 37-item self-report questionnaire designed to measure a clinician’s self-efficacy. It is appropriate for use with psychologists, psychiatrists, counsellors, trainees in these disciplines, and other mental health clinicians engaged in therapy with clients."
     },
     {
       "id": "couples-satisfaction-index-csi-16--9c69dc027c1c",
@@ -27098,11 +27150,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Couples Satisfaction Index (CSI-16) assesses romantic relationship satisfaction and functioning."
     },
     {
       "id": "crafft-substance-use-assessment-crafft-2-1-n--74bd92c2de16",
       "title": "CRAFFT Substance Use Assessment (CRAFFT 2.1+N)",
+      "description": "The CRAFFT Substance Use Assessment (CRAFFT 2.1+N) is a self-report screen for substance use, substance-related riding and driving risk, and risk of substance use disorder in young people aged 12 to 21 (Knight et al., 2002; CABHRe, 2021). Branching means a young person answers between 5 and 20 questions. The result places them in a Low, Medium, or High risk category, with riding and driving risk and nicotine use reported alongside the score.",
       "referencePeriod": "",
       "instructions": "",
       "sourceUrl": "https://novopsych.com/assessments/addiction/crafft-substance-use-assessment-crafft-2-1-n/",
@@ -27838,7 +27892,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Death Anxiety Beliefs and Behaviours Scale (DABBS) is an 18-item self-report measure designed to assess death anxiety (i.e., fears of death or dying). The DABBS was developed specifically for use in clinical populations and was the first measure to provide a clinical cut-off score, normative data, and treatment-guiding subscales."
     },
     {
       "id": "depression-anxiety-stress-scale-dass-10--3b7391b71c72",
@@ -28116,7 +28171,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Depression Anxiety Stress Scale (DASS-10) is a brief 10-item version of the full version of the Depression Anxiety Stress Scale (DASS-42) . The DASS-10 can determine the overall level of distress as well as provides subscale scores for two symptom clusters: Depression and Anxiety/Stress"
     },
     {
       "id": "depression-anxiety-stress-scales-long-form-dass-42--98e6daa15d6b",
@@ -29054,7 +29110,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Depression Anxiety Stress Scales – 42 (DASS-42) is a 42-item self-report scale designed to measure the negative emotional states of depression, anxiety and stress in adults and older adolescents (17 years +). It is the long version of the DASS-21 . It is a useful tool for routine outcome monitoring and can be used to assess the level of treatment response."
     },
     {
       "id": "depression-anxiety-stress-scales-short-form-dass-21--acf13d5bf87b",
@@ -29530,7 +29587,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Depression Anxiety Stress Scales – 21 (DASS-21) is 21-item self-report measure designed to assess the severity of general psychological distress and symptoms related to depression, anxiety, and stress in adults older adolescents (17 years +)."
     },
     {
       "id": "depression-anxiety-stress-scale-youth-version-dass-y--2604ab8d4694",
@@ -30006,7 +30064,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Depression Anxiety Stress Scales – Youth version (DASS-Y) is a version of the DASS-21 for youth aged 7 – 18 years of age designed to measure general psychological distress and the negative emotional states of depression, anxiety and stress. The wording and focus of the questions is simplified compared to other versions of the DASS, making it more relevant for young people."
     },
     {
       "id": "difficulties-in-emotion-regulation-scale-16-item-version-ders-16--c5536e3def4b",
@@ -30436,7 +30495,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Difficulties in Emotion Regulation Scale – 16 item version (DERS-16) is a self-report measure that assesses individuals’ levels of difficulties in emotion regulation. Based upon the original 36 item version DERS , the DERS-16 uses a clinically-useful conceptualisation of emotion regulation that was developed to be applicable to a wide variety of psychological difficulties."
     },
     {
       "id": "difficulties-in-emotion-regulation-scale--221f5a9cb12a",
@@ -31386,7 +31446,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Difficulties in Emotion Regulation Scale (DERS) is a 36-item a measure designed to assess clinically relevant difficulties in emotion regulation. The DERS provides valuable insights into an individual’s ability to understand, accept, and manage emotions effectively."
     },
     {
       "id": "digital-stress-scale--a523bd676177",
@@ -31842,7 +31903,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Digital Stress Scale (DSS) is a 24-item self-report measure designed to assess the subjective experience of stress associated with digital technology use, particularly mobile and social media (Hall et al., 2021). The DSS can be used with adolescents or adults (ages 14+)."
     },
     {
       "id": "dar-5--5adc584d7917",
@@ -31986,7 +32048,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Dimensions of Anger Reactions-5 (DAR-5) is a 5-item adult self-report measure that assesses the frequency of anger experiences over the past 4 weeks, particularly in individuals who have experienced trauma."
     },
     {
       "id": "dissociative-experiences-scale-ii-des-ii--63422eb5fbb7",
@@ -33400,7 +33463,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Dissociative Experiences Scale-II ( DES-II) is a 28-item, self-report measure of dissociative experiences. Dissociation is often considered a psychological defense mechanism for victims of traumatizing events, and the scale is of particular use in measuring dissociation among people with PTSD, dissociative disorders, borderline personality disorder and those with a history of abuse."
     },
     {
       "id": "drug-use-disorders-identification-test-dudit--399903a6348d",
@@ -33684,7 +33748,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Drug Use Disorders Identification Test (DUDIT) is designed to identify adults with drug use problems and assess the severity of their drug use."
     },
     {
       "id": "eating-attitudes-test-26-eat-26--b8cb550dc0d9",
@@ -34612,11 +34677,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Eating Attitudes Test (EAT-26) is used to identify the presence of “eating disorder risk” based on attitudes, feelings and behaviours related to eating. There are 26 self-report questions assessing general eating behaviour and five additional questions assessing risky behaviours. The EAT-26 can aid in the screening and diagnosis of eating disorders such as anorexia nervosa, bulimia nervosa and binge eating disorder."
     },
     {
       "id": "eating-disorder-15ed-15--c8ca6c162a50",
       "title": "Eating Disorder-15 (ED-15)",
+      "description": "The Eating Disorder-15 is a 15-item scale to measure session-by-session change for eating disorder attitudes and behaviours. The scale measures the frequency of eating-disordered behaviours and has two factors:",
       "referencePeriod": "",
       "instructions": "This questionnaire considers your eating attitudes and behaviors over the last week. Please complete this measure by selecting the appropriate answers for all items. Over the past week, how often have I:",
       "sourceUrl": "https://novopsych.com/assessments/outcome-monitoring/eating_disorder-15ed-15/",
@@ -35225,7 +35292,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Edinburgh Postnatal Depression Scale (EPDS; Cox et al., 1987) is a 10-item self-report measure of depressive symptoms in women during pregnancy and the first year after birth. It is one of the most widely used screening tools for antenatal and postnatal depression."
     },
     {
       "id": "empathy-quotient-40-item-version--b54fdd8fd587",
@@ -35701,7 +35769,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Empathy Quotient – 40 item version (EQ-40) is a self-report tool to assess empathy in adults (18 years of age and older). The EQ-40 ( Baron-Cohen & Wheelwright, 2004) assesses various aspects of empathy and three subscales are included:"
     },
     {
       "id": "equanimity-scale-es-16--ea501ffc20ec",
@@ -36131,7 +36200,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Equanimity Scale – 16 (ES-16) is a 16-item self-report mindfulness scale to assess the level by which a client is taking a non-reactive attitude to thoughts, feelings, and experiences. The ES-16 is for use with adults 18 years of age and older and can be useful in the therapeutic context to assess experiential avoidance and a client’s emotional reactivity – two factors that increase suffering (Grabovac et al. 2011, Hayes et al., 1996)."
     },
     {
       "id": "executive-skills-questionnaire-revised-esq-r--f39ae41829fa",
@@ -36695,7 +36765,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Executive Skills Questionnaire–Revised (ESQ–R) is a 25-item, self-report measure of executive functioning skills, including plan and time management, organization, and emotional and behavioral regulation."
     },
     {
       "id": "experience-in-close-relationship-scale-short-form-ecr-s--50815164ead8",
@@ -37117,7 +37188,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Experience in Close Relationships Scale-Short Form (ECR-S) is a 12-item self-report measure designed to assess adult attachment patterns in romantic relationships, representing a more concise version of the original 36-item ECR (Wei et al., 2007). Built upon contemporary attachment theory, the ECR-S evaluates how individuals think, feel, and behave in romantic relationships, particularly focusing on attachment-related anxiety and avoidance dimensions."
     },
     {
       "id": "extreme-demand-avoidance-8-eda-8--5c05748e0c96",
@@ -37307,7 +37379,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Extreme Demand Avoidance – 8 (EDA-8) is a parent- or caregiver-report measure of pathological demand avoidance (PDA) in children and adolescents (O’Nions et al., 2021). PDA is characterised by an extreme desire for autonomy and control, high levels of anxiety, and difficulties with emotional regulation, leading to avoidance or resistance when faced with perceived demands or expectations."
     },
     {
       "id": "extreme-demand-avoidance-questionnaire-adult-eda-qa--ccfe55a2495b",
@@ -37893,7 +37966,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Extreme Demand Avoidance Questionnaire – Adult (EDA-QA) is a self-report measure of pathological demand avoidance (PDA) for adults (Egan et al., 2019). PDA is characterised by an extreme desire for autonomy and control, high levels of anxiety, and difficulties with emotional regulation, leading to avoidance or resistance when faced with perceived demands or expectations."
     },
     {
       "id": "fatigue-assessment-scale-fas--4da3697fad5d",
@@ -38167,7 +38241,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The FAS is a 10-item self-report measure of general fatigue (Michielsen et al., 2003). It assesses fatigue as a single overall construct while ensuring coverage of both physical symptoms (e.g., physical exhaustion, lack of energy, tiring quickly) and mental symptoms (e.g., lack of motivation, problems thinking clearly, difficulty initiating tasks). The FAS was originally developed in Dutch by selecting and refining items from four established fatigue questionnaires (Michielsen et al., 2004). It has since been translated into numerous other languages and used across a range of populations and conditions (Hendriks et al., 2018)."
     },
     {
       "id": "five-facet-mindfulness-questionnaire-ffmq-15--6069dec1835d",
@@ -38467,7 +38542,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Five Facet Mindfulness Questionnaire (FFMQ-15) is a 15 question self-report scale that measures mindfulness with regards to thoughts, experiences, and actions in daily life (Baer, Carmody, & Hunsinger, 2012). The FFMQ-15 measures 5 subscales of mindfulness:"
     },
     {
       "id": "flourishing-scale-fs--36825cb5960c",
@@ -38753,7 +38829,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Flourishing Scale is a brief 8-item measure of the respondent’s self-perceived success in important areas of life such as relationships, self-esteem, purpose, and optimism."
     },
     {
       "id": "frost-multidimensional-perfectionism-scale-fmps--02f6904b257a",
@@ -39417,11 +39494,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Frost Multidimensional Perfectionism Scale (FMPS) is a 35-item self-report questionnaire designed to assess multiple dimensions of perfectionism in adolescents and adults (Frost et al., 1990)."
     },
     {
       "id": "gender-preoccupation-stability-questionnaire-2--6299a80a040e",
       "title": "Gender Preoccupation and Stability Questionnaire 2 (GPSQ-2)",
+      "description": "The Gender Preoccupation and Stability Questionnaire-2 (GPSQ-2) is a 14-item self-report measure of gender-related distress (gender dysphoria) in adolescents and adults, and was developed by Bowman et al. (2024).",
       "referencePeriod": "",
       "instructions": "Please select the answer that best reflects your thoughts and feelings over the past two weeks.",
       "sourceUrl": "https://novopsych.com/assessments/formulation/gender-preoccupation-stability-questionnaire-2/",
@@ -41451,7 +41530,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The General Behaviour Inventory-Revised (GBI-R) is a 73-item self-report tool designed to assess bipolar disorder (Depue et al., 1989). It measures the frequency, intensity, and duration of symptoms associated with bipolar disorder type I and II, as well as cyclothymia."
     },
     {
       "id": "GAD7",
@@ -41619,7 +41699,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Generalised Anxiety Disorder Assessment (GAD-7) is a brief measure for symptoms of anxiety, based on the generalised anxiety disorder (GAD) diagnostic criteria described in the Diagnostic and Statistical Manual of Mental Disorders (DSM)."
     },
     {
       "id": "geriatric-depression-scale-15-gds--a1ef7075a9d0",
@@ -41843,7 +41924,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Geriatric Depression Scale (GDS-15), used to screen for depression in adults aged 55 and older, consists of 15 items that assess mental health based on feelings over the past week (Yesavage & Sheikh, 1986)."
     },
     {
       "id": "herth-hope-index-hhi--50cd05c27f9d",
@@ -42265,7 +42347,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Herth Hope Index (HHI) is designed to assess hope levels and monitor changes in hope over time in adults experiencing illness."
     },
     {
       "id": "indigenous-risk-impact-screen--b882ecf7bcbd",
@@ -42541,7 +42624,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Indigenous Risk Impact Screen (IRIS) is a 13-item scale designed to assess alcohol intake, drug use, mental health and emotional well-being. The scale was developed for and validated with Aboriginal and Torres Strait Islander adults in Australia."
     },
     {
       "id": "aggression-scale-for-autism--d6a56deea55d",
@@ -42863,7 +42947,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Institute for Basic Research – Modified Overt Aggression Scale (IBR-MOAS) is a 20-item assessment of the type, frequency, and severity of aggressive behaviours within autistic, traumatic brain injury, and intellectually disabled populations that is completed by a caregiver (Cohen et al., 2010). The IBR-MOAS can be used to measure the efficacy of therapy on aggressive behaviours in both clinical and community settings."
     },
     {
       "id": "international-personality-item-pool-neo-120-item-version-ipip-neo-120--06ddfa9e85c9",
@@ -43137,7 +43222,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The International Personality Item Pool – Neuroticism, Extraversion, Openness – 120 item version (IPIP-NEO-120) is a 120-item self-report personality inventory for use by older adolescents and adults (ages 16+). Developed by Johnson (2014), this assessment provides a shorter alternative to the original 300-item IPIP-NEO while maintaining strong psychometric properties."
     },
     {
       "id": "international-trauma-questionnaire-child-and-adolescent-version-itq-ca--869ed5b93581",
@@ -43603,7 +43689,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The International Trauma Questionnaire – Child and Adolescent Version (ITQ-CA) is a 22-item self-report measure designed to assess symptoms of Post Traumatic Stress Disorder (PTSD) and Disturbances in Self Organization (DSO), which together constitute Complex PTSD (CPTSD) in accordance with the International Classification of Diseases 11 (ICD-11) conceptualisation of trauma-related diagnoses, in children and adolescents aged 7 to 17 years."
     },
     {
       "id": "international-trauma-questionnaire-itq--720bec686a03",
@@ -43903,11 +43990,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The International Trauma Questionnaire (ITQ) is an 18-item self-report measure designed to assess symptoms of Post Traumatic Stress Disorder (PTSD) and Disturbances in Self Organization (DSO), which together constitute Complex PTSD (CPTSD) in accordance with the International Classification of Diseases 11 (ICD-11) conceptualisation of trauma-related diagnoses."
     },
     {
       "id": "kessler-psychological-distress-scale-plus-k10--13aea23eea71",
       "title": "Kessler Psychological Distress Scale PLUS (K10+)",
+      "description": "The Kessler Psychological Distress Scale Plus (K10+) is a 14-question psychological screening tool designed to identify adults with significant levels of psychological distress, and has the same first 10 questions as the K10 , with the addition of four questions asking about the impact of the distress on daily living.",
       "referencePeriod": "",
       "instructions": "These questions concern how you have been feeling over the past 30 days. Select a box below each question that best represents how you have been.",
       "sourceUrl": "https://novopsych.com/assessments/outcome-monitoring/kessler-psychological-distress-scale-plus-k10/",
@@ -44362,7 +44451,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Kessler Psychological Distress Scale-5 (K5) is a 5-item self-report questionnaire designed to assess psychological distress over the past four weeks. The K5 is a shortened version of the K10, and involved wording modifications for certain items to ensure cultural appropriateness and understanding for Indigenous Australians and Torres Strait Island populations. It is designed for Australian indigenous adults aged 16 years and over."
     },
     {
       "id": "leadership-scale-for-sports-lss-15--053274805a74",
@@ -44714,7 +44804,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Leadership Scale for Sports (LSS-15) is a 15-item athlete-report measure designed to assess perceived coaching leadership behaviors within sporting contexts (Chelladurai & Saleh, 1980). Rather than measuring leadership from the coach’s perspective, the LSS-15 captures athletes’ experiences and perceptions of their coach’s leadership style, providing valuable insight into the coach-athlete relationship and leadership effectiveness from the recipient’s viewpoint."
     },
     {
       "id": "alcohol-addiction-questionnaire--52726a095031",
@@ -44926,7 +45017,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Leeds Dependence Questionnaire (LDQ) is a brief, 10-item, self-report measure of substance dependence intended to capture the essential elements of the dependence syndrome across all substance classes. The LDQ can provide clinicians and researchers with a unitary, continuous, measure of dependence that is not specific to any particular substance (Edwards & Gross, 1976; Edwards, 1986)."
     },
     {
       "id": "life-events-checklist-5-lec-5--a26ee0fc9afc",
@@ -45450,7 +45542,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Life Events Checklist for DSM-5 (LEC-5) is a self-report tool developed by the National Center for Post-traumatic Stress Disorder (PTSD) to measure exposure to potentially traumatic events and assist with the diagnosis of PTSD. The LEC-5 contains 17 questions inquiring about the experiences of potentially traumatic events associated with post-traumatic difficulties in adults (18+ years). The LEC-5 is used to establish exposure to a PTSD Criterion A traumatic event and is subsequently used in combination with other measures (e.g. PTSD Checklist for DSM-5 (PCL-5 )) to establish if other diagnostic criteria are present (Weathers et al., 2013)."
     },
     {
       "id": "life-orientation-test-revised--919614ebc68b",
@@ -45724,7 +45817,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Life Orientation Test-Revised (LOT-R; Scheier, Carver, & Bridges, 1994) is a 10-item self-report instrument designed to assess dispositional optimism, conceptualised as generalised positive expectancies about future outcomes. The scale represents a refinement of the original Life Orientation Test (Scheier & Carver, 1985), with modifications addressing item content issues and better distinguishing optimism from related constructs like neuroticism and self-mastery. The LOT-R is suitable for individuals aged 14 years and above, demonstrating broad applicability across the lifespan from adolescence through late adulthood."
     },
     {
       "id": "life-skills-profile-16-item-version--16e3384c0fb9",
@@ -46090,7 +46184,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The abbreviated Life Skills Profile (LSP-16; Rosen et al., 1989) is a clinician-rated assessment that contains 16 items which provide a key measure of function and disability for people with mental illness. The focus of LSP-16 is on the person’s general functioning, i.e. how the person functions in terms of their social relationships and ability to do day-to-day tasks."
     },
     {
       "id": "mss-ysq-young-schema-questionnaire--0eb54fbe44ea",
@@ -48080,7 +48175,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Maladaptive Schema Scale – Young Schema Aligned (MSS-YSQ) assesses maladaptive patterns of thoughts, behaviours and emotions. The MSS-YSQ is aligned with the the schemas defined in the Young Schema Questionnaire (YSQ) in 1990, but is shorter (76 questions) and uses contemporary psychometric techniques."
     },
     {
       "id": "maladaptive-schema-scale-mss--eeb9310268c2",
@@ -49186,7 +49282,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Maladaptive Schema Scale (MSS) is a 108-item tool that assesses maladaptive patterns of thoughts, behaviours and emotions. It measures 27 schemas, integrating traditional early maladaptive schemas described by Jeffery Young and additional schemas based on attachment, trauma and other contemporary research."
     },
     {
       "id": "male-depression-risk-scale-mdrs-22--6274aa5a66f0",
@@ -50036,7 +50133,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The 22-item Male Depression Risk Scale (MDRS-22) is a self-report instrument that can be used to identify adult men’s risk of depression, with a focus on externalising signs and symptoms (i.e., aggression & drug use; Rice et al., 2013). The MDRS-22 has a particular advantage over gender-neutral depression rating scales, as it specially measures factors empirically associated with depression and suicidality in men and emphasises maladaptive coping strategies."
     },
     {
       "id": "manic-and-depression-symptoms-paired-screening-pmq-9-and-phq-9--d03a749c0f38",
@@ -50380,7 +50478,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Manic and Depression Symptoms Paired Screening (PMQ-9 and PHQ-9) is a brief self-report assessment designed to support measurement-based care for adults with bipolar disorder. Details regarding the PHQ-9 are presented on its separate page."
     },
     {
       "id": "mascc-unmet-needs-assessment-for-cancer-related-cognitive-impairment-impact-mascc-cog--b844d496fd9b",
@@ -52594,7 +52693,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Multinational Association for Supportive Care in Cancer (MASCC) Unmet Needs Assessment of Cancer-Related Cognitive Impairment Impact (MASCC COG-IMPACT) is a 55-item self-report measure developed by Haywood and colleagues (2025) under the auspices of MASCC. It is designed for adults aged 18 and over who have completed curative-intent cancer treatment, have no current evidence of disease, and who self-identify as experiencing cancer-related cognitive impairment (CRCI)."
     },
     {
       "id": "mclean-screening-instrument-for-bpd-msi-bpd--cfae059062bb",
@@ -52748,7 +52848,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The MSI-BPD is a 10-item self-report instrument used to screen for borderline personality disorder (BPD; Zanarini et al., 2003) in youth (15 years of age or greater; Chanen et al., 2008; Noblin et al., 2013; van Alebeek et al., 2017) or adults."
     },
     {
       "id": "meno-d--0011882ab4fb",
@@ -53074,7 +53175,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The MENO-D is a 12-item rating scale designed to assess depression in perimenopausal women. The menopause transition is a time when women experience increased risk for new onset depression and relapse, and research indicates perimenopausal depression may be a distinct subtype of depression with characteristic symptoms."
     },
     {
       "id": "mental-health-literacy-scale-mhls--e2b1069216a6",
@@ -53938,7 +54040,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Mental Health Literacy Scale (MHLS) is a 35-item, scale-based measure of knowledge and beliefs about mental disorders which aid their recognition, management or prevention."
     },
     {
       "id": "mindfulness-based-self-efficacy-scale-mses-r--afdc37419a72",
@@ -54524,7 +54627,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Mindfulness-based Self-Efficacy Scale – Revised (MSES-R) is a 22-item self-report scale for adults and adolescents (age 16+) designed to measure levels of self-efficacy in overcoming daily stressors. The MSES-R was developed with a focus on measuring skills that people felt improved in their lives as a consequence of mindfulness practice."
     },
     {
       "id": "the-montgomery-asberg-rating-scale-madrs--87bdd7875dc7",
@@ -54878,7 +54982,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Montgomery-Asberg Rating Scale (MADRS) is a 10-item clinician -rated assessment for depression in adults (18+). The MADRS focusses more upon functional impairment and somatic symptoms than other assessments which might focus more upon depressive cognitive attitudes (Montgomery and Asberg, 1979)."
     },
     {
       "id": "mood-and-feelings-questionnaire-self-report-mfq-self--0229b3f7a2db",
@@ -55126,7 +55231,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Mood and Feelings Questionnaire (Short Version) – Self Report(MFQ-Self) is a 13-item self-report measure assessing recent depressive symptomatology in children aged 6-17 years."
     },
     {
       "id": "mood-and-feelings-questionnaire-parent-report-mfq-parent--bf539ae275aa",
@@ -55320,7 +55426,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Mood and Feelings Questionnaire (Short Version) – Parent Report (MFQ-Parent) is a 13-item measure assessing recent depressive symptomatology in children aged 6-17 years. The MFQ-Parent is parent-rated and asks the parent to report how their child has been feeling or acting in the past two weeks."
     },
     {
       "id": "mood-disorder-questionnaire-mdq--b485da334e8a",
@@ -55552,7 +55659,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Mood Disorder Questionnaire (MDQ) is a 15-item self-report screening instrument for bipolar disorders in adults. The MDQ assesses lifetime history of manic and hypomanic symptoms based on DSM criteria, along with symptom clustering and functional impairment (Hirschfeld et al., 2000)."
     },
     {
       "id": "multidimensional-assessment-of-interoceptive-awareness-version-2-maia-2--13c5b369ef78",
@@ -56676,7 +56784,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Multidimensional Assessment of Interoceptive Awareness – Version 2 (MAIA-2; Mehling et al., 2018) is a 37-item adult self-report measure that assesses interoceptive awareness, or how individuals perceive, interpret, and respond to internal bodily sensations. It captures multiple dimensions of body awareness, including the ability to attend to bodily signals, regulate emotions through bodily awareness, and either engage with or avoid physical sensations. A youth version is available for use with adolescents and children ("
     },
     {
       "id": "multidimensional-assessment-of-interoceptive-awareness-youth-version-maia-y--15b36559af92",
@@ -57650,7 +57759,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Multidimensional Assessment of Interoceptive Awareness – Youth Version (MAIA-Y) is an 8-scale state-trait questionnaire with 32 items to measure multiple dimensions of interoception (body awareness). The MAIA-Y is suitable for use with youths between 7 – 17 years of age. There is a parallel adult version (MAIA-2) for use with individuals 18+ years of age."
     },
     {
       "id": "multidimensional-inventory-of-dissociation-60-item-adolescent-version-mid-60-a--67327718a38d",
@@ -60664,7 +60774,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Multidimensional Inventory of Dissociation 60-item – Adolescent version (MID-60-A) is a screening tool for adolescents (16-19 years) that assesses dissociative symptoms and experiences specific to DSM-5-TR dissociative disorders. It also captures dissociative experiences, PTSD and somatic symptoms, and phenomena closely related to dissociation such as trance and self-confusion. The MID-60-A is the adolescent version of the MID-60 used in adults, with minor changes to two questions (50 and 52)."
     },
     {
       "id": "multidimensional-inventory-of-dissociation-60-item-version-mid-60--6fe20374d0c2",
@@ -63678,11 +63789,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Multidimensional Inventory of Dissociation 60-item version (MID-60) is a screening tool for adults (18 years +) that assesses dissociative symptoms and experiences consistent with DSM-5-TR dissociative disorders. It also captures dissociative experiences, PTSD and somatic symptoms, and phenomena closely related to dissociation such as trance and self-confusion. There is also an adolescent version for use with adolescents ages 16 to 19 years of age – the MID-60-A ."
     },
     {
       "id": "multilevel-assessment-of-psychopathology-mapsy--b575b63dbe1c",
       "title": "Multilevel Assessment of Psychopathology (MAPsy)",
+      "description": "The MAPsy is a 154-item self-report questionnaire that screens for the symptoms of DSM-5 disorders and shows which symptoms are elevated through two lenses: 33 disorder scales, and 127 dimensions of an empirically derived hierarchy of psychopathology. Designed as a broad initial assessment, it helps clinicians identify which areas warrant further assessment.",
       "referencePeriod": "",
       "instructions": "Please respond to the following statements about your thoughts, feelings, behaviour, and experiences by selecting how true or common each statement was for you in the past year. Try to think about the full variety of your experiences, and select the response that you feel is the best fit.",
       "sourceUrl": "https://novopsych.com/assessments/formulation/multilevel-assessment-of-psychopathology-mapsy/",
@@ -67975,11 +68088,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The NovoPsych Five Factor Personality Scale – 30 is a brief self-report personality inventory measuring the well established five factor model of personality (a.k.a OCEAN). It is for use by older adolescents (ages 16+) and adults, where personality characteristics are compared to age and gender norms on the five factors of Openness, Conscientiousness, Extraversion, Agreeableness and Neuroticism."
     },
     {
       "id": "obsessional-compulsive-inventory-ocd-child-self-report--0698bee272f6",
       "title": "Obsessional Compulsive Inventory – Child Self Report (ChOCI-R-S)",
+      "description": "The Children’s Obsessional Compulsive Inventory – Revised – Self Report (ChOCI-R-S) is a 38-item self-report measure of obsessive–compulsive disorder (OCD) symptoms (Uher et al., 2008) in children and adolescents aged 7 to 17 years. It is completed by the child or adolescent and measures both the obsessive thoughts and compulsive behaviours they experience and the impairment these cause in daily life. There is also a parent-report version of the ChOCI ( ChOCI-R-P ) that can be completed by a parent or caregiver.",
       "referencePeriod": "",
       "instructions": "Each of the following questions asks you about things or “habits” you feel you have to do although you may know that they do not make sense. Sometimes, you may try to stop from doing them but this might not be possible. You might feel worried or angry or frustrated until you have finished what you have to do. An example of a habit like this may be the need to wash your hands over and over again even though they are not really dirty, or the need to count up to a special number (e.g. 6 or 10) while you do certain things. Please answer each question by indicating how much you agree with the statement, or how much you think it is true of you. Please answer each item, without spending too much time on any one item. There are no right or wrong answers. Compulsions· symptoms",
       "sourceUrl": "https://novopsych.com/assessments/diagnosis/obsessional-compulsive-inventory-ocd-child-self-report/",
@@ -68696,6 +68811,7 @@
     {
       "id": "obsessional-compulsive-inventory-revised-parent-choci-r-p--295461a1825b",
       "title": "Obsessional Compulsive Inventory- Revised-Parent (ChOCI-R-P)",
+      "description": "The Children’s Obsessional Compulsive Inventory–Revised – Parent Report (ChOCI-R-P) is a 38-item parent-report measure of obsessive–compulsive disorder (OCD) symptoms (Uher et al., 2008) in children and adolescents aged 7 to 17 years. It is completed by a parent or caregiver who is familiar with the child’s experiences. There is also a self-report version of the ChOCI ( ChOCI-R-S ) that can be completed by children or adolescents aged 7 to 17 years.",
       "referencePeriod": "",
       "instructions": "Each of the following questions asks you about things or “habits” you feel your child has to do although they may know that they do not make sense. Sometimes, they may try to stop from doing them but this might not be possible. They might feel worried or angry or frustrated until they have finished what they have to do. An example of a habit like this may be the need to wash their hands over and over again even though they are not really dirty, or the need to count up to a special number (e.g. 6 or 10) while they do certain things. Please answer each question by choosing how much you agree with the statement, or how much you think it is true of your child. Please answer each item, without spending too much time on any one item. There are no right or wrong answers. Compulsions· symptoms",
       "sourceUrl": "https://novopsych.com/assessments/child/obsessional-compulsive-inventory-revised-parent-choci-r-p/",
@@ -69412,6 +69528,7 @@
     {
       "id": "obsessional-compulsive-inventory-revised-parent-choci-r-p--fcfe218a4155",
       "title": "Obsessional Compulsive Inventory- Revised-Parent (ChOCI-R-P)",
+      "description": "The Children’s Obsessional Compulsive Inventory–Revised – Parent Report (ChOCI-R-P) is a 38-item parent-report measure of obsessive–compulsive disorder (OCD) symptoms (Uher et al., 2008) in children and adolescents aged 7 to 17 years. It is completed by a parent or caregiver who is familiar with the child’s experiences. There is also a self-report version of the ChOCI ( ChOCI-R-S ) that can be completed by children or adolescents aged 7 to 17 years.",
       "referencePeriod": "",
       "instructions": "Each of the following questions asks you about things or “habits” you feel your child has to do although they may know that they do not make sense. Sometimes, they may try to stop from doing them but this might not be possible. They might feel worried or angry or frustrated until they have finished what they have to do. An example of a habit like this may be the need to wash their hands over and over again even though they are not really dirty, or the need to count up to a special number (e.g. 6 or 10) while they do certain things. Please answer each question by choosing how much you agree with the statement, or how much you think it is true of your child. Please answer each item, without spending too much time on any one item. There are no right or wrong answers. Compulsions· symptoms",
       "sourceUrl": "https://novopsych.com/assessments/diagnosis/obsessional-compulsive-inventory-revised-parent-choci-r-p/",
@@ -70605,7 +70722,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Obsessive-Compulsive Inventory-Revised (OCI-R) is a brief, well-validated 18-item measure assessing obsessive-compulsive symptoms. The OCI-R is widely used for screening, treatment planning, and monitoring therapeutic progress. Following DSM-5 reclassification of hoarding as a separate disorder from OCD, the measure is scored as two distinct components: five OCD subscales (Washing, Checking, Ordering, Obsessing, and Neutralising) comprising 15 items, and one Hoarding subscale comprising 3 items. This scoring approach allows for independent assessment of OCD and hoarding disorder symptoms in line with contemporary diagnostic classification."
     },
     {
       "id": "oldenburg-burnout-inventory-olbi--95cb8dc3dd29",
@@ -70839,7 +70957,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Oldenburg Burnout Inventory (OLBI) is a 16-item scale designed to measure burnout across adults employed in various occupational settings. The OLBI measures both physical and cognitive aspects of burnout as well as disengagement from work."
     },
     {
       "id": "opioid-risk-tool-ort--5141a0590370",
@@ -71005,7 +71124,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Opioid Risk Tool (ORT) is a brief, self-report or clinician rated screening tool designed for use with adult patients in primary care settings to assess risk for opioid abuse among individuals prescribed opioids for treatment of chronic pain. Patients categorized as high-risk are at increased likelihood of future abusive drug-related behaviours. This tool is best administered to patients upon an initial visit prior to beginning opioid therapy, and can inform the risk/benefit decisions around prescribing opioid medication."
     },
     {
       "id": "pain-self-efficacy-questionnaire-pseq--46e2f9c59622",
@@ -71359,7 +71479,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Pain Self-Efficacy Questionnaire (PSEQ) is a 10-item questionnaire developed to assess the confidence people aged 18+ with ongoing pain have in performing activities while in pain (Nicholas, 2007). The PSEQ is applicable to all persisting pain presentations. It enquires into the level of self-efficacy regarding a range of functions, including household chores, socialising, work, as well as coping with pain without medication and is helpful in assessing the impact that pain is having on a respondent’s life."
     },
     {
       "id": "panic-disorder-severity-scale-pdss--89c4d4bb19c0",
@@ -71555,7 +71676,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The self-report Panic Disorder Severity Scale (PDSS, also known as the PDSS-SR; Houck et al., 2002) is a 7-item measure that assesses the overall severity of panic disorder in individuals aged 18+ with an established or suspected diagnosis. The PDSS captures panic attack frequency, panic-related distress, anticipatory anxiety, avoidance behaviour, and functional impairment over the past week. For respondents aged 8-17, the Revised Child Anxiety and Depression Scale ( RCADS-Child ) Panic Disorder subscale is available on NovoPsych as an age-appropriate alternative."
     },
     {
       "id": "patient-health-questionnaire-depression-phq-9--8f81b7b3270c",
@@ -71767,7 +71889,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The PHQ-9 is the nine item depression scale from the Patient Health Questionnaire, and is a widely used tool for assisting primary care clinicians in identifying depression as well as monitoring treatment (Kroenke et al., 2001)."
     },
     {
       "id": "pediatric-symptom-checklist-17-psc-17--e2242cd736c6",
@@ -71961,7 +72084,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Pediatric Symptom Checklist-17 (PSC-17; Gardner et al., 1999) is a 17-item parent-report measure of emotional and behavioural problems in children aged 4 to 16. It is a shortened version of the original PSC and is one of the most widely used tools for efficiently assessing overall psychosocial functioning across emotional, behavioural, and attentional domains."
     },
     {
       "id": "penn-alcohol-craving-scale-pacs--7dc3b08407b5",
@@ -72145,7 +72269,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Penn Alcohol Craving Scale (PACS; Flannery et al., 1999) is a 5-item self-report questionnaire designed to measure alcohol craving over the preceding week. Unlike measures that separate craving into distinct components (e.g., obsessions and compulsions), the PACS treats craving as a coherent, unified construct."
     },
     {
       "id": "penn-state-worry-questionnaire-pswq--af269f587c39",
@@ -72575,7 +72700,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Penn State Worry Questionnaire (PSWQ) is a 16-item self-report measure of trait worry in adults (Meyer et al., 1990). Rather than asking about specific worry topics or physical anxiety symptoms, the PSWQ focuses on the worry process itself, that is, how excessive, uncontrollable, and pervasive worry tends to be for that individual."
     },
     {
       "id": "perfectionistic-cognitions-inventory-pci--fbd3ad4e2b23",
@@ -73239,7 +73365,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Perfectionistic Cognitions Inventory (PCI) assesses how often individuals experience perfectionistic thoughts, such as thoughts about needing to be perfect, self-criticism, and awareness of their imperfections."
     },
     {
       "id": "personal-wellbeing-index-adult-5-pwi-a--c1b63b0adf2c",
@@ -73703,7 +73830,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Personal Wellbeing Index – Adult (PWI-A) is a 9-item self-report questionnaire validated for individuals aged 18 years and older (at the administrator’s discretion, the PWI-A may be suitable for older adolescents; International Wellbeing Group [IWBG], 2024), designed to measure subjective wellbeing, defined as an individual’s self-evaluated satisfaction with major areas of life."
     },
     {
       "id": "personality-inventory-for-dsm-5-short-form-pid-5-sf--c5b933c37b51",
@@ -75917,7 +76045,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Personality Inventory for DSM-5 – Short Form (PID-5-SF) is a 100-item self-report measure designed to assess maladaptive personality traits. It measures 25 personality facets as well as traditional personality disorders. The scale is accompanied by the Personality Inventory for DSM-5 – Adaptive , which selectively administers items most likely to provide clinically meaningful information."
     },
     {
       "id": "phobic-stimuli-response-scale-psrs--ccbb4d992047",
@@ -76943,11 +77072,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Phobic Stimuli Response Scale (PSRS) assesses fear responses across five distinct phobia subtypes. Administer Now PSRS Overview..."
     },
     {
       "id": "pardi-ar-q-arfid-questionnaire--318b4e3a1f26",
       "title": "Pica, ARFID, and Rumination Disorder Interview – ARFID Questionnaire (PARDI-AR-Q)",
+      "description": "The Pica, ARFID, and Rumination Disorder Interview – ARFID Questionnaire (PARDI-AR-Q) is a 29-item self-report screener for avoidant/restrictive food intake disorder (ARFID) in young people and adults aged 14 and over. It identifies what is driving a person’s restricted or avoidant eating (sensory sensitivity, low interest, or fear of aversive consequences).",
       "referencePeriod": "",
       "instructions": "The following questions are about your eating – some ask about how things currently are, others ask about things over the past month or the past 3 months. Please select the responses that apply to you, or enter the information requested. Please read each question carefully. Please answer all the questions. Thank you.",
       "sourceUrl": "https://novopsych.com/assessments/eating/pardi-ar-q-arfid-questionnaire/",
@@ -77560,6 +77691,7 @@
     {
       "id": "pica-arfid-and-rumination-disorder-interview-arfid-questionnaire-informant-report-par--1bbd19da573d",
       "title": "Pica, ARFID, and Rumination Disorder Interview – ARFID Questionnaire: Informant-report (PARDI-AR-Q-Informant)",
+      "description": "The Pica, ARFID, and Rumination Disorder Interview – ARFID Questionnaire (PARDI-AR-Q) Informant form is a 29-item measure for clinicians screening for avoidant/restrictive food intake disorder (ARFID) in children aged 4 and over. It is completed by a parent or carer reporting on their child.",
       "referencePeriod": "",
       "instructions": "The following questions are about your child's eating — some ask about how things currently are, others ask about things over the past month or the past 3 months. Please select the response that applies, or enter the information requested. Please read each question carefully. Please answer all the questions. Thank you.",
       "sourceUrl": "https://novopsych.com/assessments/eating/pica-arfid-and-rumination-disorder-interview-arfid-questionnaire-informant-report-pardi-ar-q-informant/",
@@ -78285,7 +78417,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Positive and Negative Affect Schedule (PANAS; Watson et al., 1988) is a 20-item self- report measure to assess positive affect (PA) and negative affect (NA). PA is associated with pleasurable engagement with the environment, whereas NA reflects a dimension of general distress summarising a variety of negative states such as anger, guilt, or anxiety."
     },
     {
       "id": "positive-childhood-experiences-pces-scale--a1798fe04223",
@@ -78481,11 +78614,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Positive Childhood Experiences (PCEs) scale is a 7-item self-report measure designed to retrospectively assess positive childhood experiences from birth to age 18 years. Developed within a developmental psychopathology framework, the PCEs scale evaluates interpersonal experiences that serve as assets and resources for developing children (Bethell et al., 2019)."
     },
     {
       "id": "preschool-anxiety-scale-pas--ddc0732c5084",
       "title": "Preschool Anxiety Scale (PAS)",
+      "description": "The Preschool Anxiety Scale (PAS) is a 28 item scale that is completed by a parent / guardian and which assesses anxiety in children between the ages of 2 ½ and 6 ½ years old. The 28 anxiety items provide an overall measure of anxiety, in addition to scores on five subscales assessing a specific aspect of child anxiety:",
       "referencePeriod": "",
       "instructions": ": Below is a list of items that describe children. For each item please select the response that best describes your child. Please answer all the items as well as you can, even if some do not seem to apply to your child.",
       "sourceUrl": "https://novopsych.com/assessments/diagnosis/preschool-anxiety-scale-pas/",
@@ -79584,7 +79719,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Problem Gambling Severity Index (PGSI) is a brief, 9-item, self-report measure of problematic gambling behaviours in the general population (Ferris & Wynne, 2001). The PGSI is able to identify different subgroups of problem gamblers with different levels of risk status (none, low, moderate, and problematic)."
     },
     {
       "id": "protective-factors-of-resilience-scale--d80af8b839be",
@@ -80108,7 +80244,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Protective Factors for Resilience Scale (PFRS) is a 15-item self-report measure for those aged 16 years and older designed to assess the protective factors that contribute to an individual’s capacity for resilience in the face of adversity (Harms et al., 2017)."
     },
     {
       "id": "ptsd-checklist-5-pcl-5--5a88422b610e",
@@ -80642,7 +80779,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Post Traumatic Stress Disorder (PTSD) Checklist for DSM-5 (PCL-5) is a 20-item self-report measure of the twenty DSM-5 symptoms of PTSD in adult populations (ages 18+). It is designed for use with people who have experienced traumatic events."
     },
     {
       "id": "reflective-practice-questionnaire-extended--d0c3b6e259e0",
@@ -81556,7 +81694,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Reflective Practice Questionnaire – Extended (RPQ-E) is a 30-item self-report measure of reflective practice and related attributes in professionals working in client-facing roles. This implementation of the RPQ-E is compares the respondent’s scores to a sample of mental health practitioners (e.g. psychologists, counsellors), and can be used as a self-assessment reflective practice exercise."
     },
     {
       "id": "regensburg-insomnia-scale-ris--3e3ecac36f30",
@@ -81830,7 +81969,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Regensburg Insomnia Rating Scale (RIS) is a 10-item rating scale to assess the cognitive, behavioural, and emotional aspects of psychophysiological insomnia (PI; Crönlein et al., 2013). The scale has been validated in an adult population."
     },
     {
       "id": "repetitive-behaviours-questionnaire-3--5ea1225093e8",
@@ -82280,7 +82420,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Repetitive Behaviours Questionnaire–3 (RBQ-3) is a 20-item scale designed to measure restricted and repetitive behaviours, a core feature of autism spectrum disorder (Jones et al. 2024)."
     },
     {
       "id": "revised-child-anxiety-and-depression-scale-child-rcads-child--1a892743a41c",
@@ -82910,7 +83051,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Revised Child Anxiety and Depression Scale – Child version (RCADS-Child) is a 47-item self-report questionnaire designed to assess symptoms of anxiety and depression in children and adolescents aged 8 to 18 years."
     },
     {
       "id": "revised-child-anxiety-and-depression-scale-child-rcads-child--a7bbc1219098",
@@ -83540,7 +83682,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Revised Child Anxiety and Depression Scale – Child version (RCADS-Child) is a 47-item self-report questionnaire designed to assess symptoms of anxiety and depression in children and adolescents aged 8 to 18 years."
     },
     {
       "id": "revised-child-anxiety-and-depression-scale-parent-rcads-parent--d8342d919927",
@@ -84214,7 +84357,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "he Revised Child Anxiety and Depression Scale – Parent version (RCADS-Parent) is a 47-item questionnaire designed to assess symptoms of anxiety and depression in children and adolescents aged 8 to 18 years, as reported by their parents."
     },
     {
       "id": "ritvo-autism-asperger-diagnostic-scale-revised-raads-r--3bbda7fdf460",
@@ -85988,7 +86132,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Ritvo Autism Asperger Diagnostic Scale – Revised (RAADS-R) is an 80-item self-report questionnaire designed to identify autism in adults (18 years or older). Developed by Ritvo et al. (2011) as a revision of the original RAADS, it was created to address the growing need for validated assessment tools specifically designed for adult populations, where autism presentations may differ from those typically seen in childhood."
     },
     {
       "id": "rosenberg-self-esteem-scale-rses--f44fb7dc1caf",
@@ -86222,7 +86367,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Rosenberg Self-Esteem Scale (RSES) is a 10-item self-report measure to assess self-esteem in individuals aged 12 years and over (Rosenberg, 1965). The RSES is one of the most widely used measures of self-esteem (Sinclair et al., 2010)."
     },
     {
       "id": "ruminative-responses-scale-rrs--0fe47bb082be",
@@ -86456,7 +86602,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Ruminative Responses Scale (RRS) is a 22-item self-report measure of rumination in adults aged 18 and over, for use by psychologists and mental health clinicians. The RRS asks respondents how frequently they engage in ruminative responses when they feel down, sad, or depressed."
     },
     {
       "id": "satisfaction-with-life-scale-swls--a2c396e073e1",
@@ -86640,7 +86787,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The SWLS is a short 5-item instrument designed to measure global cognitive judgments of satisfaction with one’s life. The scale usually requires only about one minute of a respondent’s time, where respondents answer on a Likert scale."
     },
     {
       "id": "scale-of-positive-and-negative-experience-spane--a5c3cc0b0cc4",
@@ -86758,7 +86906,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Scale of Positive and Negative Experience (SPANE) is a brief 12-item scale asking respondents to rate how often they experience various states. For example, the measure asks about physical pleasure, engagement, interest, pain, boredom etc."
     },
     {
       "id": "screen-for-child-anxiety-related-emotional-disorders-child-version-scared-child--133bf4ea4682",
@@ -87510,7 +87659,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Screen for Child Anxiety Related Emotional Disorders – Child version (SCARED Child) is a child self-report scale used to screen for anxiety disorders in children (aged 8-18 years), including generalised anxiety, separation anxiety disorder, panic disorder and social phobia (Birmaher et al., 1997). There is also parent version ( SCARED Parent ) which asks the parent questions about their child."
     },
     {
       "id": "screen-for-child-anxiety-related-emotional-disorders-parent-version-scared-parent--b7c48838f49d",
@@ -87848,7 +87998,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Screen for Child Anxiety Related Emotional Disorders – Parent version (SCARED Parent) is a parent report scale used to screen for anxiety disorders in children (aged 8-18 years), including generalised anxiety, separation anxiety disorder, panic disorder and social phobia (Birmaher et al., 1997). There is also a child self-report version ( SCARED Child )."
     },
     {
       "id": "self-compassion-scale-short-form-scs-sf--57918c65c5ed",
@@ -88174,7 +88325,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Self-Compassion Scale – Short Form (SCS-SF) is a 12-item self-report measure of self-compassion designed for adults aged 18 years and over (Raes et al., 2011). It was developed as a brief alternative to Neff’s (2003) original 26-item SCS."
     },
     {
       "id": "session-reactions-scale-3-brief-srs-3-b--72adc7da7ddf",
@@ -88552,7 +88704,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Session Reactions Scale – 3 – Brief Version (SRS-3-B) is a 15-item self-report post-session measure for collecting systematic feedback on clients’ session reactions in the context of feedback-informed treatment (Řiháček et al., 2023). It is suitable for clients engaged in psychological therapy who are 18 years and older, and is designed to be administered periodically to track the therapeutic relationship."
     },
     {
       "id": "short-health-anxiety-inventory-shai--1295bbae11bd",
@@ -88962,7 +89115,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Short Health Anxiety Inventory (SHAI) contains 18 items that assess health anxiety independent of physical health status..."
     },
     {
       "id": "social-avoidance-and-distress-scale-sads--9d882228eccd",
@@ -89172,11 +89326,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Social Avoidance and Distress Scale (SADS) is a 28-item true/false self-report measure that assesses two related aspects of social anxiety: subjective distress, discomfort, or negative emotions in social situations, and the tendency to avoid, of or desire to escape from social interactions."
     },
     {
       "id": "spence-childrens-anxiety-scale-child-scas-child--6cc370b9af56",
       "title": "Spence Children’s Anxiety Scale – Child (SCAS-Child)",
+      "description": "The Spence Children’s Anxiety Scale – Child Version (SCAS-Child) is a 44-item self-report measure designed to assess anxiety symptoms in children aged 8-15 years. Built upon contemporary diagnostic frameworks, the SCAS-Child evaluates six distinct domains of anxiety that align with clinical diagnostic categories.",
       "referencePeriod": "",
       "instructions": "Please select how often each of these things happen to you. There are no right or wrong answers.",
       "sourceUrl": "https://novopsych.com/assessments/child/spence-childrens-anxiety-scale-child-scas-child/",
@@ -90178,6 +90334,7 @@
     {
       "id": "spence-childrens-anxiety-scale-parent-scas-parent--47c0060d935a",
       "title": "Spence Children’s Anxiety Scale – Parent (SCAS-Parent)",
+      "description": "The Spence Children’s Anxiety Scale – Parent Version (SCAS-Parent) is a 38-item parent report measure designed to assess anxiety symptoms in children aged 7-13 years. Built upon contemporary diagnostic frameworks, the SCAS-Parent evaluates six distinct domains of anxiety that align with clinical diagnostic categories.",
       "referencePeriod": "",
       "instructions": "Below is a list of items that describe children. For each item please select the response that best describes your child. Please answer all the items.",
       "sourceUrl": "https://novopsych.com/assessments/child/spence-childrens-anxiety-scale-parent-scas-parent/",
@@ -91588,11 +91745,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The State Difficulties in Emotion Regulation Scale (S-DERS) assesses fluctuating emotion regulation difficulties. Administer Now S-DERS Overview S-DERS..."
     },
     {
       "id": "strengths-and-difficulties-questionnaire-sdq--ae888b36225d",
       "title": "Strengths and Difficulties Questionnaire (SDQ)",
+      "description": "The Strengths and Difficulties Questionnaire (SDQ) is a 25-item behavioural and emotional screening measure for children and young people aged 2 to 17 years (Goodman, 1997). It assesses four problem domains (emotional symptoms, conduct problems, hyperactivity/inattention, and peer relationship problems) together with a fifth prosocial behaviour scale.",
       "referencePeriod": "",
       "instructions": "",
       "sourceUrl": "https://novopsych.com/assessments/child/strengths-and-difficulties-questionnaire-sdq/",
@@ -92305,7 +92464,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Strengths and Stressors (SAS) scale is a 56-item clinician-rated instrument designed to assess family functioning and psychosocial development in child protection settings (Berry et al., 2003)."
     },
     {
       "id": "supervisory-styles-inventory-ssi--b1854a1ce9c1",
@@ -93169,7 +93329,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Supervisory Styles Inventory (SSI) is a 25 item scale which measures the interpersonal or relational aspects of supervisors as perceived by supervisees. The SSI is completed by a supervisee to rate their perceptions of their supervisor’s style based on three subscales: Attractive, Interpersonally Sensitive, and Task-Oriented. This scale can be useful to start a discussion around the preferences a supervisee has for their supervision."
     },
     {
       "id": "tampa-scale-of-kinesiophobia-tsk--eb142b457a13",
@@ -93535,7 +93696,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The TSK is a 17-item self report checklist using a 4-point Likert scale that was developed as a measure of fear of movement or (re)injury."
     },
     {
       "id": "team-psychological-safety-tps-7--86510a92b6ff",
@@ -93787,7 +93949,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Team Psychological Safety scale (TPS-7) is a 7-item self-report measure designed to assess psychological safety within high-performing teams. Psychological safety represents a shared team belief that members can engage in interpersonal risk-taking behaviours—such as asking questions, admitting mistakes, proposing new ideas, or challenging existing approaches—without fear of negative consequences to their self-image, status, or career (Edmondson, 1999)."
     },
     {
       "id": "the-impact-of-event-scale-revised-ies-r--46fccba3226e",
@@ -94165,7 +94328,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Impact of Event Scale-Revised (IES-R) is a 22-item self-report measure designed to assess distress caused by a traumatic event and can assist clinicians in assessing for Post Traumatic Stress Disorder (PTSD). This technical review presents normative data from latent profile analysis of clinical populations, along with detailed percentile rankings and interpretive guidelines, to help clinicians better understand and utilise the assessment in practice."
     },
     {
       "id": "the-kessler-psychological-distress-scale-k10--64247e4127ac",
@@ -94439,7 +94603,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Kessler Psychological Distress Scale (K10) is a psychological screening tool designed to identify adults with significant levels of psychological distress. It is widely used in Australia and often used in primary care settings to identify people with clinically significant psychological distress."
     },
     {
       "id": "the-professional-quality-of-life-scale-5-proqol--53f333844a17",
@@ -94843,11 +95008,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Professional Quality of Life Scale (ProQOL-5) is a 30-item self-report measure of the positive and negative aspects of working as a helping professional, for adults aged 18 years and over (Stamm, 2010)."
     },
     {
       "id": "the-world-health-organisation-disability-assessment-schedule-whodas-2-0-self-report-v--d1cbf0de489d",
       "title": "The World Health Organisation Disability Assessment Schedule (WHODAS 2.0) – Self-Report Version",
+      "description": "The World Health Organisation Disability Assessment Schedule (WHODAS 2.0) is a practical, generic assessment instrument that can measure health and disability at population level or in clinical practice (World Health Organisation (WHO), 2010).",
       "referencePeriod": "",
       "instructions": "This question asks about difficulties due to health conditions. Health conditions include diseases or illnesses, other health problems may be short or long lasting, injuries, mental or emotional problems, and problems with alcohol or drugs. Think back over the past 30 days and answer these questions, thinking about how much difficulty you had doing the following activities. DOMAIN 1Cognition In the past 30 days, how much difficulty did you have in:",
       "sourceUrl": "https://novopsych.com/assessments/health/the-world-health-organisation-disability-assessment-schedule-whodas-2-0-self-report-version/",
@@ -96316,7 +96483,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Thought-Action Fusion Scale-Revised (TAFS-R) is a 19-item self-report measure designed to assess thought-action fusion (TAF), a cognitive distortion particularly relevant to obsessive-compulsive disorder (OCD) and related conditions (Shafran, Thordarson, & Rachman, 1996)."
     },
     {
       "id": "tinnitus-handicap-inventory-thi--fa3776effc43",
@@ -96780,7 +96948,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Tinnitus Handicap Inventory (THI; Newman et al., 1996) is a 25-item self-report measure to determine perceived tinnitus handicap severity. The THI is a useful measure for determining the efficacy of psychological treatment for tinnitus (Zeman et al., 2011)."
     },
     {
       "id": "toronto-alexithymia-scale--11427c6a7ae5",
@@ -97054,7 +97223,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Toronto Alexithymia Scale (TAS) is a 20-item self-report questionnaire that can be used to identify issues relating to alexithymia such as difficulty identifying and describing feelings and e xternally oriented thinking (Bagby et al., 1994)."
     },
     {
       "id": "trauma-recovery-measure-trm--f4e0d7cce7e4",
@@ -97458,7 +97628,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Trauma Recovery Measure (TRM) is a 15-item self-report questionnaire developed to measure psychological recovery following exposure to trauma in adult populations (ages 18+). Trauma recovery has been defined as an individual process of cognitive change, leading to enhanced emotional and behavioural control and the attainment of intrapersonal mastery, empowerment, and hope for oneself and the future (Smith, 2022)."
     },
     {
       "id": "valuing-questionnaire-vq--26910e827ed6",
@@ -97812,7 +97983,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Valuing Questionnaire (VQ) is a 10-item self-report scale designed to measure how consistently an individual has been living with their self-determined values and is particularly helpful when administered during a course of ACT."
     },
     {
       "id": "vancouver-obsessional-compulsive-inventory-voci--a2dbd6f6d5c8",
@@ -99022,7 +99194,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The VOCI was designed to provide a self-report assessment of a range of obsessions, compulsions, avoidance behaviour, and personality characteristics of known or theoretical importance in obsessive–compulsive disorder (OCD)."
     },
     {
       "id": "vanderbilt-adhd-diagnostic-parent-rating-scale-vadprs--e090ce5482b0",
@@ -99256,11 +99429,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Vanderbilt ADHD Diagnostic Parent Rating Scale (VADPRS) is a 55-item parent-report measure designed to assess symptoms of Attention-Deficit/Hyperactivity Disorder (ADHD) and common comorbid conditions in children aged 5-12 years of age (Wolraich et al., 2003)."
     },
     {
       "id": "vanderbilt-adhd-diagnostic-teacher-rating-scale-vadtrs--32823f81d3df",
       "title": "Vanderbilt ADHD Diagnostic Teacher Rating Scale (VADTRS)",
+      "description": "The Vanderbilt ADHD Diagnostic Teacher Rating Scale (VADTRS) is a 43-item teacher-report measure designed to assess symptoms of Attention-Deficit/Hyperactivity Disorder (ADHD) and common comorbid conditions in children aged 5-12 years (Wolraich et al., 1998). It is the teacher rated version which can be used in parallel with the parent version: Vanderbilt ADHD Diagnostic Parent Rating Scale (VADPRS).",
       "referencePeriod": "",
       "instructions": ": Each rating should be considered in the context of what is appropriate for the age of the child you are rating. Inattentive",
       "sourceUrl": "https://novopsych.com/assessments/diagnosis/vanderbilt-adhd-diagnostic-teacher-rating-scale-vadtrs/",
@@ -100495,7 +100670,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Weiss Symptom Record II (WSR-II) is a 123-item screening tool that helps clinicians systematically gather information about a wide range of symptoms."
     },
     {
       "id": "wender-utah-rating-scale-25-item-version-wurs-25--a9fb5add572f",
@@ -100769,7 +100945,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Wender Utah Rating Scale – 25 item version (WURS-25) is a 25-item self-report measure designed to retrospectively assess childhood symptoms and behaviours associated with the persistence of ADHD into adulthood (Ward et al., 1993)."
     },
     {
       "id": "who-quality-of-life-brief-whoqol-bref--376334616502",
@@ -101095,7 +101272,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The WHOQOL-BREF is a 26-item self-report measure for adults (18+) that is used to assess self-perceived quality of life. It was developed by the Word Health Organisation as a quality of life assessment that could be applicable cross-culturally (The WHOQOL Group, 1994). The scale is designed to measure the impact of disease and impairment on daily activities and behaviour, perceived health, disability and functional capacity."
     },
     {
       "id": "why-have-sex-questionnaire-short-form-ysex-sf--1aa70b3ea658",
@@ -101837,7 +102015,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Why Have Sex? Questionnaire Short Form (YSEX-SF) is a 28-item self-report measure of sexual motivation for adults aged 18 years and over (Meston et al., 2020). It assesses the reasons a person has engaged in sex, capturing how frequently each of 14 distinct motivations has led them to have sexual intercourse across their past sexual experiences. For respondents who have not previously had sex, the measure instead assesses the likelihood that each motivation would lead them to have sex."
     },
     {
       "id": "work-and-social-adjustment-scale--35083c2245b6",
@@ -102061,11 +102240,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Work and Social Adjustment Scale (WSAS; Mundt et al., 2002) is a five-item adult self-report measure of functional impairment across key areas of daily life attributable to a person’s difficulties."
     },
     {
       "id": "the-world-health-organisation-disability-assessment-schedule-whodas-child--ba92f6f5986e",
       "title": "World Health Organisation Disability Assessment Schedule – Children and Youth version (WHODAS-Child)",
+      "description": "The World Health Organisation Disability Assessment Schedule – Children and Youth (WHODAS-Child; Scorza et al., 2013) is a practical, generic assessment instrument that can measure health and disability in children and youth (aged 10 – 17 years of age). The WHODAS-Child has been adapted for children and youth from the adult version of the WHODAS-2. There are two ways to use the WHODAS-Child:",
       "referencePeriod": "",
       "instructions": "This question asks about difficulties due to health conditions. Health conditions include diseases or illnesses, other health problems may be short or long- lasting, injuries, mental or emotional problems. Think back over the past 30 days and answer these questions, thinking about how much difficulty you had doing the following activities. DOMAIN 1Cognition In the past 30 days, how much difficulty did you have in:",
       "sourceUrl": "https://novopsych.com/assessments/child/the-world-health-organisation-disability-assessment-schedule-whodas-child/",
@@ -103015,6 +103196,7 @@
     {
       "id": "world-health-organisation-disability-assessment-schedule-2-0-interview-whodas-intervi--a836c2e2fbf5",
       "title": "World Health Organisation Disability Assessment Schedule 2.0 – Interview (WHODAS-interview)",
+      "description": "The World Health Organisation Disability Assessment Schedule (WHODAS 2.0) is a practical, generic assessment instrument that can measure health and disability at population level or in clinical practice (World Health Organisation (WHO), 2010).",
       "referencePeriod": "",
       "instructions": "– read to the interviewee This interview has been developed to better understand the difficulties people may have due to their health conditions. The interview will take 15– 20 minutes to complete. The interview is about difficulties people have because of health conditions. By health condition I mean diseases or illnesses, or other health problems that may be short or long lasting; injuries; mental or emotional problems; and problems with alcohol or drugs. Remember to keep all of your health problems in mind as you answer the questions. When answering, Iʼd like you to think back over the past 30 days. I would also like you to answer these questions thinking about how much difficulty you have had, on average, over the past 30 days, while doing the activity as you usually do it. Use this scale when responding. None, mild, moderate, severe, extreme or cannot do. DOMAIN 1Cognition I am now going to ask some questions about understanding and communicating. In the past 30 days, how much difficulty did you have in:",
       "sourceUrl": "https://novopsych.com/assessments/health/world-health-organisation-disability-assessment-schedule-2-0-interview-whodas-interview/",
@@ -104018,6 +104200,7 @@
     {
       "id": "world-health-organisation-disability-assessment-schedule-2-0-proxy-whodas-proxy--18dff5cd93b2",
       "title": "World Health Organisation Disability Assessment Schedule 2.0 – Proxy (WHODAS-proxy)",
+      "description": "The World Health Organisation Disability Assessment Schedule (WHODAS 2.0) is a practical, generic assessment instrument that can measure health and disability at population level or in clinical practice (World Health Organisation (WHO), 2010).",
       "referencePeriod": "",
       "instructions": "This question asks about difficulties due to health conditions experienced by the person about whom you are responding in your role as friend, relative or carer. Health conditions include diseases or illnesses, other health problems may be short or long lasting, injuries, mental or emotional problems, and problems with alcohol or drugs. Think back over the past 30 days and, to the best of your knowledge, answer these questions thinking about how much difficulty your friend, relative or carer had while doing the following activities (Note: the questionnaire uses the term “relative” to mean “friend”, “relative” or “carer”.) DOMAIN 1Cognition In the past 30 days, how much difficulty did your relative have in:",
       "sourceUrl": "https://novopsych.com/assessments/health/world-health-organisation-disability-assessment-schedule-2-0-proxy-whodas-proxy/",
@@ -105252,11 +105435,13 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Young Person’s Clinical Outcomes in Routine Evaluation (YP-CORE) is a 10 item self-report measure designed for monitoring treatment outcomes in young people aged between 11 and 16 years of age. It was derived from the adult measure Clinical Outcomes in Routine Evaluation – Outcome Measure (CORE-OM), and captures a range of presenting problems relevant for mental health services. The copyright holder for the YP-CORE is the CORE System Trust."
     },
     {
       "id": "your-experience-of-service-yes--29de2c8cbc9b",
       "title": "Your Experience of Service (YES)",
+      "description": "The Your Experience of Service (YES) assessment is a tool used to measure a client’s experience of mental health care and is a frequently used measure for assessing service levels in government health departments. The YES was developed by the Secretary to the Department of Health (Victoria) with funding from the Australian Government Department of Health (Victorian Department of Health, 2013). The YES has 26-Likert scale questions and 2 open-ended questions and was designed for use with adults (18+).",
       "referencePeriod": "",
       "instructions": "Please answer the following questions based upon your experience using our service. The following questions ask how often we did the following things... Thinking about the care you have received from this service, what was your experience in the following areas:",
       "sourceUrl": "https://novopsych.com/assessments/feedback-informed/your-experience-of-service-yes/",
@@ -106420,7 +106605,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "The Zung Self-Rating Depression Scale (SDS) assesses depressive symptoms in people aged 16 years and over across four key domains: affective, cognitive, anxious, and somatic."
     }
   ]
 }

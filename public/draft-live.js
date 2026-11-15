@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id);
 const query = new URL(location.href).searchParams;
 let draftId = query.get('draftId') || '';
 let sessionId = query.get('sessionId') || '';
+const prescriptionId = query.get('prescriptionId') || '';
 let form = null;
 let state = null;
 let socket = null;
@@ -251,7 +252,7 @@ async function start(mode) {
   try {
     if (mode === 'live') await startMicrophone();
     if (!sessionId) {
-      const response = await fetch('/api/draft-sessions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ draftId, mode }) });
+      const response = await fetch('/api/draft-sessions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(prescriptionId ? { prescriptionId, mode } : { draftId, mode }) });
       const created = await response.json();
       if (!response.ok) throw new Error(created.error || 'Could not start the review.');
       sessionId = created.id;
@@ -292,10 +293,20 @@ $('draft-print').addEventListener('click', () => window.print());
 window.addEventListener('beforeunload', () => { socket?.close(); stopMedia(); });
 
 try {
+  if (prescriptionId) {
+    const response = await fetch(`/api/prescriptions/${encodeURIComponent(prescriptionId)}`);
+    if (!response.ok) throw new Error('Assigned assessment not found.');
+    const prescription = await response.json();
+    if (prescription.kind !== 'draft') throw new Error('This link is for a scored assessment.');
+    draftId = prescription.formId;
+    if (prescription.assessmentId) sessionId = prescription.assessmentId;
+    $('draft-patient').textContent = `Assigned to ${prescription.patient.label} · Unscored demo review`;
+  }
   if (sessionId) {
     const response = await fetch(`/api/draft-sessions/${encodeURIComponent(sessionId)}`);
     if (!response.ok) throw new Error('Saved review session not found.');
     state = await response.json();
+    if (prescriptionId && state.prescriptionId !== prescriptionId) throw new Error('Saved review does not belong to this assignment.');
     draftId = state.formId;
   }
   if (!draftId) throw new Error('Choose an assessment in the library first.');
