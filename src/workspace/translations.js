@@ -156,7 +156,7 @@ export function createTranslationsService(
         .update(JSON.stringify(source))
         .digest("hex");
       const key = `${hash}:${language}`;
-      const cached = db.translation(hash, language);
+      const cached = (await db.translation(hash, language));
       if (cached) {
         try {
           validateTranslation(source, cached, language);
@@ -198,7 +198,7 @@ export function createTranslationsService(
             generatedAt: new Date().toISOString(),
             validated: false,
           };
-          db.saveTranslation(hash, language, localized);
+          (await db.saveTranslation(hash, language, localized));
           return localized;
         })();
         pending.set(key, job);

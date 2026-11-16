@@ -33,7 +33,7 @@ test('conversational mapping waits for confirmation and asks the next PHQ-9 item
   } finally { store.close(); }
 });
 
-test('Hindi conversation advances using the fixed Hindi question text', () => {
+test('Hindi conversation advances using the fixed Hindi question text', async () => {
   const store = openStore(':memory:');
   try {
     const assessment = store.create('live', 'hi');
@@ -41,15 +41,15 @@ test('Hindi conversation advances using the fixed Hindi question text', () => {
     const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model', language: 'hi',
       socket: { readyState: 1, send: () => {} }, store, assessmentId: assessment.id, onState: () => {} });
     bridge.session = { sendClientContent: (value) => prompts.push(value) };
-    bridge.propose('Q01', 1, 'पिछले दो सप्ताह में कई दिन ऐसा हुआ।', 'voice');
-    const result = bridge.confirm();
+    (await bridge.propose('Q01', 1, 'पिछले दो सप्ताह में कई दिन ऐसा हुआ।', 'voice'));
+    const result = (await bridge.confirm());
     bridge.afterConfirmation(result);
     assert.equal(store.get(assessment.id).language, 'hi');
     assert.match(prompts[0].turns[0].parts[0].text, new RegExp(getForm('hi').questions[1].text));
   } finally { store.close(); }
 });
 
-test('positive item 9 leads to final review and a human follow-up instruction', () => {
+test('positive item 9 leads to final review and a human follow-up instruction', async () => {
   const store = openStore(':memory:');
   try {
     const assessment = store.create('live');
@@ -58,8 +58,8 @@ test('positive item 9 leads to final review and a human follow-up instruction', 
     const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model',
       socket: { readyState: 1, send: () => {} }, store, assessmentId: assessment.id, onState: () => {} });
     bridge.session = { sendClientContent: (value) => prompts.push(value) };
-    bridge.propose('Q09', 1, 'This occurred on several days.', 'voice');
-    const result = bridge.confirm();
+    (await bridge.propose('Q09', 1, 'This occurred on several days.', 'voice'));
+    const result = (await bridge.confirm());
     assert.equal(result.reviewReady, true);
     assert.equal(result.item9Positive, true);
     assert.equal(store.get(assessment.id).status, 'review');
@@ -69,7 +69,7 @@ test('positive item 9 leads to final review and a human follow-up instruction', 
   } finally { store.close(); }
 });
 
-test('PCL-5 live mapping accepts value 4 and advances through twenty items', () => {
+test('PCL-5 live mapping accepts value 4 and advances through twenty items', async () => {
   const store = openStore(':memory:');
   try {
     const assessment = store.create('live', 'en', 'demo-c', 'pcl5');
@@ -77,14 +77,14 @@ test('PCL-5 live mapping accepts value 4 and advances through twenty items', () 
     const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model', formId: 'pcl5',
       socket: { readyState: 1, send: () => {} }, store, assessmentId: assessment.id, onState: () => {} });
     bridge.session = { sendClientContent: (value) => prompts.push(value) };
-    bridge.propose('Q01', 4, 'Extremely bothered during the past month.', 'voice');
-    bridge.afterConfirmation(bridge.confirm());
+    (await bridge.propose('Q01', 4, 'Extremely bothered during the past month.', 'voice'));
+    bridge.afterConfirmation((await bridge.confirm()));
     assert.equal(store.get(assessment.id).answers[0].value, 4);
     assert.match(prompts[0].turns[0].parts[0].text, /item Q02 of 20/);
   } finally { store.close(); }
 });
 
-test('Gemini transcript fragments update one message until the turn ends', () => {
+test('Gemini transcript fragments update one message until the turn ends', async () => {
   const store = openStore(':memory:');
   try {
     const assessment = store.create('live');
@@ -107,7 +107,7 @@ test('Gemini transcript fragments update one message until the turn ends', () =>
   } finally { store.close(); }
 });
 
-test('imported live form validates choices for the current question', () => {
+test('imported live form validates choices for the current question', async () => {
   const draftStore = openDraftStore(':memory:');
   try {
     const form = getLiveDraftForm('autism-treatment-evaluation-checklist-atec--45f7ca5c94cc');
@@ -117,9 +117,9 @@ test('imported live form validates choices for the current question', () => {
       socket: { readyState: 1, send: () => {} }, store: draftStore,
       assessmentId: assessment.id, formId: form.formId, formOverride: form, onState: () => {} });
     bridge.session = { sendClientContent: (message) => prompts.push(message) };
-    assert.throws(() => bridge.propose(form.questions[0].id, 3, 'An option was selected.'), /not an option/);
-    bridge.propose(form.questions[0].id, 2, 'An option was selected.');
-    bridge.afterConfirmation(bridge.confirm());
+    await assert.rejects(async () => (await bridge.propose(form.questions[0].id, 3, 'An option was selected.')), /not an option/);
+    (await bridge.propose(form.questions[0].id, 2, 'An option was selected.'));
+    bridge.afterConfirmation((await bridge.confirm()));
     assert.equal(draftStore.get(assessment.id).answers[0].value, 2);
     assert.match(prompts[0].turns[0].parts[0].text, new RegExp(form.questions[1].text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.match(prompts[0].turns[0].parts[0].text, /Internal response anchors/);

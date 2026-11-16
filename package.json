@@ -12,10 +12,12 @@
     "test": "node --test",
     "import:assessments": "node scripts/import-assessment-bundle.mjs",
     "audit:assessments": "node scripts/audit-assessment-bundle.mjs",
-    "smoke:live": "node scripts/smoke-draft-live.mjs"
+    "smoke:live": "node scripts/smoke-draft-live.mjs",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate-sqlite-to-postgres.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",
+    "pg": "^8.23.1",
     "ws": "8.22.1"
   }
 }

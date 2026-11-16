@@ -1,7 +1,6 @@
 import { WebSocketServer } from "ws";
 import { catalogue } from "./catalogue.js";
 import { LANGUAGES } from "./languages.js";
-import { openWorkspaceStore } from "./store.js";
 import { createRecommender } from "./recommendations.js";
 import { createTranslationsService } from "./translations.js";
 import { GeminiBridge } from "./live-bridge.js";
@@ -15,7 +14,7 @@ export function createWorkspaceApi(
     apiKey = process.env.GEMINI_API_KEY,
     model = process.env.GEMINI_LIVE_MODEL || "gemini-3.8-live",
     port = 4174,
-    store = openWorkspaceStore(dbPath),
+    store,
     recommend = createRecommender(store),
     translations = createTranslationsService(store),
   } = {},
@@ -73,11 +72,11 @@ export function createWorkspaceApi(
         data = definition(p[1]);
         if (!data) throw new HttpError(404, "Assessment not found.");
       } else if (p[0] === "patients" && p.length === 1 && req.method === "GET")
-        data = store.listPatients();
+        data = (await store.listPatients());
       else if (p[0] === "patients" && p.length === 1 && req.method === "POST")
-        data = store.createPatient(await body(req));
+        data = (await store.createPatient(await body(req)));
       else if (p[0] === "patients" && p.length === 2 && req.method === "GET")
-        data = store.patient(p[1]);
+        data = (await store.patient(p[1]));
       else if (
         p[0] === "patients" &&
         p.length === 3 &&
@@ -85,7 +84,7 @@ export function createWorkspaceApi(
         ["GET", "POST"].includes(req.method)
       )
         data = doctorGuidance(
-          store.patient(p[1]),
+          (await store.patient(p[1])),
           req.method === "POST" ? await body(req) : undefined,
         );
       else if (
@@ -99,25 +98,25 @@ export function createWorkspaceApi(
         p[2] === "prescriptions" &&
         req.method === "POST"
       )
-        data = store.prescribe(p[1], (await body(req)).assessmentId);
+        data = (await store.prescribe(p[1], (await body(req)).assessmentId));
       else if (
         p[0] === "patients" &&
         p[2] === "sessions" &&
         req.method === "GET"
       )
-        data = store.sessions(p[1]);
+        data = (await store.sessions(p[1]));
       else if (
         p[0] === "patients" &&
         p[2] === "analytics" &&
         req.method === "GET"
       )
-        data = store.analytics(p[1]);
+        data = (await store.analytics(p[1]));
       else if (
         p[0] === "prescriptions" &&
         p.length === 2 &&
         req.method === "GET"
       )
-        data = store.prescription(p[1]);
+        data = (await store.prescription(p[1]));
       else if (
         p[0] === "prescriptions" &&
         p[2] === "sessions" &&
@@ -134,38 +133,38 @@ export function createWorkspaceApi(
             503,
             "Gemini is not configured. Use on-screen choices.",
           );
-        const rx = store.prescription(p[1]);
+        const rx = (await store.prescription(p[1]));
         data = rx.session
-          ? store.createSession(rx.id, rx.session.definition, language, mode)
-          : store.createSession(
+          ? (await store.createSession(rx.id, rx.session.definition, language, mode))
+          : (await store.createSession(
               rx.id,
               await translations.localize(rx.definition, language),
               language,
               mode,
-            );
+            ));
       } else if (p[0] === "sessions" && p.length === 2 && req.method === "GET")
-        data = store.get(p[1]);
+        data = (await store.get(p[1]));
       else if (
         p[0] === "sessions" &&
         p[2] === "answers" &&
         req.method === "PATCH"
       ) {
-        data = store.answer(p[1], await body(req));
+        data = (await store.answer(p[1], await body(req)));
         live.get(p[1])?.bridge.update(data);
       } else if (
         p[0] === "sessions" &&
         p[2] === "finalize" &&
         req.method === "POST"
       ) {
-        data = store.finalize(p[1], (await body(req)).revision);
+        data = (await store.finalize(p[1], (await body(req)).revision));
         live.get(p[1])?.bridge.update(data);
       } else if (
         p[0] === "sessions" &&
         p[2] === "report" &&
         req.method === "GET"
       ) {
-        const s = store.get(p[1]);
-        const report = assessmentReport(s, store.patient(s.patientId));
+        const s = (await store.get(p[1]));
+        const report = assessmentReport(s, (await store.patient(s.patientId)));
         res.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
           "cache-control": "no-store",
@@ -188,7 +187,7 @@ export function createWorkspaceApi(
     }
     return true;
   }
-  wss.on("connection", (socket, request) => {
+  wss.on("connection", async (socket, request) => {
     let id, bridge;
     const send = (data) => {
       if (socket.readyState === 1) socket.send(JSON.stringify(data));
@@ -205,7 +204,7 @@ export function createWorkspaceApi(
       id = new URL(request.url, "http://localhost").searchParams.get(
         "sessionId",
       );
-      const state = store.get(id);
+      const state = (await store.get(id));
       if (
         state.status !== "draft" ||
         state.sessionMode === "screen" ||
@@ -213,13 +212,14 @@ export function createWorkspaceApi(
         !apiKey?.trim()
       )
         throw new Error();
+      if (socket.readyState !== 1) return;
       bridge = new GeminiBridge({
         apiKey,
         model,
         state,
         send,
-        getState: async () => store.get(id),
-        recordAnswer: async (answer) => store.answer(id, answer, "gemini"),
+        getState: async () => (await store.get(id)),
+        recordAnswer: async (answer) => (await store.answer(id, answer, "gemini")),
       });
       live.set(id, { bridge, socket });
       bridge.start();
@@ -261,7 +261,7 @@ export function createWorkspaceApi(
         socket.close();
       }
       wss.close();
-      store.close();
+      return store.close();
     },
   };
 }

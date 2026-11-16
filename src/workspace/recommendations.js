@@ -36,7 +36,7 @@ export function createRecommender(
         400,
         "Provide a valid doctor conversation or request a history review.",
       );
-    const patient = store.patient(patientId);
+    const patient = (await store.patient(patientId));
     const hash = createHash("sha256")
       .update(
         JSON.stringify([
@@ -49,7 +49,7 @@ export function createRecommender(
       )
       .digest("hex");
     if (source === "history" && !refresh) {
-      const cached = store.recommendation(patientId, hash);
+      const cached = (await store.recommendation(patientId, hash));
       if (cached) return cached;
     }
     if (!ai)
@@ -164,7 +164,7 @@ export function createRecommender(
         createdAt: new Date().toISOString(),
       };
       if (source === "history")
-        store.saveRecommendation(patientId, hash, result);
+        (await store.saveRecommendation(patientId, hash, result));
       return result;
     } catch (error) {
       throw geminiError(

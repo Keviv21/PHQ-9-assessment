@@ -6,41 +6,51 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { languages } from './assessment.js';
 import { assessmentQuestion, getAssessmentForm } from './forms.js';
-import { openStore } from './store.js';
+import { openApplicationStorage } from './storage.js';
 import { GeminiBridge } from './gemini-bridge.js';
 import { recommendAssessments } from './recommendation.js';
 import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from './demo-patients.js';
 import { getDraftAssessment, getLiveDraftForm, listDraftAssessments } from './draft-library.js';
-import { openDraftStore } from './draft-store.js';
+
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
-const dbPath = process.env.DB_PATH || fileURLToPath(new URL('../data/prototype.sqlite', import.meta.url));
-const store = openStore(dbPath);
-const draftStore = openDraftStore(dbPath);
+let storage;
+try { storage = await openApplicationStorage(); }
+catch (error) {
+  console.error(`Database initialization failed (${error.code || 'configuration'}). Check DATABASE_URL, network access and database permissions. The app has not started.`);
+  process.exit(1);
+}
+const { store, draftStore, workspaceStore } = storage;
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const port = Number(process.env.PORT || 4174);
 const allowedStatic = new Set(['/workspace-analytics-charts.js', '/workspace-language-guard.js', '/workspace-answers.js', '/workspace-answer-input.js', '/workspace-media.js', '/workspace-library.js', '/workspace-analytics.js', '/workspace-analytics.css', '/workspace.css', '/workspace-session.html', '/workspace-session.js', '/workspace-common.js', '/workspace-audio.js', '/workspace-presentation.js', '/workspace-languages.js', '/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
 const activeAssessments = new Set();
-const workspace = createWorkspaceApi(dbPath, {apiKey, model, port});
+const workspace = createWorkspaceApi(null, {apiKey, model, port, store:workspaceStore});
 
 function json(response, status, value) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
   response.end(JSON.stringify(value));
 }
 
-const server = http.createServer(async (request, response) => {
+const server = http.createServer((request, response) => {
+  handleRequest(request, response).catch(() => {
+    if (!response.headersSent) json(response, 503, {error:'Database unavailable. Please retry.'});
+    else response.end();
+  });
+});
+async function handleRequest(request, response) {
   if (request.url.startsWith('/api/workspace/') && await workspace.handle(request, response)) return;
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
   if (url.pathname === '/api/draft-sessions' && request.method === 'POST') {
     if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
     let body = '';
     request.on('data', (chunk) => { body += chunk; if (body.length > 1000) request.destroy(); });
-    request.on('end', () => {
+    request.on('end', async () => {
       try {
         const { draftId, mode } = JSON.parse(body);
-        return json(response, 201, draftStore.create(draftId, mode));
+        return json(response, 201, (await draftStore.create(draftId, mode)));
       } catch (error) { return json(response, 400, { error: error.message }); }
     });
     return;
@@ -50,7 +60,7 @@ const server = http.createServer(async (request, response) => {
     if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
     let body = '';
     request.on('data', (chunk) => { body += chunk; if (body.length > 1000) request.destroy(); });
-    request.on('end', () => {
+    request.on('end', async () => {
       let formId;
       try { ({ formId } = JSON.parse(body)); }
       catch { return json(response, 400, { error: 'Choose an assessment.' }); }
@@ -59,7 +69,8 @@ const server = http.createServer(async (request, response) => {
       if (suggestion.status !== 'suggestions' || !suggestion.prescriptionChoices.some((item) => item.id === formId && item.availability === 'available')) {
         return json(response, 409, { error: 'This assessment cannot be prescribed from the current patient summary.' });
       }
-      return json(response, 201, store.prescribe(patientPrescriptionsRoute[1], formId));
+      try { return json(response, 201, (await store.prescribe(patientPrescriptionsRoute[1], formId))); }
+      catch { return json(response, 503, {error: "Could not save prescription. Please retry."}); }
     });
     return;
   }
@@ -73,7 +84,7 @@ const server = http.createServer(async (request, response) => {
       body += chunk;
       if (body.length > 4096) tooLarge = true;
     });
-    request.on('end', () => {
+    request.on('end', async () => {
       if (tooLarge) return json(response, 413, { error: 'Context is too large. Use only structured fields.' });
       try { return json(response, 200, recommendAssessments(JSON.parse(body))); }
       catch (error) { return json(response, 400, { error: error.message }); }
@@ -82,10 +93,10 @@ const server = http.createServer(async (request, response) => {
   }
   if (request.method !== 'GET') return json(response, 405, { error: 'Method not allowed.' });
   if (url.pathname === '/api/health') return json(response, 200, { ok: true });
-  if (url.pathname === '/api/draft-sessions') return json(response, 200, draftStore.list());
+  if (url.pathname === '/api/draft-sessions') return json(response, 200, (await draftStore.list()));
   if (url.pathname.startsWith('/api/draft-sessions/')) {
     const id = url.pathname.slice('/api/draft-sessions/'.length);
-    const state = draftStore.get(id);
+    const state = (await draftStore.get(id));
     return state ? json(response, 200, state) : json(response, 404, { error: 'Live review session not found.' });
   }
   if (url.pathname === '/api/assessment-library') return json(response, 200, listDraftAssessments());
@@ -97,27 +108,27 @@ const server = http.createServer(async (request, response) => {
     return record ? json(response, 200, record) : json(response, 404, { error: 'Assessment not found.' });
   }
   if (url.pathname === '/api/demo-patients') return json(response, 200, listDemoPatients());
-  if (url.pathname === '/api/analytics/overview') return json(response, 200, store.analyticsOverview());
+  if (url.pathname === '/api/analytics/overview') return json(response, 200, (await store.analyticsOverview()));
   const patientAnalyticsRoute = /^\/api\/demo-patients\/(demo-[a-z])\/analytics$/.exec(url.pathname);
   if (patientAnalyticsRoute) {
     return getDemoPatient(patientAnalyticsRoute[1])
-      ? json(response, 200, store.patientAnalytics(patientAnalyticsRoute[1]))
+      ? json(response, 200, (await store.patientAnalytics(patientAnalyticsRoute[1])))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   if (patientPrescriptionsRoute) {
     return getDemoPatient(patientPrescriptionsRoute[1])
-      ? json(response, 200, store.patientPrescriptions(patientPrescriptionsRoute[1]))
+      ? json(response, 200, (await store.patientPrescriptions(patientPrescriptionsRoute[1])))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   const patientReportsRoute = /^\/api\/demo-patients\/(demo-[a-z])\/reports$/.exec(url.pathname);
   if (patientReportsRoute) {
     return getDemoPatient(patientReportsRoute[1])
-      ? json(response, 200, store.patientResults(patientReportsRoute[1]))
+      ? json(response, 200, (await store.patientResults(patientReportsRoute[1])))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   const prescriptionRoute = /^\/api\/prescriptions\/([0-9a-f-]{36})$/i.exec(url.pathname);
   if (prescriptionRoute) {
-    const prescription = store.getPrescription(prescriptionRoute[1]);
+    const prescription = (await store.getPrescription(prescriptionRoute[1]));
     return prescription ? json(response, 200, { ...prescription, patient: getDemoPatient(prescription.demoPatientId) })
       : json(response, 404, { error: 'Prescription not found.' });
   }
@@ -149,10 +160,10 @@ const server = http.createServer(async (request, response) => {
       scoringSource: form.scoringSource,
     });
   }
-  if (url.pathname === '/api/results') return json(response, 200, store.results());
+  if (url.pathname === '/api/results') return json(response, 200, (await store.results()));
   if (url.pathname.startsWith('/api/results/')) {
     const id = url.pathname.slice('/api/results/'.length);
-    const assessment = store.get(id);
+    const assessment = (await store.get(id));
     if (!assessment || assessment.status !== 'completed') return json(response, 404, { error: 'Result not found.' });
     return json(response, 200, assessment);
   }
@@ -170,10 +181,13 @@ const server = http.createServer(async (request, response) => {
   } catch {
     json(response, 404, { error: 'File not found.' });
   }
-});
+}
 
 const wss = new WebSocketServer({ noServer: true, maxPayload: 300_000 });
 wss.on('connection', (socket, request) => {
+  connectLegacy(socket, request).catch(() => socket.close(1011, 'Database unavailable.'));
+});
+async function connectLegacy(socket, request) {
   const origin = request.headers.origin;
   if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
     socket.close(1008, 'Unexpected origin.');
@@ -183,7 +197,7 @@ wss.on('connection', (socket, request) => {
   const mode = url.searchParams.get('mode');
   const language = url.searchParams.get('language') || 'en';
   const prescriptionId = url.searchParams.get('prescriptionId') || '';
-  const prescription = store.getPrescription(prescriptionId);
+  const prescription = (await store.getPrescription(prescriptionId));
   const demoPatientId = prescription?.demoPatientId || null;
   const formId = prescription?.formId || null;
   let form;
@@ -214,7 +228,7 @@ wss.on('connection', (socket, request) => {
     socket.close(1008, 'Assessment does not belong to this prescription.');
     return;
   }
-  const assessment = requestedId ? store.get(requestedId) : store.startPrescription(prescriptionId, mode, language);
+  const assessment = requestedId ? (await store.get(requestedId)) : (await store.startPrescription(prescriptionId, mode, language));
   if (!assessment || assessment.formId !== formId || assessment.mode !== mode || assessment.language !== language || assessment.demoPatientId !== demoPatientId || assessment.status === 'completed' || activeAssessments.has(assessment.id)) {
     socket.close(1008, 'Assessment cannot be resumed.');
     return;
@@ -242,7 +256,7 @@ wss.on('connection', (socket, request) => {
     bridge.start().catch((error) => send({ type: 'error', message: error.message }));
   }
 
-  socket.on('message', (payload, isBinary) => {
+  socket.on('message', async (payload, isBinary) => {
     try {
       if (isBinary) {
         if (mode !== 'live' || !bridge || payload.length < 3) return;
@@ -261,7 +275,7 @@ wss.on('connection', (socket, request) => {
       if (message.type === 'select') {
         if (bridge) throw new Error('Answer in your own words in Live mode.');
         else {
-          const state = store.get(assessment.id);
+          const state = (await store.get(assessment.id));
           if (state.status !== 'in_progress') throw new Error('Assessment is completed.');
           if (!Number.isInteger(message.value) || message.value < 0 || message.value >= form.options.length) throw new Error(`Choose a value from 0 to ${form.options.length - 1}.`);
           pending = { number: state.currentNumber, value: message.value };
@@ -269,24 +283,24 @@ wss.on('connection', (socket, request) => {
         }
       } else if (message.type === 'say') {
         if (!bridge) throw new Error('Text conversation requires Live mode.');
-        if (store.get(assessment.id)?.status !== 'in_progress') throw new Error('Review the answers on screen.');
+        if ((await store.get(assessment.id))?.status !== 'in_progress') throw new Error('Review the answers on screen.');
         bridge.sendText(message.text);
       } else if (message.type === 'confirm') {
         if (bridge) {
-          const result = bridge.confirm();
+          const result = await bridge.confirm();
           if (!result.accepted) throw new Error(result.error);
           bridge.afterConfirmation(result);
         } else {
           if (!pending) throw new Error('Select an answer first.');
-          const state = store.record(assessment.id, pending.number, pending.value, 'demo');
+          const state = (await store.record(assessment.id, pending.number, pending.value, 'demo'));
           pending = null;
           sendState(state);
         }
       } else if (message.type === 'cancel') {
-        if (bridge) { bridge.cancel(); bridge.afterCancellation(); }
+        if (bridge) { bridge.cancel(); await bridge.afterCancellation(); }
         else { pending = null; send({ type: 'proposal_cleared' }); }
       } else if (message.type === 'finalize') {
-        const state = store.finalize(assessment.id, message.answers);
+        const state = (await store.finalize(assessment.id, message.answers));
         sendState(state);
         bridge?.stop();
       } else {
@@ -301,7 +315,7 @@ wss.on('connection', (socket, request) => {
     activeAssessments.delete(assessment.id);
     bridge?.stop();
   });
-});
+}
 
 const draftWss = new WebSocketServer({ noServer: true, maxPayload: 300_000 });
 server.on('upgrade', (request, socket, head) => {
@@ -314,6 +328,9 @@ server.on('upgrade', (request, socket, head) => {
 });
 const activeDraftSessions = new Set();
 draftWss.on('connection', (socket, request) => {
+  connectDraft(socket, request).catch(() => socket.close(1011, 'Database unavailable.'));
+});
+async function connectDraft(socket, request) {
   const origin = request.headers.origin;
   if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
     socket.close(1008, 'Unexpected origin.');
@@ -321,7 +338,7 @@ draftWss.on('connection', (socket, request) => {
   }
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
   const sessionId = url.searchParams.get('sessionId') || '';
-  const draft = draftStore.get(sessionId);
+  const draft = (await draftStore.get(sessionId));
   const form = draft && getLiveDraftForm(draft.formId);
   if (!draft || !form || draft.status === 'completed' || activeDraftSessions.has(sessionId)) {
     socket.close(1008, 'Live review session is unavailable.');
@@ -335,7 +352,7 @@ draftWss.on('connection', (socket, request) => {
   let pending = null;
   let bridge = null;
   let lastVideoAt = 0;
-  const bridgeStore = { get: (id) => draftStore.get(id), record: (...args) => draftStore.record(...args) };
+  const bridgeStore = { get: async (id) => (await draftStore.get(id)), record: async (...args) => (await draftStore.record(...args)) };
 
   function send(message) {
     if (socket.readyState === 1) socket.send(JSON.stringify(message));
@@ -352,7 +369,7 @@ draftWss.on('connection', (socket, request) => {
     bridge.start().catch((error) => send({ type: 'error', message: error.message }));
   }
 
-  socket.on('message', (payload, isBinary) => {
+  socket.on('message', async (payload, isBinary) => {
     try {
       if (isBinary) {
         if (!bridge || payload.length < 3) return;
@@ -369,7 +386,7 @@ draftWss.on('connection', (socket, request) => {
       const message = JSON.parse(payload.toString('utf8'));
       if (message.type === 'select') {
         if (draft.mode !== 'demo') throw new Error('Describe your answer during the live conversation.');
-        const state = draftStore.get(sessionId);
+        const state = (await draftStore.get(sessionId));
         if (state.status !== 'in_progress') throw new Error('Review the answers on screen.');
         const options = form.questions[state.currentNumber - 1].options;
         if (!Number.isInteger(message.value) || message.value < 0 || message.value >= options.length) throw new RangeError('Choose an available option.');
@@ -377,36 +394,36 @@ draftWss.on('connection', (socket, request) => {
         send({ type: 'proposal', number: pending.number, value: pending.value, label: options[pending.value].label });
       } else if (message.type === 'say') {
         if (!bridge) throw new Error('Text conversation requires Gemini Live.');
-        if (draftStore.get(sessionId)?.status !== 'in_progress') throw new Error('Review the answers on screen.');
+        if ((await draftStore.get(sessionId))?.status !== 'in_progress') throw new Error('Review the answers on screen.');
         bridge.sendText(message.text);
       } else if (message.type === 'confirm') {
         if (bridge) {
-          const result = bridge.confirm();
+          const result = await bridge.confirm();
           if (!result.accepted) throw new Error(result.error);
           bridge.afterConfirmation(result);
         } else {
           if (!pending) throw new Error('Choose an answer first.');
-          const state = draftStore.record(sessionId, pending.number, pending.value, 'demo');
+          const state = (await draftStore.record(sessionId, pending.number, pending.value, 'demo'));
           pending = null;
           sendState(state);
         }
       } else if (message.type === 'cancel') {
-        if (bridge) { bridge.cancel(); bridge.afterCancellation(); }
+        if (bridge) { bridge.cancel(); await bridge.afterCancellation(); }
         else { pending = null; send({ type: 'proposal_cleared' }); }
       } else if (message.type === 'finalize') {
-        const state = draftStore.finalize(sessionId, message.answers);
+        const state = (await draftStore.finalize(sessionId, message.answers));
         sendState(state);
         bridge?.stop();
       } else throw new Error('Unknown message type.');
     } catch (error) { send({ type: 'error', message: error.message }); }
   });
   socket.on('close', () => { activeDraftSessions.delete(sessionId); bridge?.stop(); });
-});
+}
 
 server.listen(port, '127.0.0.1', () => {
   console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
   console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
-  console.log(`SQLite database: ${dbPath}`);
+  console.log(`Database: ${storage.kind} · ${storage.description}`);
 });
 
 function shutdown() {
@@ -415,7 +432,7 @@ function shutdown() {
   for (const client of draftWss.clients) client.close();
   wss.close();
   draftWss.close();
-  server.close(() => { store.close(); draftStore.close(); });
+  server.close(() => { Promise.resolve(storage.close()).catch(() => {}); });
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

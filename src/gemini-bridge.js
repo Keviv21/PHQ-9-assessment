@@ -115,7 +115,7 @@ export class GeminiBridge {
           onopen: () => this.send({ type: 'live_status', status: 'connected' }),
           onmessage: (message) => this.onModelMessage(message),
           onerror: (error) => this.send({ type: 'live_status', status: 'error', detail: error.message }),
-          onclose: () => this.onModelClose(session),
+          onclose: () => { this.onModelClose(session).catch(() => this.send({type:'live_status',status:'error',detail:'Database unavailable.'})); },
         },
       });
       if (this.stopped) {
@@ -124,7 +124,7 @@ export class GeminiBridge {
       }
       this.session = session;
       this.retryCount = 0;
-      if (announceQuestion || !hadHandle) this.askCurrentQuestion();
+      if (announceQuestion || !hadHandle) await this.askCurrentQuestion();
     } catch (error) {
       this.send({ type: 'live_status', status: 'error', detail: error.message });
       this.scheduleReconnect();
@@ -133,11 +133,11 @@ export class GeminiBridge {
     }
   }
 
-  onModelClose(closedSession) {
+  async onModelClose(closedSession) {
     if (this.session === closedSession) this.session = null;
     this.outputTranscriptId = null;
     this.outputTranscriptText = '';
-    if (!this.stopped && this.store.get(this.assessmentId)?.status === 'in_progress') {
+    if (!this.stopped && (await this.store.get(this.assessmentId))?.status === 'in_progress') {
       this.send({ type: 'live_status', status: 'reconnecting' });
       this.scheduleReconnect();
     }
@@ -151,8 +151,8 @@ export class GeminiBridge {
     }, 1000 * this.retryCount);
   }
 
-  askCurrentQuestion() {
-    const state = this.store.get(this.assessmentId);
+  async askCurrentQuestion() {
+    const state = (await this.store.get(this.assessmentId));
     if (!state || state.status !== 'in_progress' || !this.session) return;
     const question = this.questionAt(state.currentNumber);
     const anchors = this.questionAnchors(state.currentNumber);
@@ -210,9 +210,9 @@ export class GeminiBridge {
     for (const call of calls) {
       let result;
       try {
-        if (call.name === 'propose_answer') result = this.propose(call.args?.questionId, call.args?.value, call.args?.summary, this.responseMethod);
+        if (call.name === 'propose_answer') result = await this.propose(call.args?.questionId, call.args?.value, call.args?.summary, this.responseMethod);
         else if (call.name === 'confirm_answer') {
-          result = this.confirm();
+          result = await this.confirm();
           if (result.accepted) {
             confirmed = result;
             result = {
@@ -235,8 +235,8 @@ export class GeminiBridge {
     }
   }
 
-  propose(questionId, value, summary, method = 'voice') {
-    const state = this.store.get(this.assessmentId);
+  async propose(questionId, value, summary, method = 'voice') {
+    const state = (await this.store.get(this.assessmentId));
     if (!state || state.status !== 'in_progress') throw new Error('No active assessment.');
     if (this.form.draft) {
       const options = this.form.questions[state.currentNumber - 1].options;
@@ -261,10 +261,10 @@ export class GeminiBridge {
     return { accepted: true, pendingConfirmation: false };
   }
 
-  confirm() {
+  async confirm() {
     if (!this.pending) return { accepted: false, error: 'No proposed answer to confirm.' };
     const { number, value, method, summary } = this.pending;
-    const state = this.store.record(this.assessmentId, number, value, method, summary);
+    const state = (await this.store.record(this.assessmentId, number, value, method, summary));
     this.pending = null;
     this.responseMethod = 'voice';
     this.onState(state);
@@ -290,8 +290,8 @@ export class GeminiBridge {
     this.session.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });
   }
 
-  afterCancellation() {
-    const state = this.store.get(this.assessmentId);
+  async afterCancellation() {
+    const state = (await this.store.get(this.assessmentId));
     if (!this.session || !state || state.status !== 'in_progress') return;
     const question = this.questionAt(state.currentNumber);
     this.session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: `The participant wants to correct your understanding of ${question.id}. Invite them to clarify in their own words. Do not guess a value.` }] }], turnComplete: true });
