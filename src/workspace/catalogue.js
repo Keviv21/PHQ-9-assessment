@@ -2,7 +2,7 @@ import { categorizeAssessment } from "./categories.js";
 import { readFileSync } from "node:fs";
 const bundle = JSON.parse(
   readFileSync(
-    new URL("../../data/workspace-assessments.json", import.meta.url),
+    new URL("../../data/assessments/catalogue.json", import.meta.url),
     "utf8",
   ),
 );
