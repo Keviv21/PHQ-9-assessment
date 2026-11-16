@@ -234,9 +234,13 @@ test("Workspace translations include option labels and reject changes to canonic
           text: JSON.stringify({
             ...d,
             title: "परीक्षण",
+            instructions: "अपना उत्तर चुनें।",
+            referencePeriod: "पिछले दो सप्ताह में",
+            ui: Object.fromEntries(Object.entries(d.ui).map(([k, v]) => [k, "उत्तर चुनें " + (v.match(/\{\w+\}/g) || []).join(" ")])),
             questions: d.questions.map((q) => ({
               ...q,
-              text: "प्रश्न " + q.id,
+              text: "आपको यह परेशानी कितनी बार हुई?",
+              contextText: q.contextText ? "पिछले दो सप्ताह में" : "",
               options: q.options.map((o) => ({
                 ...o,
                 label: "उत्तर " + o.value,

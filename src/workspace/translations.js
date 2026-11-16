@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { HttpError } from "./errors.js";
 import { LANGUAGES, languageName } from "./languages.js";
+import { usesSelectedScript } from "../../public/workspace-language-guard.js";
 import { SESSION_LABELS } from "./presentation.js";
 
 const object = (properties) => ({
@@ -38,7 +39,7 @@ export const translationSchema = object({
 const validText = (value) =>
   typeof value === "string" && value.trim().length > 0 && value.length <= 12000;
 const placeholders = (text) => (text.match(/\{\w+\}/g) || []).sort().join(",");
-export function validateTranslation(source, translated) {
+export function validateTranslation(source, translated, language = "en") {
   const invalid = () => {
     throw new Error("Incomplete or mismatched translation");
   };
@@ -79,6 +80,24 @@ export function validateTranslation(source, translated) {
       placeholders(value) !== placeholders(translated.ui[key])
     )
       invalid();
+  const checkLanguage = (original, result, field) => {
+    // Pure numeric anchors (e.g. a 0–10 scale) are legitimate source labels.
+    if (/\p{L}/u.test(original || "") && !usesSelectedScript(result, language))
+      throw new Error(`Translation is not in the selected language: ${field}`);
+  };
+  checkLanguage(source.instructions, translated.instructions, "instructions");
+  checkLanguage(source.referencePeriod, translated.referencePeriod, "reference period");
+  source.questions.forEach((q, i) => {
+    checkLanguage(q.text, translated.questions[i].text, `question ${q.id}`);
+    checkLanguage(q.contextText || q.context_text, translated.questions[i].contextText, `context ${q.id}`);
+    q.options.forEach((o, j) => {
+      const label = translated.questions[i].options[j].label;
+      if (/\p{L}/u.test(o.label) && !/\p{L}/u.test(label))
+        throw new Error(`Missing full answer label: ${q.id}`);
+      checkLanguage(o.label, label, `option ${q.id}/${j}`);
+    });
+  });
+  Object.keys(SESSION_LABELS).forEach(key => checkLanguage(SESSION_LABELS[key], translated.ui[key], `UI ${key}`));
   // Copy text fields only: provider output cannot alter scoring, IDs or response values.
   return {
     title: translated.title,
@@ -113,7 +132,7 @@ export function createTranslationsService(
     async localize(definition, language) {
       if (!LANGUAGES.some((l) => l.code === language))
         throw new HttpError(400, "Unsupported language.");
-      if (language === "en" || definition.localized?.language === language)
+      if (language === "en")
         return definition;
       const source = {
         title: definition.title,
@@ -127,12 +146,23 @@ export function createTranslationsService(
         })),
         ui: SESSION_LABELS,
       };
+      if (definition.localized?.language === language) {
+        try {
+          validateTranslation(source, definition.localized, language);
+          return definition;
+        } catch { /* Rebuild incomplete translations from the canonical text. */ }
+      }
       const hash = createHash("sha256")
         .update(JSON.stringify(source))
         .digest("hex");
       const key = `${hash}:${language}`;
       const cached = db.translation(hash, language);
-      if (cached) return { ...definition, localized: cached };
+      if (cached) {
+        try {
+          validateTranslation(source, cached, language);
+          return { ...definition, localized: cached };
+        } catch { /* Ignore old untranslated or partial cache entries. */ }
+      }
       if (!provider)
         throw new HttpError(
           503,
@@ -153,7 +183,7 @@ export function createTranslationsService(
                 abortSignal: AbortSignal.timeout(90000),
               },
             });
-            translated = validateTranslation(source, JSON.parse(response.text));
+            translated = validateTranslation(source, JSON.parse(response.text), language);
           } catch (error) {
             throw geminiError(
               error,

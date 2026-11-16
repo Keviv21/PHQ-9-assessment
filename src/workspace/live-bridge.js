@@ -4,6 +4,8 @@ import {
   currentQuestionIndex,
   canSkip,
 } from "../../public/workspace-answers.js";
+import { mergeTranscript, hasNativeScript, usesSelectedScript, numericChoicePrompt } from "../../public/workspace-language-guard.js";
+import { responseLabel } from "../../public/workspace-answers.js";
 import { presentation } from "./presentation.js";
 import { languageName } from "./languages.js";
 import { GoogleGenAI, Modality } from "@google/genai";
@@ -76,6 +78,10 @@ export class GeminiBridge {
     this.paused = false;
     this.pending = null;
     this.queue = Promise.resolve();
+    this.outputText = "";
+    this.outputAudio = [];
+    this.outputBytes = 0;
+    this.languageRetries = 0;
   }
   async start() {
     const connect = this.client.live.connect({
@@ -163,6 +169,8 @@ export class GeminiBridge {
     if (!this.session || this.stopped || this.paused) return;
     this.hasResponse = false;
     this.pending = null;
+    this.languageRetries = 0;
+    this.clearOutput();
     const question = this.current();
     if (!question || this.state.status !== "draft") {
       this.send({ type: "status", status: "review" });
@@ -195,7 +203,7 @@ export class GeminiBridge {
                   value,
                   label,
                 })),
-              })}\nAsk this exact question in the selected conversation language and invite a natural-language answer. The complete response labels are visible on screen; explain them in full when requested or needed for clarification. Never ask just to select numeric values. In voice mode invite speaking or choosing on screen; in chat mode invite typing or choosing on screen. Do not advance until the application state changes.`,
+              })}\nAsk this exact question in the selected conversation language and invite a natural-language answer. Read each complete translated response label with the question, without adding numbers or IDs. When explaining a choice use only the selected language and the full label. Never ask just to select numeric values. In voice mode invite speaking or choosing on screen; in chat mode invite typing or choosing on screen. Do not advance until the application state changes.`,
             },
           ],
         },
@@ -265,10 +273,48 @@ export class GeminiBridge {
     if (this.ready && !this.stopped)
       this.session.sendRealtimeInput({ audioStreamEnd: true });
   }
+  clearOutput() {
+    this.outputText = "";
+    this.outputAudio = [];
+    this.outputBytes = 0;
+  }
+  finishOutput() {
+    const text = this.outputText;
+    if (!text.trim() && !this.outputAudio.length) return;
+    const guarded = hasNativeScript(this.state.language);
+    const valid = (!guarded || usesSelectedScript(text, this.state.language)) && !numericChoicePrompt(text);
+    if (valid) {
+      if (text.trim()) this.send({ type: "transcript", speaker: "assistant", text });
+      for (const data of this.outputAudio) this.send({ type: "audio", data });
+      this.languageRetries = 0;
+    }
+    this.clearOutput();
+    if (!valid) {
+      // Never play an unverified turn: retry once, then show the prepared labels.
+      if (this.languageRetries++ === 0 && this.session && !this.stopped) {
+        this.session.sendClientContent({
+          turns: [{ role: "user", parts: [{ text: `Your last response was withheld. Repeat the response entirely in ${languageName(this.state.language)} using its native script. Speak full translated answer labels, never option numbers or internal IDs. Do not call a tool or record another answer for this correction.` }] }],
+          turnComplete: true,
+        });
+        return;
+      }
+      const q = this.current();
+      if (q) {
+        const text = [q.context_text, q.text, ...q.options.map(o => o.label)].filter(Boolean).join("\n");
+        if (!guarded || usesSelectedScript(text, this.state.language))
+          this.send({ type: "transcript", speaker: "assistant", text, prepared: true });
+      }
+    }
+    this.send({ type: "turn_complete" });
+  }
   async onMessage(message) {
     if (this.stopped) return;
     const content = message.serverContent;
-    if (content?.interrupted) this.send({ type: "audio_interrupt" });
+    if (content?.interrupted) {
+      this.clearOutput();
+      this.send({ type: "audio_interrupt" });
+      this.send({ type: "turn_complete" });
+    }
     if (content?.inputTranscription?.text) {
       this.hasResponse = true;
       this.send({
@@ -277,19 +323,23 @@ export class GeminiBridge {
         text: content.inputTranscription.text,
       });
     }
-    if (content?.outputTranscription?.text)
-      this.send({
-        type: "transcript",
-        speaker: "assistant",
-        text: content.outputTranscription.text,
-      });
-    for (const part of content?.modelTurn?.parts || [])
+    if (!content?.interrupted && content?.outputTranscription?.text)
+      this.outputText = mergeTranscript(this.outputText, content.outputTranscription.text);
+    for (const part of (content?.interrupted ? [] : content?.modelTurn?.parts) || [])
       if (
         part.inlineData?.data &&
         /^audio\/pcm/.test(part.inlineData.mimeType || "")
       )
-        this.send({ type: "audio", data: part.inlineData.data });
-    if (content?.turnComplete) this.send({ type: "turn_complete" });
+      {
+        this.outputBytes += part.inlineData.data.length;
+        if (this.outputBytes > 8 * 1024 * 1024) {
+          this.clearOutput();
+          this.fail("The voice reply was too long. Reconnect or use on-screen responses.");
+          return;
+        }
+        this.outputAudio.push(part.inlineData.data);
+      }
+    if (content?.turnComplete && !content?.interrupted) this.finishOutput();
     if (message.toolCallCancellation?.ids?.includes(this.pending)) {
       this.pending = null;
       this.send({ type: "proposal_cleared" });
@@ -333,7 +383,8 @@ export class GeminiBridge {
               questionId: args.questionId,
               value: args.value,
               revision: args.revision,
-              summary: args.summary,
+              summary: usesSelectedScript(args.summary, this.state.language)
+                ? args.summary : responseLabel(q, args.value).slice(0, 240),
             });
             this.state = saved;
             this.hasResponse = false;
@@ -369,6 +420,7 @@ export class GeminiBridge {
   stop() {
     this.stopped = true;
     this.ready = false;
+    this.clearOutput();
     this.session?.close();
     this.session = null;
   }

@@ -1,3 +1,4 @@
+import { mergeTranscript } from "./workspace-language-guard.js";
 import {
   answerType,
   currentQuestionIndex,
@@ -58,7 +59,7 @@ function addMessage(speaker, text, chunk = false) {
     currentTurn?.speaker === speaker &&
     currentTurn.body.isConnected
   ) {
-    currentTurn.body.textContent += text;
+    currentTurn.body.textContent = mergeTranscript(currentTurn.body.textContent, text);
     $("session-transcript").scrollTop = $("session-transcript").scrollHeight;
     return;
   }

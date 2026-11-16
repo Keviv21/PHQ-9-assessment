@@ -1,3 +1,4 @@
+import { createDistributionChartSvg, createResponseChartSvg, responseCounts, trendData } from "./workspace-analytics-charts.js";
 import { el as node, api, reportLinks, date } from "./workspace-common.js";
 const colors = ["#245bd5", "#9844a8", "#087b70"];
 const duration = (seconds) =>
@@ -15,7 +16,7 @@ export function createPatientAnalytics(root) {
  <div data-part="content" hidden>
   <div class="pa-toolbar"><label>Assessment<select data-part="assessment"></select></label><p class="pa-completed" data-part="completed"></p></div>
   <dl class="pa-scores" data-part="scores"></dl>
-  <section class="pa-chart"><div class="pa-chart-header"><h3>Score trend</h3><div class="pa-legend" data-part="legend"></div></div><p class="pa-note" data-part="note"></p><canvas data-part="plot" role="img" aria-label="Assessment scores by visit. Exact values are listed in Assessment history."></canvas></section>
+  <section class="pa-chart"><div class="pa-chart-header"><h3 data-part="trend-title">Score trend</h3><div class="pa-legend" data-part="legend"></div></div><p class="pa-note" data-part="note"></p><canvas data-part="plot" role="img" aria-label="Assessment scores by visit. Exact values are listed in Assessment history."></canvas></section>
   <section class="pa-history"><h3>Assessment history</h3><div class="pa-table-scroll"><table data-part="table" aria-label="Assessment history"></table></div></section>
   <section class="pa-history"><div class="pa-toolbar"><h3>Visit details</h3><label>Visit<select data-part="visit"></select></label></div><div data-part="details"></div></section>
  </div>`;
@@ -154,36 +155,46 @@ export function createPatientAnalytics(root) {
     if (r.severity)
       detail.append(node("p", `Recorded descriptor: ${r.severity}`));
     detail.append(reportLinks(r.id));
-    const counts = new Map();
-    r.responses
-      .filter(
-        (a) =>
-          !a.feedback &&
-          !a.skipped &&
-          (!a.responseType || a.responseType.endsWith("choice")),
-      )
-      .forEach((a) =>
-        counts.set(a.response, (counts.get(a.response) || 0) + 1),
-      );
-    detail.append(
-      node("h3", "Response distribution"),
-      node(
-        "p",
-        "Counts of saved response labels, not a clinical score or population percentile.",
-        "pa-note",
-      ),
-    );
-    const distribution = node("div", undefined, "response-distribution");
-    for (const [text, count] of counts) {
-      const row = node("label"),
-        bar = node("progress");
-      bar.max = r.questionCount;
-      bar.value = count;
-      bar.setAttribute("aria-label", `${text}: ${count} responses`);
-      row.append(node("span", text), bar, node("strong", String(count)));
-      distribution.append(row);
+    const charts = node("div", undefined, "pa-visit-charts");
+    if (group.scored) {
+      group.metrics.forEach((metric, i) => {
+        const chart = createDistributionChartSvg({
+          title: metric.name, axisLabel: "Recorded score within the source-defined range",
+          min: metric.min, max: metric.max, patientScore: r.values[i],
+          patientScoreLabel: `${metric.name}: ${r.values[i]} / ${metric.max}`,
+        });
+        if (chart) {
+          const section = node("section", undefined, "pa-chart");
+          section.append(chart);
+          charts.append(section);
+        }
+      });
     }
-    detail.append(distribution);
+    const bars = responseCounts(r.responses);
+    const distribution = node("section", undefined, "pa-chart");
+    distribution.append(node("h3", "Response distribution"), node("p",
+      "Counts of saved choice responses. Written feedback and skipped questions are excluded. These counts are not clinical scores or population percentiles.", "pa-note"));
+    const chart = createResponseChartSvg(bars);
+    if (chart) {
+      const scroll = node("div", undefined, "pa-svg-scroll");
+      scroll.append(chart);
+      distribution.append(scroll);
+      const table = node("table", undefined, "pa-response-counts");
+      table.setAttribute("aria-label", "Response distribution values");
+      const head = node("thead"), row = node("tr");
+      row.append(node("th", "Full response label"), node("th", "Count"));
+      head.append(row);
+      const body = node("tbody");
+      bars.forEach(({ label, count }) => {
+        const row = node("tr");
+        row.append(node("td", label), node("td", String(count)));
+        body.append(row);
+      });
+      table.append(head, body);
+      distribution.append(table);
+    } else distribution.append(node("p", "This visit has no choice responses to chart. Written and numeric responses are listed below."));
+    charts.append(distribution);
+    detail.append(charts);
     const answers = node("details");
     answers.open = true;
     answers.append(node("summary", "Saved answers"));
@@ -223,7 +234,7 @@ export function createPatientAnalytics(root) {
     plot.height = Math.round(height * pixelRatio);
     const ctx = plot.getContext("2d");
     ctx.scale(pixelRatio, pixelRatio);
-    const { results, metrics } = group;
+    const { results, metrics } = trendData(group);
     const max = metrics[0].max;
     const min = metrics[0].min || 0;
     const left = 36;
@@ -310,20 +321,26 @@ export function createPatientAnalytics(root) {
     renderScores(group);
     renderHistory(group);
     find("legend").replaceChildren(
-      ...group.metrics.map((m, i) => {
+      ...trendData(group).metrics.map((m, i) => {
         const item = node("span", m.name);
         item.style.setProperty("--series-color", colors[i]);
         return item;
       }),
     );
-    const scored = group.results.some((r) => r.values.some((v) => v !== null));
-    plot.hidden = !scored;
-    find("note").textContent = !scored
-      ? "Response history only. This questionnaire has no chartable clinical scores."
+    const scored = group.scored && group.results.some((r) => r.values.some((v) => v !== null));
+    const canChart = !group.scored || scored;
+    plot.hidden = !canChart;
+    find("trend-title").textContent = group.scored ? "Score trend" : "Response completion by visit";
+    plot.setAttribute("aria-label", group.scored
+      ? "Recorded scores by visit. Exact values are in Assessment history."
+      : "Number of answered questions by visit. Exact counts are in Assessment history.");
+    find("note").textContent = !group.scored
+      ? "Answered questions per completed visit. This shows response completion, not symptom severity."
+      : !scored ? "No recorded scores available for these visits."
       : group.results.length === 1
         ? "One recorded visit. Complete another visit to compare scores."
         : "Recorded scores by visit; changes alone do not establish clinical improvement or deterioration.";
-    if (scored) drawTrend(group);
+    if (canChart) drawTrend(group);
     const previous = find("visit").value;
     find("visit").replaceChildren(
       ...group.results

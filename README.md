@@ -108,3 +108,9 @@ The PHQ-9 source form linked above has nine scored items. A functional difficult
 - `public/recommend.html` and `public/recommend.js`: clinician-facing recommendation screen.
 - `public/`: Casebook-style browser UI, audio and optional camera capture.
 - `docs/WORKFLOW_AND_PERFORMANCE.md`: end-to-end workflow diagram, data rates, latency points, and token/cost illustration.
+
+### Patient analytics and conversation language
+
+Patient analytics adapts Sagar's score-range and response bar charts to saved workspace visits. Scored sessions use only their frozen source-defined score range; unscored sessions show response completion and full-label response counts. Feedback, skipped questions and numeric measurements are excluded from choice counts. No population percentiles or diagnostic bands are inferred from the draft catalogue. The November 16 source currently disables scoring, so new sessions show response graphs.
+
+Questionnaire translations include the full question text, context, answer labels and session controls. Hindi, Telugu and the other supported Indian-script languages are checked for their selected script before translations are cached; older incomplete cached translations are regenerated for new sessions. The main branch's cumulative transcript handling is used in the conversation view. Live output is buffered until the turn transcript can be checked, so voice replies begin after that check. Wrong-script replies or numeric-only menu prompts are withheld and retried once; if the retry still fails, the prepared question and complete answer labels are shown on screen. These script checks detect language drift, not translation accuracy or clinical validation. Saved session snapshots and completed reports keep their original wording; start a new assessment to use freshly prepared translations.
