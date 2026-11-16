@@ -308,9 +308,14 @@ test("Translated mixed questions retain input rules, option IDs, and numeric or 
           return {
             text: JSON.stringify({
               ...source,
+              title: "Cuestionario de prueba",
+              instructions: "Indique su respuesta.",
+              referencePeriod: source.referencePeriod ? "Durante las últimas dos semanas" : "",
+              ui: Object.fromEntries(Object.entries(source.ui).map(([key, value]) => [key, "Indique su respuesta " + (value.match(/\{\w+\}/g) || []).join(" ")])),
               questions: source.questions.map((q) => ({
                 ...q,
                 text: "Pregunta " + q.id,
+                contextText: q.contextText ? "Durante la última semana" : "",
                 options: q.options.map((o) => ({
                   ...o,
                   label: o.label === "Yes" ? "Sí" : "No",

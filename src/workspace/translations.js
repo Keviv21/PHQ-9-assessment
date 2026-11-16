@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { HttpError } from "./errors.js";
 import { LANGUAGES, languageName } from "./languages.js";
-import { usesSelectedScript } from "../../public/workspace-language-guard.js";
+import { usesSelectedLanguage, unchangedTranslation } from "../../public/workspace-language-guard.js";
 import { SESSION_LABELS } from "./presentation.js";
 
 const object = (properties) => ({
@@ -82,7 +82,7 @@ export function validateTranslation(source, translated, language = "en") {
       invalid();
   const checkLanguage = (original, result, field) => {
     // Pure numeric anchors (e.g. a 0–10 scale) are legitimate source labels.
-    if (/\p{L}/u.test(original || "") && !usesSelectedScript(result, language))
+    if (/\p{L}/u.test(original || "") && (!usesSelectedLanguage(result, language) || unchangedTranslation(original, result, language)))
       throw new Error(`Translation is not in the selected language: ${field}`);
   };
   checkLanguage(source.instructions, translated.instructions, "instructions");

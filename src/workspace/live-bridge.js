@@ -4,7 +4,7 @@ import {
   currentQuestionIndex,
   canSkip,
 } from "../../public/workspace-answers.js";
-import { mergeTranscript, hasNativeScript, usesSelectedScript, numericChoicePrompt } from "../../public/workspace-language-guard.js";
+import { mergeTranscript, usesSelectedLanguage, numericChoicePrompt } from "../../public/workspace-language-guard.js";
 import { responseLabel } from "../../public/workspace-answers.js";
 import { presentation } from "./presentation.js";
 import { languageName } from "./languages.js";
@@ -281,8 +281,7 @@ export class GeminiBridge {
   finishOutput() {
     const text = this.outputText;
     if (!text.trim() && !this.outputAudio.length) return;
-    const guarded = hasNativeScript(this.state.language);
-    const valid = (!guarded || usesSelectedScript(text, this.state.language)) && !numericChoicePrompt(text);
+    const valid = usesSelectedLanguage(text, this.state.language) && !numericChoicePrompt(text);
     if (valid) {
       if (text.trim()) this.send({ type: "transcript", speaker: "assistant", text });
       for (const data of this.outputAudio) this.send({ type: "audio", data });
@@ -301,7 +300,7 @@ export class GeminiBridge {
       const q = this.current();
       if (q) {
         const text = [q.context_text, q.text, ...q.options.map(o => o.label)].filter(Boolean).join("\n");
-        if (!guarded || usesSelectedScript(text, this.state.language))
+        if (usesSelectedLanguage(text, this.state.language))
           this.send({ type: "transcript", speaker: "assistant", text, prepared: true });
       }
     }
@@ -383,7 +382,7 @@ export class GeminiBridge {
               questionId: args.questionId,
               value: args.value,
               revision: args.revision,
-              summary: usesSelectedScript(args.summary, this.state.language)
+              summary: usesSelectedLanguage(args.summary, this.state.language)
                 ? args.summary : responseLabel(q, args.value).slice(0, 240),
             });
             this.state = saved;
