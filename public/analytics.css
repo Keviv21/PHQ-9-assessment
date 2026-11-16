@@ -19,6 +19,14 @@
 .analytics-form-track{height:9px;border-radius:100px;background:#eaf0f6;overflow:hidden}
 .analytics-form-fill{height:100%;border-radius:100px}
 .analytics-patient-panel{padding:24px}
+.analytics-activity{border-top:1px solid #e3eaf2;margin-top:22px;padding-top:20px}
+.analytics-activity h3{margin:0 0 5px;color:#183653;font-size:16px}
+.analytics-activity p{color:#657b92;font-size:12px;margin:0 0 14px}
+.analytics-activity-scroll{overflow-x:auto}
+.analytics-activity-bars{height:152px;display:grid;align-items:end;gap:9px;min-width:100%;padding:8px 4px 0;border-bottom:1px solid #dce5ef}
+.analytics-activity-month{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:48px}
+.analytics-activity-month strong,.analytics-activity-month small{font-size:11px;color:#526b85;white-space:nowrap}
+.analytics-activity-column{width:min(32px,80%);min-height:4px;background:linear-gradient(180deg,#15a6a1,#9ce0d9);border-radius:5px 5px 0 0}
 .analytics-patient-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .analytics-patient-heading h2{margin:0 0 5px}
 .analytics-patient-heading p{margin:0;color:#718198;font-size:12px}

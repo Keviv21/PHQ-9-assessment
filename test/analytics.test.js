@@ -35,3 +35,37 @@ test('overview counts prescribed work and uses completed linked assessments for 
   assert.deepEqual(result.byForm.map((item) => [item.prescribed, item.completed]), [[2, 2], [1, 0], [1, 0]]);
   assert.equal(buildOverview([], new Date('2026-11-13T00:00:00.000Z')).totals.completionRate, null);
 });
+
+test('combined analytics keeps all completed assessments and charts DASS-21 on separate scales', () => {
+  const rows = [
+    { id: 'phq', form_id: 'phq9', form_version: 'v1', language: 'en', mode: 'demo',
+      completed_at: '2026-11-01T00:00:00.000Z', scores: { rawTotal: 8, maxTotal: 27 } },
+    { id: 'dass', prescription_id: 'dass-rx', form_id: 'dass21', form_title: 'DASS-21',
+      form_version: 'imported-draft-v1', language: 'en', mode: 'demo',
+      completed_at: '2026-11-02T00:00:00.000Z', scores: { rawTotal: 14,
+        rawSubscales: { depression: 8, anxiety: 4, stress: 2 },
+        severity: { total: 'Normal', depression: 'Moderate', anxiety: 'Mild', stress: 'Normal' } } },
+    { id: 'brief', prescription_id: 'brief-rx', form_id: 'draft:brief', form_title: 'Brief Resilience Scale',
+      form_version: 'imported-draft-v1', language: 'en', mode: 'demo',
+      completed_at: '2026-11-03T00:00:00.000Z', scores: null },
+  ];
+  const result = buildPatientAnalytics('demo-a', rows);
+  assert.equal(result.totalCompleted, 3);
+  assert.equal(result.totalScored, 2);
+  assert.equal(result.series.length, 5);
+  assert.equal(result.series.find((item) => item.formId === 'dass21' && item.metricId === 'total').maxTotal, 63);
+  assert.equal(result.series.find((item) => item.metricId === 'depression').points[0].score, 8);
+  assert.equal(result.activity[2].score, null);
+  assert.equal(result.activity[2].detailUrl, '/draft-live.html?prescriptionId=brief-rx');
+  const overview = buildOverview([
+    { form_id: 'phq9', created_at: rows[0].completed_at, assessment_id: 'phq',
+      assessment_status: 'completed', completed_at: rows[0].completed_at },
+    { form_id: 'dass21', form_title: 'DASS-21', created_at: rows[1].completed_at,
+      assessment_id: 'dass', assessment_status: 'completed', completed_at: rows[1].completed_at },
+    { form_id: 'draft:brief', form_title: 'Brief Resilience Scale', created_at: rows[2].completed_at,
+      assessment_id: 'brief', assessment_status: 'completed', completed_at: rows[2].completed_at },
+  ], new Date('2026-11-13T00:00:00.000Z'));
+  assert.equal(overview.totals.completed, 3);
+  assert.equal(overview.byForm.find((item) => item.formId === 'draft:brief').completed, 1);
+  assert.equal(overview.months.find((item) => item.month === '2026-11').completed, 3);
+});

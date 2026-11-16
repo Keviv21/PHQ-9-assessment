@@ -161,7 +161,10 @@ function renderReview() {
     select.value = String(answer.value);
     row.append(select); container.append(row);
   });
-  setStatus('Review every response, then save this unscored session.');
+  $('draft-review-help').textContent = form.scoringAvailable ?
+    'Check every response. The DASS-21 score will be calculated from your final answers.' :
+    'Check every response before saving the answer summary.';
+  setStatus('Review every response, then save this session.');
 }
 
 function renderComplete() {
@@ -171,13 +174,26 @@ function renderComplete() {
   $('draft-start').hidden = true;
   const area = $('draft-result-items');
   area.replaceChildren();
+  const scoreArea = $('draft-score');
+  scoreArea.replaceChildren();
+  scoreArea.hidden = !state.scores;
+  if (state.scores) {
+    scoreArea.append(element('h3', `DASS-21 total: ${state.scores.rawTotal} / 63 (${state.scores.severity.total})`));
+    for (const [name, raw] of Object.entries(state.scores.rawSubscales)) {
+      scoreArea.append(element('p', `${name[0].toUpperCase()}${name.slice(1)}: ${raw} / 21 (${state.scores.severity[name]})`));
+    }
+    scoreArea.append(element('p', state.scores.interpretation));
+  }
+  $('draft-complete-help').textContent = state.scores ?
+    'Final answers and the DASS-21 score are stored locally. Review with a clinician.' :
+    'Final answers are stored locally. This assessment has no verified scoring rule in the app.';
   state.answers.forEach((answer, index) => {
     const row = element('div', undefined, 'draft-review-row');
     row.append(element('strong', `${index + 1}. ${form.questions[index].text}`), element('p', form.questions[index].options[answer.value]?.label || 'Unrecorded'));
     area.append(row);
   });
-  $('draft-saved-at').textContent = `Saved ${new Date(state.completedAt).toLocaleString()} · ${state.reviewChangeCount} final answer change(s) · No score`;
-  setStatus('Completed answers saved locally. No score was calculated.');
+  $('draft-saved-at').textContent = `Saved ${new Date(state.completedAt).toLocaleString()} · ${state.reviewChangeCount} final answer change(s)`;
+  setStatus(state.scores ? 'Completed answers and score saved locally.' : 'Completed answers saved locally. No score was calculated.');
   stopMedia();
 }
 
@@ -300,7 +316,7 @@ try {
     if (prescription.kind !== 'draft') throw new Error('This link is for a scored assessment.');
     draftId = prescription.formId;
     if (prescription.assessmentId) sessionId = prescription.assessmentId;
-    $('draft-patient').textContent = `Assigned to ${prescription.patient.label} · Unscored demo review`;
+    $('draft-patient').textContent = `Assigned to ${prescription.patient.label}`;
   }
   if (sessionId) {
     const response = await fetch(`/api/draft-sessions/${encodeURIComponent(sessionId)}`);
@@ -314,6 +330,9 @@ try {
   if (!response.ok) throw new Error('Assessment not found.');
   form = await response.json();
   if (!form.previewAvailable) throw new Error('This assessment has incomplete answer options.');
+  $('draft-notice').textContent = form.scoringAvailable ?
+    'DASS-21 scores are calculated from confirmed answers. This conversational administration is a demo and does not provide a diagnosis.' :
+    'This imported definition needs scoring review. Responses are saved locally, but no score or diagnosis is generated.';
   $('draft-title').textContent = form.title;
   document.title = `${form.title} | OpenMind`;
   $('draft-period').textContent = form.referencePeriod ? `Reference period: ${form.referencePeriod}` : `${form.extractedItemCount} questions`;
@@ -333,7 +352,7 @@ try {
       renderState(state);
       $('draft-start').hidden = false;
     }
-  } else setStatus(config.geminiConfigured ? 'Ready to begin an unscored review.' : 'Voice is unavailable. On-screen review is ready.');
+  } else setStatus(config.geminiConfigured ? 'Ready to begin.' : 'Voice is unavailable. On-screen review is ready.');
 } catch (error) {
   setStatus(error.message);
   $('draft-start-live').disabled = true;

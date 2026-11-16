@@ -2,7 +2,8 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { getLiveDraftForm } from './draft-library.js';
+import { getDraftAssessment, getLiveDraftForm } from './draft-library.js';
+import { dass21DraftId, scoreImportedAssessment } from './draft-scoring.js';
 
 export function openDraftStore(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
@@ -38,6 +39,11 @@ export function openDraftStore(path) {
     FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id WHERE p.id = ?`);
   const listPatientPrescriptions = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode
     FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id WHERE p.demo_patient_id = ? ORDER BY p.created_at DESC`);
+  const listAnalyticsPrescriptions = db.prepare(`SELECT p.*, s.id AS assessment_id, s.status AS assessment_status, s.completed_at
+    FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id ORDER BY p.created_at`);
+  const listPatientCompleted = db.prepare(`SELECT p.id AS prescription_id, p.draft_id, s.id, s.mode, s.completed_at
+    FROM draft_prescriptions p JOIN draft_sessions s ON s.prescription_id = p.id
+    WHERE p.demo_patient_id = ? AND s.status = 'completed' ORDER BY s.completed_at, s.id`);
   const saveAnswers = db.prepare('UPDATE draft_sessions SET answers_json = ?, status = ? WHERE id = ?');
   const complete = db.prepare("UPDATE draft_sessions SET answers_json = ?, status = 'completed', review_change_count = ?, completed_at = ? WHERE id = ? AND status = 'review'");
 
@@ -45,6 +51,7 @@ export function openDraftStore(path) {
     const row = select.get(id);
     if (!row) return null;
     const answers = JSON.parse(row.answers_json);
+    const scores = row.status === 'completed' ? scoreImportedAssessment(row.draft_id, answers.map((answer) => answer.value)) : null;
     return {
       id: row.id,
       formId: row.draft_id,
@@ -60,8 +67,8 @@ export function openDraftStore(path) {
       currentNumber: row.status === 'in_progress' ? answers.length + 1 : null,
       answers,
       reviewChangeCount: row.review_change_count,
-      scores: null,
-      unscored: true,
+      scores,
+      unscored: !scores,
     };
   }
 
@@ -80,7 +87,7 @@ export function openDraftStore(path) {
       demoPatientId: row.demo_patient_id, createdAt: row.created_at,
       assessmentId: row.session_id, mode: row.session_mode,
       status: row.session_status === 'completed' ? 'completed' : row.session_id ? 'in_progress' : 'assigned',
-      unscored: true,
+      unscored: row.draft_id !== dass21DraftId,
     };
   }
 
@@ -88,6 +95,25 @@ export function openDraftStore(path) {
 
   function patientPrescriptions(patientId) {
     return listPatientPrescriptions.all(patientId).map(prescriptionSummary);
+  }
+
+  function analyticsPrescriptionRows() {
+    return listAnalyticsPrescriptions.all().map((row) => ({
+      form_id: row.draft_id === dass21DraftId ? 'dass21' : `draft:${row.draft_id}`,
+      form_title: getDraftAssessment(row.draft_id)?.title || row.draft_id,
+      created_at: row.created_at, assessment_id: row.assessment_id,
+      assessment_status: row.assessment_status, completed_at: row.completed_at,
+    }));
+  }
+
+  function patientAnalyticsRows(patientId) {
+    return listPatientCompleted.all(patientId).map((row) => ({
+      id: row.id, prescription_id: row.prescription_id,
+      form_id: row.draft_id === dass21DraftId ? 'dass21' : `draft:${row.draft_id}`,
+      form_title: getDraftAssessment(row.draft_id)?.title || row.draft_id,
+      form_version: 'imported-draft-v1', language: 'en', mode: row.mode,
+      completed_at: row.completed_at, scores: get(row.id).scores,
+    }));
   }
 
   function prescribe(patientId, draftId) {
@@ -148,10 +174,12 @@ export function openDraftStore(path) {
   function list() {
     return listRecent.all().map((row) => ({
       id: row.id, formId: row.draft_id, mode: row.mode, status: row.status,
-      startedAt: row.started_at, completedAt: row.completed_at, unscored: true,
+      startedAt: row.started_at, completedAt: row.completed_at,
+      unscored: row.draft_id !== dass21DraftId,
     }));
   }
 
   return { create, get, record, finalize, list, prescribe, getPrescription,
-    patientPrescriptions, startPrescription, close: () => db.close() };
+    patientPrescriptions, analyticsPrescriptionRows, patientAnalyticsRows,
+    startPrescription, close: () => db.close() };
 }

@@ -30,7 +30,7 @@ function renderSuggestions(items) {
     const row = node('div', undefined, 'doctor-chat-suggestion');
     const text = node('div');
     text.append(node('strong', item.title), node('p', item.reason),
-      node('small', item.kind === 'unscored_draft' ? 'Imported form · unscored demo review' : 'Scored assessment'));
+      node('small', item.kind === 'unscored_draft' ? 'Answers saved without a score' : 'Score available'));
     const choose = node('button', 'Select', 'button outline');
     choose.type = 'button';
     choose.addEventListener('click', () => window.dispatchEvent(new CustomEvent('clinic:select-assessment', { detail: { id: item.id } })));

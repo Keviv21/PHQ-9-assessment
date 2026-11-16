@@ -71,7 +71,7 @@
               <div id="doctor-chat-suggestions" class="doctor-chat-suggestions"></div>
             </section>
             <details id="library-view" class="panel library-embedded"><summary>Browse assessment questions and source details</summary>
-              <p class="library-notice">Imported definitions need clinical review. Of 162 complete forms, three use dedicated scored flows and 159 can be assigned as unscored demo reviews. The 24 incomplete forms are visible but unavailable.</p>
+              <p class="library-notice">Imported definitions need clinical review. DASS-21 has an implemented score. Other imported forms save answers without a score until their scoring rules are verified. The 24 incomplete forms are unavailable.</p>
               <div id="library-catalogue">
                 <div class="library-toolbar"><label class="search-label" for="library-search">Search assessments<input id="library-search" type="search" placeholder="Search by name" autocomplete="off"></label><label class="search-label" for="library-filter">Show<select id="library-filter"><option value="all">All assessments</option><option value="preview">Preview available</option><option value="incomplete">Needs source content</option></select></label></div>
                 <p id="library-count" class="library-count" aria-live="polite">Loading assessment library…</p>
@@ -92,8 +92,8 @@
           <div id="report-content" aria-live="polite"><p class="empty-state">Choose a patient to view their test reports.</p></div>
         </section>
         <section id="analytics-view" hidden>
-          <div class="page-heading"><div><p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p><h1>Scored Assessment Analytics</h1><p>Track scored assessments over time and monitor completion of scored assignments.</p></div></div>
-          <p class="analytics-note">The charts use saved sample patient results. Scores from different assessments are shown separately. Imported library reviews have no verified scores and are not included in score trends.</p>
+          <div class="page-heading"><div><p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p><h1>Assessment Analytics</h1><p>Track assessment activity and patient progress over time.</p></div></div>
+          <p class="analytics-note">All completed assigned assessments appear in activity charts. Score trends are shown separately for each assessment and subscale; forms without verified scoring appear in activity only. Scores from different tests are not combined.</p>
           <div id="analytics-status" class="analytics-status" role="status" aria-live="polite"></div>
           <div id="analytics-summary" class="analytics-summary"></div>
           <div class="analytics-grid">
@@ -101,7 +101,7 @@
             <section class="panel analytics-panel"><h2>By assessment</h2><div id="analytics-by-form"></div></section>
           </div>
           <section class="panel analytics-patient-panel">
-            <div class="analytics-patient-heading"><div><h2>Patient progress</h2><p>Each point is a finalized report. Open a point in the table to review its answers.</p></div><div class="analytics-controls"><label for="analytics-patient">Patient<select id="analytics-patient" class="patient-picker"><option value="">Choose a patient</option></select></label><label for="analytics-range">Period<select id="analytics-range" class="patient-picker"><option value="all">All time</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></label></div></div>
+            <div class="analytics-patient-heading"><div><h2>Patient progress</h2><p>View every completed assessment and follow each available score over time.</p></div><div class="analytics-controls"><label for="analytics-patient">Patient<select id="analytics-patient" class="patient-picker"><option value="">Choose a patient</option></select></label><label for="analytics-range">Period<select id="analytics-range" class="patient-picker"><option value="all">All time</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></label></div></div>
             <div id="analytics-patient-content"><p class="empty-state">Choose a patient to see their score history.</p></div>
           </section>
         </section>

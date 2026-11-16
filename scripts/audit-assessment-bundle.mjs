@@ -20,6 +20,10 @@ if (!path) {
       questionsWithUnlabelledPrintedValues: 0,
       questionsWithUnsupportedResponseType: 0,
       scoringEnabledRecords: 0,
+      recordsWithStructuredScoringRules: 0,
+      recordsWithCompleteOptionScores: 0,
+      scoringStatuses: {},
+      structuredScoringCandidates: [],
       clinicallyApprovedRecords: 0,
       recordsWithVerifiedReusePermission: 0,
     };
@@ -55,6 +59,18 @@ if (!path) {
       else if (incomplete) report.recordsWithMissingAnswerOptions += 1;
       else report.recordsWithCompleteAnswerOptions += 1;
       if (record.scoring?.enabled === true) report.scoringEnabledRecords += 1;
+      const scoringStatus = record.scoring?.status || 'missing';
+      report.scoringStatuses[scoringStatus] = (report.scoringStatuses[scoringStatus] || 0) + 1;
+      if (Array.isArray(record.scoring?.rules) && record.scoring.rules.length) {
+        report.recordsWithStructuredScoringRules += 1;
+        report.structuredScoringCandidates.push({ id: record.assessment_id,
+          ruleCount: record.scoring.rules.length, status: scoringStatus });
+      }
+      if (questions.length && questions.every((question) => {
+        const options = responseSets.get(question.response_set_id)?.options;
+        return Array.isArray(options) && options.length >= 2 && options.every((option) =>
+          typeof option.score === 'number' && Number.isFinite(option.score));
+      })) report.recordsWithCompleteOptionScores += 1;
       if (record.review?.ready_for_clinical_use === true) report.clinicallyApprovedRecords += 1;
       if (record.rights?.reproduction_permission === 'verified') report.recordsWithVerifiedReusePermission += 1;
     }

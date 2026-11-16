@@ -198,10 +198,10 @@ function renderAssessmentOptions() {
   const scored = suggestion?.prescriptionChoices || [];
   const available = [
     ...scored.map((item) => ({ id: item.id, title: item.title, enabled: item.availability === 'available',
-      label: `${item.title} · scored${item.id === suggestion.primaryAssessmentId ? ' · recommended' : ''}` })),
+      label: `${item.title}${item.id === suggestion.primaryAssessmentId ? ' · Recommended' : ''}` })),
     ...catalogue.filter((item) => !scoredDraftIds.has(item.id))
       .map((item) => ({ id: `draft:${item.id}`, title: item.title, enabled: item.previewAvailable,
-        label: `${item.title} · ${item.previewAvailable ? 'unscored demo review' : 'needs source content'}` })),
+        label: item.title })),
   ];
   const matches = available.filter((item) => item.title.toLowerCase().includes(search) || item.id === selectedFormId);
   select.replaceChildren(new Option('Select an assessment', ''));
@@ -240,7 +240,9 @@ function updateSelectedChoice() {
   $('prescribe-button').textContent = allowed ? 'Confirm & Assign' : 'Confirm & Prescribe';
   const area = $('selection-details');
   if (draft) {
-    area.replaceChildren(notice(`${draft.title} is an imported, unscored demo review. Its answers will be saved, but no clinical score or scored report will be generated.`));
+    area.replaceChildren(notice(draft.scoringAvailable ?
+      `${draft.title} has an implemented score. Review the final answers before interpreting the result.` :
+      `${draft.title} saves answers, but its scoring rules have not been verified. No score will be generated.`));
     return;
   }
   if (!choice) {
@@ -298,7 +300,7 @@ async function prescribe() {
     const card = el('div', undefined, 'prescribed-card');
     const title = record.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId : record.formId.toUpperCase();
     card.append(el('h3', `${title} assigned`), el('p', record.kind === 'draft' ?
-      `Unscored demo review assigned to ${suggestion.patient.label}. Its answers can be saved and reviewed without a clinical score.` :
+      `${suggestion.patient.label} can complete the assessment. ${record.unscored ? 'Its answers will be saved without a score.' : 'A score will be shown after final answer review.'}` :
       `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
     const actions = el('div', undefined, 'prescribed-actions');
     const url = new URL(`${record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`, location.href);
@@ -333,7 +335,9 @@ async function loadReports(patientId) {
     const [prescriptions, reports] = await Promise.all([prescriptionsResponse.json(), reportsResponse.json()]);
     if (current !== loadNumber) return;
     const completedDrafts = prescriptions.filter((item) => item.kind === 'draft' && item.status === 'completed');
-    area.replaceChildren(el('h2', `${reports.length} scored report${reports.length === 1 ? '' : 's'} · ${completedDrafts.length} unscored review${completedDrafts.length === 1 ? '' : 's'}`));
+    const scoredImported = completedDrafts.filter((item) => !item.unscored).length;
+    const answerReviews = completedDrafts.length - scoredImported;
+    area.replaceChildren(el('h2', `${reports.length + scoredImported} score summar${reports.length + scoredImported === 1 ? 'y' : 'ies'} · ${answerReviews} answer review${answerReviews === 1 ? '' : 's'}`));
     const list = el('div', undefined, 'report-list');
     for (const report of reports) {
       const row = el('div', undefined, 'report-row');
@@ -346,8 +350,8 @@ async function loadReports(patientId) {
       const row = el('div', undefined, 'report-row');
       const info = el('div');
       const title = catalogue.find((item) => item.id === record.formId)?.title || record.formId;
-      info.append(el('strong', `${title} · Unscored review`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
-      const link = el('a', 'View reviewed answers');
+      info.append(el('strong', `${title} · ${record.unscored ? 'Answer review' : 'Score and answers'}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
+      const link = el('a', record.unscored ? 'View reviewed answers' : 'View score and answers');
       link.href = `/draft-live.html?prescriptionId=${encodeURIComponent(record.id)}`;
       row.append(info, link); list.append(row);
     }
@@ -355,7 +359,7 @@ async function loadReports(patientId) {
       const row = el('div', undefined, 'report-row');
       const info = el('div');
       const title = record.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId : record.formId.toUpperCase();
-      info.append(el('strong', `${title} · ${record.status === 'assigned' ? 'Assigned' : 'In progress'}${record.kind === 'draft' ? ' · Unscored' : ''}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
+      info.append(el('strong', `${title} · ${record.status === 'assigned' ? 'Assigned' : 'In progress'}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
       const link = el('a', 'Open patient assessment');
       link.href = `${record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`;
       row.append(info, link); list.append(row);

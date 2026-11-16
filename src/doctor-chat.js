@@ -42,7 +42,8 @@ export function retrieveDoctorCandidates(patient, message, history = []) {
     }
     if (message.toLowerCase().includes(item.title.toLowerCase())) score += 20;
     return { id: `draft:${item.id}`, title: item.title,
-      description: (item.description || '').slice(0, 240), score, kind: 'unscored_draft' };
+      description: (item.description || '').slice(0, 240), score,
+      kind: item.scoringAvailable ? 'scored_draft' : 'unscored_draft' };
   }).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
   const scored = scoredIds.filter((id) => id !== 'pcl5' || patient.summary.traumaExposure === 'confirmed').map((id) => {
     const entry = getCatalogEntry(id);
@@ -55,7 +56,7 @@ export function fallbackDoctor(patient, message, history = []) {
   const validated = validateDoctorMessage(message, history);
   const messageTerms = tokens(validated.message);
   const suggestions = retrieveDoctorCandidates(patient, validated.message, validated.history)
-    .filter((item) => item.kind === 'unscored_draft')
+    .filter((item) => item.kind !== 'scored')
     .map((item) => ({ item, matches: [...messageTerms].filter((term) =>
       tokens(`${item.title} ${item.description}`).has(term)) }))
     .filter(({ matches }) => matches.length)

@@ -1,6 +1,7 @@
 const byId = (id) => document.getElementById(id);
-const formNames = { phq9: 'PHQ-9', gad7: 'GAD-7', pcl5: 'PCL-5' };
-const colors = { phq9: '#1879dc', gad7: '#19a39a', pcl5: '#845ec2' };
+const formNames = { phq9: 'PHQ-9', gad7: 'GAD-7', pcl5: 'PCL-5', dass21: 'DASS-21' };
+const colors = { phq9: '#1879dc', gad7: '#19a39a', pcl5: '#845ec2', dass21: '#d66a31',
+  'dass21:depression': '#b54f6d', 'dass21:anxiety': '#6a64be', 'dass21:stress': '#d07924' };
 let patients = [];
 let overviewLoad = 0;
 let patientLoad = 0;
@@ -22,6 +23,9 @@ function svg(tag, attributes = {}) {
 function dateLabel(value) {
   return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+function formLabel(item) { return formNames[item.formId] || item.formTitle || item.formId; }
+function seriesColor(item) { return colors[`${item.formId}:${item.metricId}`] || colors[item.formId] || '#607d9e'; }
 
 function renderOverview(data) {
   const { totals } = data;
@@ -57,14 +61,17 @@ function renderOverview(data) {
 
   const byForm = byId('analytics-by-form');
   byForm.replaceChildren();
-  for (const form of data.byForm) {
+  const activeForms = data.byForm.filter((form) => form.prescribed)
+    .sort((a, b) => b.prescribed - a.prescribed || formLabel(a).localeCompare(formLabel(b)));
+  if (!activeForms.length) byForm.append(node('p', 'Assignments will appear here after a test is prescribed.', 'empty-state'));
+  for (const form of activeForms) {
     const row = node('div', undefined, 'analytics-form-row');
     const heading = node('div', undefined, 'analytics-form-heading');
-    heading.append(node('strong', formNames[form.formId]), node('span', `${form.completed} of ${form.prescribed} completed`));
+    heading.append(node('strong', formLabel(form)), node('span', `${form.completed} of ${form.prescribed} completed`));
     const track = node('div', undefined, 'analytics-form-track');
     const fill = node('div', undefined, 'analytics-form-fill');
     fill.style.width = `${form.prescribed ? (form.completed / form.prescribed) * 100 : 0}%`;
-    fill.style.background = colors[form.formId];
+    fill.style.background = seriesColor(form);
     track.append(fill);
     row.append(heading, track);
     byForm.append(row);
@@ -89,7 +96,7 @@ function scoreChart(series) {
     left + ((Date.parse(point.completedAt) - first) / (last - first)) * plotWidth;
   const y = (score) => top + (1 - score / series.maxTotal) * plotHeight;
   const chart = svg('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img',
-    'aria-label': `${formNames[series.formId]} scores over time, out of ${series.maxTotal}` });
+    'aria-label': `${formLabel(series)} ${series.metricName || 'total score'} over time, out of ${series.maxTotal}` });
   for (const fraction of [0, 0.5, 1]) {
     const score = Math.round(fraction * series.maxTotal);
     chart.append(svg('line', { x1: left, y1: y(score), x2: width - right, y2: y(score), class: 'analytics-gridline' }));
@@ -99,12 +106,12 @@ function scoreChart(series) {
   }
   if (points.length > 1) chart.append(svg('polyline', {
     points: points.map((point, index) => `${x(point, index)},${y(point.score)}`).join(' '),
-    fill: 'none', stroke: colors[series.formId], 'stroke-width': 3,
+    fill: 'none', stroke: seriesColor(series), 'stroke-width': 3,
     'stroke-linecap': 'round', 'stroke-linejoin': 'round',
   }));
   points.forEach((point, index) => {
     const marker = svg('circle', { cx: x(point, index), cy: y(point.score), r: 6,
-      fill: colors[series.formId], stroke: '#fff', 'stroke-width': 2 });
+      fill: seriesColor(series), stroke: '#fff', 'stroke-width': 2 });
     const title = svg('title');
     title.textContent = `${dateLabel(point.completedAt)}: ${point.score} of ${series.maxTotal}`;
     marker.append(title);
@@ -128,19 +135,62 @@ function renderPatient() {
   }
   const days = byId('analytics-range').value;
   const cutoff = days === 'all' ? 0 : Date.now() - Number(days) * 86400000;
+  const activity = (patientData.activity || []).filter((item) => Date.parse(item.completedAt) >= cutoff);
   const series = patientData.series.map((item) => ({ ...item,
     points: item.points.filter((point) => Date.parse(point.completedAt) >= cutoff),
   })).filter((item) => item.points.length);
   area.replaceChildren();
+  if (activity.length) {
+    const card = node('section', undefined, 'analytics-activity');
+    card.append(node('h3', 'Completed assessments over time'),
+      node('p', `${activity.length} completed · ${activity.filter((item) => item.score !== null).length} with scores`));
+    const counts = new Map();
+    for (const item of activity) {
+      const month = item.completedAt.slice(0, 7);
+      counts.set(month, (counts.get(month) || 0) + 1);
+    }
+    const months = [...counts].sort(([a], [b]) => a.localeCompare(b));
+    const maximum = Math.max(...months.map(([, count]) => count));
+    const scroll = node('div', undefined, 'analytics-activity-scroll');
+    const bars = node('div', undefined, 'analytics-activity-bars');
+    bars.style.gridTemplateColumns = `repeat(${months.length}, minmax(48px, 1fr))`;
+    for (const [month, count] of months) {
+      const bar = node('div', undefined, 'analytics-activity-month');
+      const column = node('span', undefined, 'analytics-activity-column');
+      column.style.height = `${Math.max(8, (count / maximum) * 100)}%`;
+      column.title = `${month}: ${count} completed`;
+      bar.append(node('strong', String(count)), column, node('small', month));
+      bars.append(bar);
+    }
+    scroll.append(bars);
+    card.append(scroll);
+    const table = node('table', undefined, 'analytics-table');
+    const head = node('tr');
+    for (const label of ['Completed', 'Assessment', 'Result', 'Details']) head.append(node('th', label));
+    const thead = node('thead'); thead.append(head);
+    const tbody = node('tbody');
+    for (const item of [...activity].reverse()) {
+      const row = node('tr');
+      const detail = node('td');
+      const link = node('a', 'View answers'); link.href = item.detailUrl;
+      detail.append(link);
+      row.append(node('td', dateLabel(item.completedAt)), node('td', formLabel(item)),
+        node('td', item.score === null ? 'Answers saved; no score available' : `${item.score} / ${item.maxTotal}`), detail);
+      tbody.append(row);
+    }
+    table.append(thead, tbody);
+    card.append(table);
+    area.append(card);
+  }
   if (!series.length) {
-    area.append(node('p', patientData.totalCompleted ? 'No completed scored assessments in this period. Choose All time to see earlier results.' :
-      'No completed scored assessments yet. Prescribe and complete a test to start this timeline.', 'empty-state'));
+    area.append(node('p', activity.length ? 'These completed forms have no score trend. Their answers remain available above.' :
+      'No completed assessments in this period. Choose All time to see earlier results.', 'empty-state'));
     return;
   }
   for (const item of series) {
     const card = node('section', undefined, 'analytics-series');
     const heading = node('div', undefined, 'analytics-series-heading');
-    heading.append(node('h3', `${formNames[item.formId]} · ${item.language === 'hi' ? 'Hindi' : 'English'} · ${item.formVersion.replace(/-prototype$/, '')}`));
+    heading.append(node('h3', `${formLabel(item)}${item.metricId !== 'total' ? ` · ${item.metricName}` : ''} · ${item.language === 'hi' ? 'Hindi' : 'English'}`));
     const latest = item.points.at(-1);
     const previous = item.points.at(-2);
     const change = previous ? ` · Change from previous: ${latest.score - previous.score >= 0 ? '+' : ''}${latest.score - previous.score}` :
@@ -159,7 +209,7 @@ function renderPatient() {
         node('td', `${point.score} / ${item.maxTotal}${point.severity ? ` · ${point.severity}` : ''}`));
       const detail = node('td');
       const link = node('a', 'View report');
-      link.href = `/report.html?id=${encodeURIComponent(point.id)}`;
+      link.href = point.detailUrl;
       detail.append(link);
       if (point.requiresHumanFollowUp) detail.append(node('span', 'Human follow-up required', 'analytics-follow-up'));
       row.append(detail);

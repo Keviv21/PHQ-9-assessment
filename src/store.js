@@ -255,12 +255,12 @@ export function openStore(path) {
     return listPatientCompleted.all(demoPatientId).map(resultSummary);
   }
 
-  function patientAnalytics(demoPatientId) {
-    return buildPatientAnalytics(demoPatientId, listPatientAnalytics.all(demoPatientId));
+  function patientAnalytics(demoPatientId, importedRows = []) {
+    return buildPatientAnalytics(demoPatientId, [...listPatientAnalytics.all(demoPatientId), ...importedRows]);
   }
 
-  function analyticsOverview() {
-    return buildOverview(listAnalyticsPrescriptions.all());
+  function analyticsOverview(importedRows = []) {
+    return buildOverview([...listAnalyticsPrescriptions.all(), ...importedRows]);
   }
 
   function prescriptionSummary(row) {

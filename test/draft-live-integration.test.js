@@ -83,6 +83,9 @@ test('imported questionnaire supports a saved unscored WebSocket session', { tim
     assert.equal(linkedSession.prescriptionId, assignment.id);
     assert.equal((await (await fetch(`${base}/api/prescriptions/${assignment.id}`)).json()).assessmentId, linkedSession.id);
     assert.equal((await (await fetch(`${base}/api/demo-patients/demo-a/prescriptions`)).json())[0].kind, 'draft');
+    const overview = await (await fetch(`${base}/api/analytics/overview`)).json();
+    assert.equal(overview.totals.prescribed, 1);
+    assert.equal(overview.byForm.find((item) => item.formId === `draft:${selected.id}`).prescribed, 1);
     const blocked = catalogue.find((item) => !item.previewAvailable);
     const blockedResponse = await fetch(`${base}/api/demo-patients/demo-a/prescriptions`, {
       method: 'POST', headers: { 'content-type': 'application/json' },

@@ -2,32 +2,60 @@ const forms = ['phq9', 'gad7', 'pcl5'];
 
 export function buildPatientAnalytics(patientId, rows) {
   const groups = new Map();
+  const activity = [];
   for (const row of rows) {
     const scores = typeof row.scores_json === 'string' ? JSON.parse(row.scores_json) : row.scores;
-    if (!forms.includes(row.form_id) || !Number.isFinite(scores?.rawTotal) ||
-        !Number.isFinite(scores?.maxTotal) || !Number.isFinite(Date.parse(row.completed_at))) continue;
-    const key = `${row.form_id}:${row.form_version}:${row.language}`;
-    if (!groups.has(key)) groups.set(key, {
-      formId: row.form_id, formVersion: row.form_version, language: row.language,
-      maxTotal: scores.maxTotal, points: [],
-    });
-    groups.get(key).points.push({
-      id: row.id, completedAt: row.completed_at, score: scores.rawTotal,
-      severity: scores.severity ?? null, language: row.language, mode: row.mode,
-      requiresHumanFollowUp: scores.requiresHumanFollowUp === true,
-    });
+    if (!Number.isFinite(Date.parse(row.completed_at))) continue;
+    const isImported = Boolean(row.prescription_id);
+    const detailUrl = isImported ? `/draft-live.html?prescriptionId=${encodeURIComponent(row.prescription_id)}` :
+      `/report.html?id=${encodeURIComponent(row.id)}`;
+    const maxTotal = scores?.maxTotal ?? (row.form_id === 'dass21' ? 63 : null);
+    activity.push({ id: row.id, formId: row.form_id, formTitle: row.form_title || null,
+      completedAt: row.completed_at, score: Number.isFinite(scores?.rawTotal) ? scores.rawTotal : null,
+      maxTotal, detailUrl });
+    if (!Number.isFinite(scores?.rawTotal) || !Number.isFinite(maxTotal)) continue;
+    const metrics = [{ id: 'total', name: 'Total score', score: scores.rawTotal,
+      maxTotal, severity: typeof scores.severity === 'string' ? scores.severity : scores.severity?.total ?? null }];
+    if (row.form_id === 'dass21') for (const name of ['depression', 'anxiety', 'stress']) {
+      const value = scores.rawSubscales?.[name];
+      if (Number.isFinite(value)) metrics.push({ id: name, name: `${name[0].toUpperCase()}${name.slice(1)}`,
+        score: value, maxTotal: 21, severity: scores.severity?.[name] ?? null });
+    }
+    for (const metric of metrics) {
+      const key = `${row.form_id}:${row.form_version}:${row.language}:${metric.id}`;
+      if (!groups.has(key)) groups.set(key, {
+        formId: row.form_id, formTitle: row.form_title || null,
+        formVersion: row.form_version, language: row.language,
+        metricId: metric.id, metricName: metric.name, maxTotal: metric.maxTotal, points: [],
+      });
+      groups.get(key).points.push({
+        id: row.id, completedAt: row.completed_at, score: metric.score,
+        severity: metric.severity, language: row.language, mode: row.mode,
+        detailUrl, requiresHumanFollowUp: scores.requiresHumanFollowUp === true,
+      });
+    }
   }
   const series = [...groups.values()].map((group) => {
     group.points.sort((a, b) => a.completedAt.localeCompare(b.completedAt) || a.id.localeCompare(b.id));
     const latest = group.points.at(-1);
     return { ...group, latest, changeFromPrevious: group.points.length > 1 ?
       latest.score - group.points.at(-2).score : null };
-  }).sort((a, b) => forms.indexOf(a.formId) - forms.indexOf(b.formId) || a.formVersion.localeCompare(b.formVersion));
-  return { patientId, totalCompleted: series.reduce((sum, item) => sum + item.points.length, 0), series };
+  }).sort((a, b) => {
+    const order = [...forms, 'dass21'];
+    const aIndex = order.indexOf(a.formId);
+    const bIndex = order.indexOf(b.formId);
+    return (aIndex < 0 ? 999 : aIndex) - (bIndex < 0 ? 999 : bIndex) ||
+      a.formVersion.localeCompare(b.formVersion) ||
+      ['total', 'depression', 'anxiety', 'stress'].indexOf(a.metricId) -
+      ['total', 'depression', 'anxiety', 'stress'].indexOf(b.metricId);
+  });
+  activity.sort((a, b) => a.completedAt.localeCompare(b.completedAt) || a.id.localeCompare(b.id));
+  return { patientId, totalCompleted: activity.length,
+    totalScored: activity.filter((item) => item.score !== null).length, activity, series };
 }
 
 export function buildOverview(rows, now = new Date()) {
-  const byForm = forms.map((formId) => ({ formId, prescribed: 0, completed: 0 }));
+  const byForm = forms.map((formId) => ({ formId, formTitle: null, prescribed: 0, completed: 0 }));
   const counts = { prescribed: 0, completed: 0, inProgress: 0, notStarted: 0 };
   const durations = [];
   const months = [];
@@ -36,8 +64,11 @@ export function buildOverview(rows, now = new Date()) {
     months.push({ month: date.toISOString().slice(0, 7), completed: 0 });
   }
   for (const row of rows) {
-    const form = byForm.find((item) => item.formId === row.form_id);
-    if (!form) continue;
+    let form = byForm.find((item) => item.formId === row.form_id);
+    if (!form) {
+      form = { formId: row.form_id, formTitle: row.form_title || null, prescribed: 0, completed: 0 };
+      byForm.push(form);
+    }
     counts.prescribed += 1;
     form.prescribed += 1;
     if (row.assessment_status === 'completed' && row.completed_at) {

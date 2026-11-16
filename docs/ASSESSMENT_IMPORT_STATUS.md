@@ -1,6 +1,6 @@
 # Assessment import status
 
-The 13 November 2026 repaired export contains 186 draft records. The Assessment Library can start a saved, unscored voice or on-screen review for 162 of them. Compared with the prior import, 53 additional records have usable question and response structures. For 16 of these, the export prints numeric choices but labels only the scale endpoints; those choices display the printed numbers and available endpoint words.
+The 13 November 2026 repaired export contains 186 draft records. Prescribe Test can start a saved voice or on-screen review for 162 of them. DASS-21 now has an implemented score; the others use their dedicated scored flows (PHQ-9, GAD-7, PCL-5) or save answers without a score. Compared with the prior import, 53 additional records have usable question and response structures. For 16 of these, the export prints numeric choices but labels only the scale endpoints; those choices display the printed numbers and available endpoint words.
 
 The other 24 records remain catalogue-only. The number in the last column is the number of items without a complete choice structure. The source needs to provide the missing response sets or, for SDQ, its questions before these can run as the same questionnaire. We have not invented choices or scoring rules.
 
@@ -31,4 +31,4 @@ The other 24 records remain catalogue-only. The number in the last column is the
 | WHODAS 2.0 – Proxy | 39 | 3 |
 | Your Experience of Service (YES) | 28 | 2 |
 
-The repaired export marks no record as scoring enabled or ready for clinical use. Imported reviews save selected answers only. The separate PHQ-9, GAD-7, and PCL-5 flows retain their existing scoring and patient prescription behavior.
+The repaired export marks no record as scoring enabled or ready for clinical use. It has structured draft rules for eight forms and no structured rules for the other 178. The app has independently implemented and tested scoring for PHQ-9, GAD-7, PCL-5, and DASS-21; the remaining forms save selected answers without a score. DASS-21 follows the [published NovoPsych raw-score guidance](https://novopsych.com/assessments/depression/depression-anxiety-stress-scales-short-form-dass-21/) for its total, subscales, and severity bands. Percentiles and change calculations are not included. Run `npm run audit:assessments -- <repaired-bundle.json>` to inspect scoring coverage before adding another rule.
