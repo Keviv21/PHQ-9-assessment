@@ -7,14 +7,20 @@ export function buildPatientAnalytics(patientId, rows) {
     const scores = typeof row.scores_json === 'string' ? JSON.parse(row.scores_json) : row.scores;
     if (!Number.isFinite(Date.parse(row.completed_at))) continue;
     const isImported = Boolean(row.prescription_id);
-    const detailUrl = isImported ? `/draft-live.html?prescriptionId=${encodeURIComponent(row.prescription_id)}` :
+    const detailUrl = row.kind === 'definition' ? `/definition.html?prescriptionId=${encodeURIComponent(row.prescription_id)}` :
+      isImported ? `/draft-live.html?prescriptionId=${encodeURIComponent(row.prescription_id)}` :
       `/report.html?id=${encodeURIComponent(row.id)}`;
-    const maxTotal = scores?.maxTotal ?? (row.form_id === 'dass21' ? 63 : null);
+    const draftMetrics = scores?.metrics?.filter((metric) => Number.isFinite(metric.value) &&
+      Number.isFinite(metric.maximum) && metric.maximum > 0 && (metric.minimum ?? 0) >= 0) ?? [];
+    const displayMetric = draftMetrics.find((metric) => /total/i.test(metric.id)) ?? draftMetrics[0];
+    const maxTotal = displayMetric?.maximum ?? scores?.maxTotal ?? (row.form_id === 'dass21' ? 63 : null);
     activity.push({ id: row.id, formId: row.form_id, formTitle: row.form_title || null,
-      completedAt: row.completed_at, score: Number.isFinite(scores?.rawTotal) ? scores.rawTotal : null,
+      completedAt: row.completed_at, score: displayMetric?.value ?? (Number.isFinite(scores?.rawTotal) ? scores.rawTotal : null),
       maxTotal, detailUrl });
-    if (!Number.isFinite(scores?.rawTotal) || !Number.isFinite(maxTotal)) continue;
-    const metrics = [{ id: 'total', name: 'Total score', score: scores.rawTotal,
+    if ((!Number.isFinite(scores?.rawTotal) || !Number.isFinite(maxTotal)) && !draftMetrics.length) continue;
+    const metrics = draftMetrics.length ? draftMetrics.map((metric) => ({ id: metric.id,
+      name: metric.label, score: metric.value, maxTotal: metric.maximum, severity: metric.band })) :
+      [{ id: 'total', name: 'Total score', score: scores.rawTotal,
       maxTotal, severity: typeof scores.severity === 'string' ? scores.severity : scores.severity?.total ?? null }];
     if (row.form_id === 'dass21') for (const name of ['depression', 'anxiety', 'stress']) {
       const value = scores.rawSubscales?.[name];
@@ -31,7 +37,7 @@ export function buildPatientAnalytics(patientId, rows) {
       groups.get(key).points.push({
         id: row.id, completedAt: row.completed_at, score: metric.score,
         severity: metric.severity, language: row.language, mode: row.mode,
-        detailUrl, requiresHumanFollowUp: scores.requiresHumanFollowUp === true,
+        detailUrl, requiresHumanFollowUp: scores?.requiresHumanFollowUp === true,
       });
     }
   }

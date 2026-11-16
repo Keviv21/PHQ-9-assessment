@@ -29,8 +29,9 @@ function renderSuggestions(items) {
   for (const item of items) {
     const row = node('div', undefined, 'doctor-chat-suggestion');
     const text = node('div');
-    text.append(node('strong', item.title), node('p', item.reason),
-      node('small', item.kind === 'unscored_draft' ? 'Answers saved without a score' : 'Score available'));
+    const scoreLabel = item.kind === 'scored' ? 'Scored assessment' :
+      item.kind === 'answer_only' ? 'Answer report only' : 'Draft scoring for review';
+    text.append(node('strong', item.title), node('p', item.reason), node('small', scoreLabel));
     const choose = node('button', 'Select', 'button outline');
     choose.type = 'button';
     choose.addEventListener('click', () => window.dispatchEvent(new CustomEvent('clinic:select-assessment', { detail: { id: item.id } })));
@@ -45,7 +46,7 @@ function reset(patient, status) {
   eligible = status === 'suggestions';
   history = [];
   byId('doctor-chat-messages').replaceChildren(node('p', eligible ?
-    'Ask Gemini about a current concern or another assessment. Suggestions are for doctor review.' :
+    'Describe a current concern or ask about another assessment. Suggestions are for doctor review.' :
     'Complete the safety or age review before discussing an assignment.', 'doctor-chat-intro'));
   byId('doctor-chat-suggestions').replaceChildren();
   byId('doctor-chat-input').value = '';

@@ -137,15 +137,16 @@ function renderState(next) {
     setStatus(t('savedLocally'));
     return;
   }
-  for (const option of mode === 'demo' ? form.options : []) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'option';
-    button.innerHTML = `<span class="number">${option.value}</span><span><strong></strong><small></small></span>`;
-    button.querySelector('strong').textContent = option.label;
-    button.querySelector('small').textContent = option.description;
-    button.addEventListener('click', () => send({ type: 'select', value: option.value }));
-    ui.options.append(button);
+  for (const option of form.options) {
+    const choice = document.createElement(mode === 'demo' ? 'button' : 'div');
+    if (mode === 'demo') choice.type = 'button';
+    choice.className = `option${mode === 'live' ? ' voice-choice' : ''}`;
+    choice.innerHTML = '<span class="number"></span><span><strong></strong><small></small></span>';
+    choice.querySelector('.number').textContent = String(option.value);
+    choice.querySelector('strong').textContent = option.label;
+    choice.querySelector('small').textContent = option.description;
+    if (mode === 'demo') choice.addEventListener('click', () => send({ type: 'select', value: option.value }));
+    ui.options.append(choice);
   }
   if (mode === 'demo' && 'speechSynthesis' in window) {
     speechSynthesis.cancel();

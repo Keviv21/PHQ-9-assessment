@@ -31,6 +31,8 @@ h2 { margin: 0 0 14px; font-size: 18px; }
 .draft-options { display: grid; gap: 8px; margin-top: 18px; }
 .draft-option { width: 100%; padding: 12px 14px; background: white; border: 1px solid #dce5ee; border-radius: 8px; color: #233c58; text-align: left; cursor: pointer; }
 .draft-option:hover,.draft-option.selected { border-color: #0088ff; background: #f2f9ff; }
+.draft-option.voice-option { cursor: default; }
+.draft-option.voice-option:hover:not(.selected) { border-color: #dce5ee; background: white; }
 .draft-confirmation { border-top: 1px solid #e5eaf0; margin-top: 18px; padding-top: 18px; }
 .draft-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
 .draft-review-row { padding: 13px 0; border-bottom: 1px solid #e3eaf2; }

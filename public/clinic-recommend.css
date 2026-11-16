@@ -58,6 +58,16 @@
 .decision-panel .decision-help { color: #60748d; font-size: 12px; line-height: 1.5; }
 .decision-panel #selection-details { margin-top: 13px; font-size: 13px; color: #40546d; }
 .decision-panel #selection-details p { margin: 7px 0; }
+.assessment-combobox { position: relative; max-width: 520px; }
+.assessment-combobox .assessment-search { width: 100%; max-width: none; margin: 0; padding-right: 44px; }
+.assessment-open { position: absolute; top: 0; right: 0; height: 100%; width: 42px; border: 0; background: transparent; color: #47617e; font-size: 25px; }
+.assessment-open:disabled { color: #aab6c5; }
+.assessment-options { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; max-height: 300px; overflow-y: auto; border: 1px solid #cbd9e8; border-radius: 9px; background: #fff; box-shadow: 0 10px 24px #12385c20; padding: 5px; }
+.assessment-option { width: 100%; display: block; text-align: left; border: 0; border-radius: 6px; padding: 10px 11px; background: #fff; color: #1c3552; font-size: 13px; line-height: 1.4; }
+.assessment-option:hover:not(:disabled),.assessment-option.highlighted { background: #eaf4ff; color: #075fae; }
+.assessment-option.selected { font-weight: 700; }
+.assessment-option:disabled { color: #9ba8b8; cursor: not-allowed; }
+.assessment-no-results { margin: 0; padding: 10px; color: #65778d; font-size: 13px; }
 .clinical-note { font-size: 11px; color: #8190a2; line-height: 1.5; margin: 28px 0 0; }
 @media (max-width: 1050px) { .clinic-app { grid-template-columns: 270px minmax(0, 1fr); } .sidebar { padding-left: 8px; padding-right: 8px; } .logo { width: calc(100% + 16px); margin-left: -8px; margin-right: -8px; } .detail-grid { grid-template-columns: 1fr; } }
 @media (min-width: 651px) {

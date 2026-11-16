@@ -1,11 +1,11 @@
 import { GoogleGenAI } from '@google/genai';
-import { listDraftAssessments } from './draft-library.js';
+import { listDefinitions } from './definition-library.js';
 import { getCatalogEntry } from './assessment-catalog.js';
 
 const stopWords = new Set(['about', 'after', 'again', 'also', 'and', 'are', 'been', 'does', 'from', 'have', 'into', 'more', 'patient', 'some', 'that', 'their', 'them', 'there', 'these', 'this', 'with', 'would']);
 const scoredIds = ['phq9', 'gad7', 'pcl5'];
-const duplicateDraftIds = new Set(scoredIds.map((id) => getCatalogEntry(id).catalogDraftId));
-const drafts = listDraftAssessments().filter((item) => item.previewAvailable && !duplicateDraftIds.has(item.id));
+const retainedLegacyIds = new Set(['phq9', 'gad7', 'pcl5', 'dass21'].map((id) => getCatalogEntry(id).catalogDraftId));
+const definitions = listDefinitions().filter((item) => item.available && !retainedLegacyIds.has(item.id));
 
 function tokens(value) {
   return new Set(String(value).toLowerCase().match(/[a-z]{3,}/g)?.filter((word) => !stopWords.has(word)) || []);
@@ -32,7 +32,7 @@ export function retrieveDoctorCandidates(patient, message, history = []) {
   const current = patient.summary.observations.filter((item) => item.status === 'current');
   const query = tokens([message, ...history.filter((turn) => turn.role === 'doctor').slice(-2).map((turn) => turn.text),
     ...current.map((item) => item.description)].join(' '));
-  const ranked = drafts.map((item) => {
+  const ranked = definitions.map((item) => {
     const title = tokens(item.title);
     const description = tokens(item.description || '');
     let score = 0;
@@ -41,15 +41,18 @@ export function retrieveDoctorCandidates(patient, message, history = []) {
       if (description.has(word)) score += 1;
     }
     if (message.toLowerCase().includes(item.title.toLowerCase())) score += 20;
-    return { id: `draft:${item.id}`, title: item.title,
+    return { id: `definition:${item.id}`, title: item.title,
       description: (item.description || '').slice(0, 240), score,
-      kind: item.scoringAvailable ? 'scored_draft' : 'unscored_draft' };
-  }).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
+      kind: item.ruleCount ? 'definition_draft' : 'answer_only' };
+  }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
   const scored = scoredIds.filter((id) => id !== 'pcl5' || patient.summary.traumaExposure === 'confirmed').map((id) => {
     const entry = getCatalogEntry(id);
     return { id, title: entry.title, description: entry.purpose, kind: 'scored' };
   });
-  return [...scored, ...ranked.slice(0, 18).map(({ score, ...item }) => item)];
+  const dass = getCatalogEntry('dass21');
+  return [...scored, { id: `draft:${dass.catalogDraftId}`, title: dass.title,
+    description: dass.purpose, kind: 'scored_draft' },
+  ...ranked.slice(0, 18).map(({ score, ...item }) => item)];
 }
 
 export function fallbackDoctor(patient, message, history = []) {

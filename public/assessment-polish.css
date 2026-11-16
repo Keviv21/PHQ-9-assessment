@@ -30,6 +30,8 @@ body { background: #fff; color: var(--openmind-ink); }
 .question-area h2 { color: #172b45; }
 .option:hover,.option.selected { border-color: var(--openmind-blue); }
 .option .number { color: #0875d5; }
+.option.voice-choice { cursor: default; }
+.option.voice-choice:hover:not(.selected) { background: #fff; border-color: #e1e8f2; }
 .session-panel { border-left-color: #e2e8f0; padding: 22px 17px; }
 .session-card { border-color: #e1e8f0; border-radius: 12px; }
 .camera-box { background: #edf2f7; }

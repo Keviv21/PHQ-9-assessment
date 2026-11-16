@@ -11,20 +11,27 @@ import { recommendAssessments } from './recommendation.js';
 import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from './demo-patients.js';
 import { getDraftAssessment, getLiveDraftForm, listDraftAssessments } from './draft-library.js';
 import { openDraftStore } from './draft-store.js';
+import { openPostgresStores } from './postgres-stores.js';
 import { answerDoctor, fallbackDoctor, validateDoctorMessage } from './doctor-chat.js';
 import { getCatalogEntry } from './assessment-catalog.js';
+import { getDefinition, listDefinitions } from './definition-library.js';
+import { openDefinitionStore } from './definition-store.js';
+import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
 const dbPath = process.env.DB_PATH || fileURLToPath(new URL('../data/prototype.sqlite', import.meta.url));
-const store = openStore(dbPath);
-const draftStore = openDraftStore(dbPath);
+const postgres = process.env.DATABASE_URL ? openPostgresStores() : null;
+const store = postgres?.store ?? openStore(dbPath);
+const draftStore = postgres?.draftStore ?? openDraftStore(dbPath);
+const definitionStore = openDefinitionStore(postgres ? { pool: postgres.pool } : { path: dbPath });
+const definitionVoiceStore = createDefinitionVoiceStore(definitionStore);
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const textModel = process.env.GEMINI_TEXT_MODEL?.trim() || 'gemini-3.5-flash-lite';
 const scoredDraftIds = new Set(['phq9', 'gad7', 'pcl5'].map((id) => getCatalogEntry(id).catalogDraftId));
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
+const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css', '/definition.html', '/definition.js', '/definition-voice.js', '/definition.css']);
 const activeAssessments = new Set();
 
 function json(response, status, value) {
@@ -32,16 +39,76 @@ function json(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
-const server = http.createServer((request, response) => {
+async function readJson(request, maxBytes = 200_000) {
+  if (!request.headers['content-type']?.startsWith('application/json')) throw new RangeError('Send JSON.');
+  let body = '';
+  for await (const chunk of request) {
+    body += chunk;
+    if (Buffer.byteLength(body) > maxBytes) throw new RangeError('Request is too large.');
+  }
+  return JSON.parse(body);
+}
+
+const server = http.createServer(async (request, response) => {
+  try {
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+  if (url.pathname === '/api/definitions' && request.method === 'GET') return json(response, 200, listDefinitions());
+  if (url.pathname.startsWith('/api/definitions/') && request.method === 'GET') {
+    let id;
+    try { id = decodeURIComponent(url.pathname.slice('/api/definitions/'.length)); }
+    catch { return json(response, 400, { error: 'Invalid ID.' }); }
+    const definition = getDefinition(id);
+    return definition ? json(response, 200, definition) : json(response, 404, { error: 'Assessment not found.' });
+  }
+  const definitionPatientRoute = /^\/api\/definition-patients\/(demo-[a-z])\/prescriptions$/.exec(url.pathname);
+  if (definitionPatientRoute) {
+    const patientId = definitionPatientRoute[1];
+    if (!getDemoPatient(patientId)) return json(response, 404, { error: 'Patient not found.' });
+    if (request.method === 'GET') return json(response, 200, await definitionStore.patientPrescriptions(patientId));
+    if (request.method === 'POST') {
+      try {
+        const { formId } = await readJson(request, 2000);
+        const suggestion = suggestForDemoPatient(patientId);
+        if (suggestion?.status !== 'suggestions') return json(response, 409, { error: 'Clinical review required before assignment.' });
+        return json(response, 201, await definitionStore.prescribe(patientId, formId));
+      } catch (error) { return json(response, 400, { error: error.message }); }
+    }
+  }
+  const definitionPrescriptionRoute = /^\/api\/definition-prescriptions\/([0-9a-f-]{36})(\/start)?$/i.exec(url.pathname);
+  if (definitionPrescriptionRoute) {
+    const id = definitionPrescriptionRoute[1];
+    if (request.method === 'GET' && !definitionPrescriptionRoute[2]) {
+      const prescription = await definitionStore.getPrescription(id);
+      return prescription ? json(response, 200, { ...prescription, patient: getDemoPatient(prescription.demoPatientId) }) :
+        json(response, 404, { error: 'Assignment not found.' });
+    }
+    if (request.method === 'POST' && definitionPrescriptionRoute[2]) {
+      try { return json(response, 200, await definitionStore.start(id)); }
+      catch (error) { return json(response, 400, { error: error.message }); }
+    }
+  }
+  const definitionSessionRoute = /^\/api\/definition-sessions\/([0-9a-f-]{36})(\/finish)?$/i.exec(url.pathname);
+  if (definitionSessionRoute) {
+    const id = definitionSessionRoute[1];
+    if (request.method === 'GET' && !definitionSessionRoute[2]) {
+      const state = await definitionStore.getSession(id);
+      return state ? json(response, 200, state) : json(response, 404, { error: 'Session not found.' });
+    }
+    if (request.method === 'PUT' || (request.method === 'POST' && definitionSessionRoute[2])) {
+      try {
+        const { answers, context } = await readJson(request);
+        return json(response, 200, await definitionStore.save(id, answers, Boolean(definitionSessionRoute[2]), context ?? null));
+      } catch (error) { return json(response, 400, { error: error.message }); }
+    }
+  }
   if (url.pathname === '/api/draft-sessions' && request.method === 'POST') {
     if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
     let body = '';
     request.on('data', (chunk) => { body += chunk; if (body.length > 1000) request.destroy(); });
-    request.on('end', () => {
+    request.on('end', async () => {
       try {
         const { draftId, mode, prescriptionId } = JSON.parse(body);
-        const state = prescriptionId ? draftStore.startPrescription(prescriptionId, mode) : draftStore.create(draftId, mode);
+        const state = prescriptionId ? await draftStore.startPrescription(prescriptionId, mode) : await draftStore.create(draftId, mode);
         return json(response, prescriptionId && state.answers.length ? 200 : 201, state);
       } catch (error) { return json(response, 400, { error: error.message }); }
     });
@@ -52,7 +119,7 @@ const server = http.createServer((request, response) => {
     if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
     let body = '';
     request.on('data', (chunk) => { body += chunk; if (body.length > 1000) request.destroy(); });
-    request.on('end', () => {
+    request.on('end', async () => {
       let formId;
       try { ({ formId } = JSON.parse(body)); }
       catch { return json(response, 400, { error: 'Choose an assessment.' }); }
@@ -65,12 +132,14 @@ const server = http.createServer((request, response) => {
         const draftId = formId.slice('draft:'.length);
         if (scoredDraftIds.has(draftId)) return json(response, 409, { error: 'Choose the scored version of this assessment.' });
         if (!getLiveDraftForm(draftId)) return json(response, 409, { error: 'This imported assessment needs complete source content before assignment.' });
-        return json(response, 201, draftStore.prescribe(patientPrescriptionsRoute[1], draftId));
+        try { return json(response, 201, await draftStore.prescribe(patientPrescriptionsRoute[1], draftId)); }
+        catch (error) { return json(response, 400, { error: error.message }); }
       }
       if (!suggestion.prescriptionChoices.some((item) => item.id === formId && item.availability === 'available')) {
         return json(response, 409, { error: 'This assessment is not available for assignment.' });
       }
-      return json(response, 201, store.prescribe(patientPrescriptionsRoute[1], formId));
+      try { return json(response, 201, await store.prescribe(patientPrescriptionsRoute[1], formId)); }
+      catch (error) { return json(response, 400, { error: error.message }); }
     });
     return;
   }
@@ -119,11 +188,14 @@ const server = http.createServer((request, response) => {
     return;
   }
   if (request.method !== 'GET') return json(response, 405, { error: 'Method not allowed.' });
-  if (url.pathname === '/api/health') return json(response, 200, { ok: true });
-  if (url.pathname === '/api/draft-sessions') return json(response, 200, draftStore.list());
+  if (url.pathname === '/api/health') {
+    if (postgres) await postgres.health();
+    return json(response, 200, { ok: true, database: postgres ? 'postgresql' : 'sqlite' });
+  }
+  if (url.pathname === '/api/draft-sessions') return json(response, 200, await draftStore.list());
   if (url.pathname.startsWith('/api/draft-sessions/')) {
     const id = url.pathname.slice('/api/draft-sessions/'.length);
-    const state = draftStore.get(id);
+    const state = await draftStore.get(id);
     return state ? json(response, 200, state) : json(response, 404, { error: 'Live review session not found.' });
   }
   if (url.pathname === '/api/assessment-library') return json(response, 200, listDraftAssessments());
@@ -136,30 +208,33 @@ const server = http.createServer((request, response) => {
   }
   if (url.pathname === '/api/demo-patients') return json(response, 200, listDemoPatients());
   if (url.pathname === '/api/analytics/overview') return json(response, 200,
-    store.analyticsOverview(draftStore.analyticsPrescriptionRows()));
+    await store.analyticsOverview([...await draftStore.analyticsPrescriptionRows(),
+      ...await definitionStore.analyticsPrescriptionRows()]));
   const patientAnalyticsRoute = /^\/api\/demo-patients\/(demo-[a-z])\/analytics$/.exec(url.pathname);
   if (patientAnalyticsRoute) {
     return getDemoPatient(patientAnalyticsRoute[1])
-      ? json(response, 200, store.patientAnalytics(patientAnalyticsRoute[1],
-        draftStore.patientAnalyticsRows(patientAnalyticsRoute[1])))
+      ? json(response, 200, await store.patientAnalytics(patientAnalyticsRoute[1],
+        [...await draftStore.patientAnalyticsRows(patientAnalyticsRoute[1]),
+          ...await definitionStore.patientAnalyticsRows(patientAnalyticsRoute[1])]))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   if (patientPrescriptionsRoute) {
     return getDemoPatient(patientPrescriptionsRoute[1])
-      ? json(response, 200, [...store.patientPrescriptions(patientPrescriptionsRoute[1]),
-        ...draftStore.patientPrescriptions(patientPrescriptionsRoute[1])]
+      ? json(response, 200, [...await store.patientPrescriptions(patientPrescriptionsRoute[1]),
+        ...await draftStore.patientPrescriptions(patientPrescriptionsRoute[1]),
+        ...await definitionStore.patientPrescriptions(patientPrescriptionsRoute[1])]
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   const patientReportsRoute = /^\/api\/demo-patients\/(demo-[a-z])\/reports$/.exec(url.pathname);
   if (patientReportsRoute) {
     return getDemoPatient(patientReportsRoute[1])
-      ? json(response, 200, store.patientResults(patientReportsRoute[1]))
+      ? json(response, 200, await store.patientResults(patientReportsRoute[1]))
       : json(response, 404, { error: 'Demo patient not found.' });
   }
   const prescriptionRoute = /^\/api\/prescriptions\/([0-9a-f-]{36})$/i.exec(url.pathname);
   if (prescriptionRoute) {
-    const prescription = store.getPrescription(prescriptionRoute[1]) || draftStore.getPrescription(prescriptionRoute[1]);
+    const prescription = await store.getPrescription(prescriptionRoute[1]) || await draftStore.getPrescription(prescriptionRoute[1]) || await definitionStore.getPrescription(prescriptionRoute[1]);
     return prescription ? json(response, 200, { ...prescription, patient: getDemoPatient(prescription.demoPatientId) })
       : json(response, 404, { error: 'Prescription not found.' });
   }
@@ -191,10 +266,10 @@ const server = http.createServer((request, response) => {
       scoringSource: form.scoringSource,
     });
   }
-  if (url.pathname === '/api/results') return json(response, 200, store.results());
+  if (url.pathname === '/api/results') return json(response, 200, await store.results());
   if (url.pathname.startsWith('/api/results/')) {
     const id = url.pathname.slice('/api/results/'.length);
-    const assessment = store.get(id);
+    const assessment = await store.get(id);
     if (!assessment || assessment.status !== 'completed') return json(response, 404, { error: 'Result not found.' });
     return json(response, 200, assessment);
   }
@@ -212,10 +287,20 @@ const server = http.createServer((request, response) => {
   } catch {
     json(response, 404, { error: 'File not found.' });
   }
+  } catch (error) {
+    console.error('Request failed:', error.message);
+    if (!response.headersSent) json(response, 503, { error: 'Database request failed.' });
+  }
 });
 
 const wss = new WebSocketServer({ noServer: true, maxPayload: 300_000 });
 wss.on('connection', (socket, request) => {
+  handleScoredConnection(socket, request).catch((error) => {
+    console.error('Assessment connection failed:', error.message);
+    socket.close(1011, 'Database request failed.');
+  });
+});
+async function handleScoredConnection(socket, request) {
   const origin = request.headers.origin;
   if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
     socket.close(1008, 'Unexpected origin.');
@@ -225,7 +310,7 @@ wss.on('connection', (socket, request) => {
   const mode = url.searchParams.get('mode');
   const language = url.searchParams.get('language') || 'en';
   const prescriptionId = url.searchParams.get('prescriptionId') || '';
-  const prescription = store.getPrescription(prescriptionId);
+  const prescription = await store.getPrescription(prescriptionId);
   const demoPatientId = prescription?.demoPatientId || null;
   const formId = prescription?.formId || null;
   let form;
@@ -256,7 +341,7 @@ wss.on('connection', (socket, request) => {
     socket.close(1008, 'Assessment does not belong to this prescription.');
     return;
   }
-  const assessment = requestedId ? store.get(requestedId) : store.startPrescription(prescriptionId, mode, language);
+  const assessment = requestedId ? await store.get(requestedId) : await store.startPrescription(prescriptionId, mode, language);
   if (!assessment || assessment.formId !== formId || assessment.mode !== mode || assessment.language !== language || assessment.demoPatientId !== demoPatientId || assessment.status === 'completed' || activeAssessments.has(assessment.id)) {
     socket.close(1008, 'Assessment cannot be resumed.');
     return;
@@ -284,7 +369,9 @@ wss.on('connection', (socket, request) => {
     bridge.start().catch((error) => send({ type: 'error', message: error.message }));
   }
 
+  let messageQueue = Promise.resolve();
   socket.on('message', (payload, isBinary) => {
+    messageQueue = messageQueue.then(async () => {
     try {
       if (isBinary) {
         if (mode !== 'live' || !bridge || payload.length < 3) return;
@@ -303,7 +390,7 @@ wss.on('connection', (socket, request) => {
       if (message.type === 'select') {
         if (bridge) throw new Error('Answer in your own words in Live mode.');
         else {
-          const state = store.get(assessment.id);
+          const state = await store.get(assessment.id);
           if (state.status !== 'in_progress') throw new Error('Assessment is completed.');
           if (!Number.isInteger(message.value) || message.value < 0 || message.value >= form.options.length) throw new Error(`Choose a value from 0 to ${form.options.length - 1}.`);
           pending = { number: state.currentNumber, value: message.value };
@@ -311,24 +398,24 @@ wss.on('connection', (socket, request) => {
         }
       } else if (message.type === 'say') {
         if (!bridge) throw new Error('Text conversation requires Live mode.');
-        if (store.get(assessment.id)?.status !== 'in_progress') throw new Error('Review the answers on screen.');
+        if ((await store.get(assessment.id))?.status !== 'in_progress') throw new Error('Review the answers on screen.');
         bridge.sendText(message.text);
       } else if (message.type === 'confirm') {
         if (bridge) {
-          const result = bridge.confirm();
+          const result = await bridge.confirm();
           if (!result.accepted) throw new Error(result.error);
           bridge.afterConfirmation(result);
         } else {
           if (!pending) throw new Error('Select an answer first.');
-          const state = store.record(assessment.id, pending.number, pending.value, 'demo');
+          const state = await store.record(assessment.id, pending.number, pending.value, 'demo');
           pending = null;
           sendState(state);
         }
       } else if (message.type === 'cancel') {
-        if (bridge) { bridge.cancel(); bridge.afterCancellation(); }
+        if (bridge) { bridge.cancel(); await bridge.afterCancellation(); }
         else { pending = null; send({ type: 'proposal_cleared' }); }
       } else if (message.type === 'finalize') {
-        const state = store.finalize(assessment.id, message.answers);
+        const state = await store.finalize(assessment.id, message.answers);
         sendState(state);
         bridge?.stop();
       } else {
@@ -337,25 +424,105 @@ wss.on('connection', (socket, request) => {
     } catch (error) {
       send({ type: 'error', message: error.message });
     }
+    });
   });
 
   socket.on('close', () => {
     activeAssessments.delete(assessment.id);
     bridge?.stop();
   });
-});
+}
 
 const draftWss = new WebSocketServer({ noServer: true, maxPayload: 300_000 });
+const definitionWss = new WebSocketServer({ noServer: true, maxPayload: 300_000 });
 server.on('upgrade', (request, socket, head) => {
   let pathname;
   try { pathname = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`).pathname; }
   catch { socket.destroy(); return; }
-  const target = pathname === '/ws' ? wss : pathname === '/draft-ws' ? draftWss : null;
+  const target = pathname === '/ws' ? wss : pathname === '/draft-ws' ? draftWss :
+    pathname === '/definition-ws' ? definitionWss : null;
   if (!target) { socket.destroy(); return; }
   target.handleUpgrade(request, socket, head, (client) => target.emit('connection', client, request));
 });
 const activeDraftSessions = new Set();
+const activeDefinitionSessions = new Set();
+definitionWss.on('connection', (socket, request) => {
+  handleDefinitionConnection(socket, request).catch((error) => {
+    console.error('Definition voice connection failed:', error.message);
+    socket.close(1011, 'Assessment voice connection failed.');
+  });
+});
+async function handleDefinitionConnection(socket, request) {
+  const origin = request.headers.origin;
+  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+    socket.close(1008, 'Unexpected origin.'); return;
+  }
+  const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+  const sessionId = url.searchParams.get('sessionId') || '';
+  if (!/^[0-9a-f-]{36}$/i.test(sessionId)) { socket.close(1008, 'Session ID required.'); return; }
+  const state = await definitionStore.getSession(sessionId);
+  if (!state || state.status !== 'in_progress' || activeDefinitionSessions.has(sessionId)) {
+    socket.close(1008, 'Assessment session is unavailable.'); return;
+  }
+  const prescription = await definitionStore.getPrescription(state.prescriptionId);
+  if (!prescription || prescription.assessmentId !== sessionId || !getDemoPatient(prescription.demoPatientId)) {
+    socket.close(1008, 'Assignment does not match this session.'); return;
+  }
+  if (!apiKey) { socket.close(1008, 'Gemini Live is not configured.'); return; }
+  if (!nextDefinitionItem(state)) { socket.close(1008, 'Review the completed answers on screen.'); return; }
+  activeDefinitionSessions.add(sessionId);
+  const snapshot = state.formSnapshot;
+  const form = { definition: true, formId: snapshot.id, title: snapshot.title,
+    referencePeriod: snapshot.referencePeriod?.instruction_claims?.join(', ') || '',
+    questions: snapshot.questions };
+  let lastVideoAt = 0;
+  let bridge;
+  const send = (message) => { if (socket.readyState === 1) socket.send(JSON.stringify(message)); };
+  const sendState = (current) => {
+    const next = nextDefinitionItem(current);
+    send({ type: 'state', assessment: voiceDefinitionState(current),
+      question: next ? { number: next.number, total: snapshot.questions.length, ...next.item } : null });
+  };
+  sendState(state);
+  bridge = new GeminiBridge({ apiKey, model, socket, store: definitionVoiceStore,
+    assessmentId: sessionId, formId: form.formId, language: 'en', formOverride: form, onState: sendState });
+  bridge.start().catch((error) => send({ type: 'error', message: error.message }));
+  let queue = Promise.resolve();
+  socket.on('message', (payload, isBinary) => {
+    queue = queue.then(async () => {
+      try {
+        if (isBinary) {
+          if (payload.length < 3) return;
+          const data = payload.subarray(1);
+          if (payload[0] === 1 && data.length % 2 === 0) bridge.sendAudio(data);
+          // Camera frames are optional conversational context only.
+          if (payload[0] === 2 && data[0] === 0xff && data[1] === 0xd8 &&
+              data.at(-2) === 0xff && data.at(-1) === 0xd9 && Date.now() - lastVideoAt >= 950) {
+            lastVideoAt = Date.now(); bridge.sendVideo(data);
+          }
+          return;
+        }
+        const message = JSON.parse(payload.toString('utf8'));
+        if (message.type === 'say') bridge.sendText(message.text);
+        else if (message.type === 'confirm') {
+          const result = await bridge.confirm();
+          if (!result.accepted) throw new Error(result.error);
+          bridge.afterConfirmation(result);
+        } else if (message.type === 'cancel') {
+          bridge.cancel(); await bridge.afterCancellation();
+        } else throw new Error('Unknown message type.');
+      } catch (error) { send({ type: 'error', message: error.message }); }
+    });
+  });
+  socket.on('close', () => { activeDefinitionSessions.delete(sessionId); bridge.stop(); });
+}
 draftWss.on('connection', (socket, request) => {
+  handleDraftConnection(socket, request).catch((error) => {
+    console.error('Imported assessment connection failed:', error.message);
+    socket.close(1011, 'Database request failed.');
+  });
+});
+async function handleDraftConnection(socket, request) {
   const origin = request.headers.origin;
   if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
     socket.close(1008, 'Unexpected origin.');
@@ -363,7 +530,7 @@ draftWss.on('connection', (socket, request) => {
   }
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
   const sessionId = url.searchParams.get('sessionId') || '';
-  const draft = draftStore.get(sessionId);
+  const draft = await draftStore.get(sessionId);
   const form = draft && getLiveDraftForm(draft.formId);
   if (!draft || !form || draft.status === 'completed' || activeDraftSessions.has(sessionId)) {
     socket.close(1008, 'Live review session is unavailable.');
@@ -394,7 +561,9 @@ draftWss.on('connection', (socket, request) => {
     bridge.start().catch((error) => send({ type: 'error', message: error.message }));
   }
 
+  let messageQueue = Promise.resolve();
   socket.on('message', (payload, isBinary) => {
+    messageQueue = messageQueue.then(async () => {
     try {
       if (isBinary) {
         if (!bridge || payload.length < 3) return;
@@ -411,7 +580,7 @@ draftWss.on('connection', (socket, request) => {
       const message = JSON.parse(payload.toString('utf8'));
       if (message.type === 'select') {
         if (draft.mode !== 'demo') throw new Error('Describe your answer during the live conversation.');
-        const state = draftStore.get(sessionId);
+        const state = await draftStore.get(sessionId);
         if (state.status !== 'in_progress') throw new Error('Review the answers on screen.');
         const options = form.questions[state.currentNumber - 1].options;
         if (!Number.isInteger(message.value) || message.value < 0 || message.value >= options.length) throw new RangeError('Choose an available option.');
@@ -419,44 +588,53 @@ draftWss.on('connection', (socket, request) => {
         send({ type: 'proposal', number: pending.number, value: pending.value, label: options[pending.value].label });
       } else if (message.type === 'say') {
         if (!bridge) throw new Error('Text conversation requires Gemini Live.');
-        if (draftStore.get(sessionId)?.status !== 'in_progress') throw new Error('Review the answers on screen.');
+        if ((await draftStore.get(sessionId))?.status !== 'in_progress') throw new Error('Review the answers on screen.');
         bridge.sendText(message.text);
       } else if (message.type === 'confirm') {
         if (bridge) {
-          const result = bridge.confirm();
+          const result = await bridge.confirm();
           if (!result.accepted) throw new Error(result.error);
           bridge.afterConfirmation(result);
         } else {
           if (!pending) throw new Error('Choose an answer first.');
-          const state = draftStore.record(sessionId, pending.number, pending.value, 'demo');
+          const state = await draftStore.record(sessionId, pending.number, pending.value, 'demo');
           pending = null;
           sendState(state);
         }
       } else if (message.type === 'cancel') {
-        if (bridge) { bridge.cancel(); bridge.afterCancellation(); }
+        if (bridge) { bridge.cancel(); await bridge.afterCancellation(); }
         else { pending = null; send({ type: 'proposal_cleared' }); }
       } else if (message.type === 'finalize') {
-        const state = draftStore.finalize(sessionId, message.answers);
+        const state = await draftStore.finalize(sessionId, message.answers);
         sendState(state);
         bridge?.stop();
       } else throw new Error('Unknown message type.');
     } catch (error) { send({ type: 'error', message: error.message }); }
+    });
   });
   socket.on('close', () => { activeDraftSessions.delete(sessionId); bridge?.stop(); });
-});
+}
 
+if (postgres) await postgres.initialize();
+await definitionStore.initialize();
 server.listen(port, '127.0.0.1', () => {
   console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
   console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
-  console.log(`SQLite database: ${dbPath}`);
+  console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
 });
 
 function shutdown() {
   for (const client of wss.clients) client.close();
   for (const client of draftWss.clients) client.close();
+  for (const client of definitionWss.clients) client.close();
   wss.close();
   draftWss.close();
-  server.close(() => { store.close(); draftStore.close(); });
+  definitionWss.close();
+  server.close(async () => {
+    await definitionStore.close();
+    if (postgres) await postgres.close();
+    else { store.close(); draftStore.close(); }
+  });
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

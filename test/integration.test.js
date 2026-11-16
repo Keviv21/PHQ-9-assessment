@@ -55,6 +55,30 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal((await fetch(`${base}/patient-suggest.js`)).status, 200);
     assert.equal((await fetch(`${base}/assessment-library.css`)).status, 200);
     assert.equal((await fetch(`${base}/assessment-library.js`)).status, 200);
+    assert.equal((await fetch(`${base}/definition.html`)).status, 200);
+    assert.equal((await fetch(`${base}/definition.js`)).status, 200);
+    assert.equal((await fetch(`${base}/definition-voice.js`)).status, 200);
+    const definitions = await (await fetch(`${base}/api/definitions`)).json();
+    assert.equal(definitions.length, 186);
+    assert.equal(definitions.filter((entry) => entry.available).length, 185);
+    const asrs = definitions.find((entry) => entry.title === 'Adult ADHD Self-Report Scale (ASRS)');
+    const assignedDefinitionResponse = await fetch(`${base}/api/definition-patients/demo-a/prescriptions`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ formId: asrs.id }),
+    });
+    assert.equal(assignedDefinitionResponse.status, 201);
+    const assignedDefinition = await assignedDefinitionResponse.json();
+    const definitionSession = await (await fetch(`${base}/api/definition-prescriptions/${assignedDefinition.id}/start`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+    })).json();
+    const definitionAnswers = Object.fromEntries(definitionSession.formSnapshot.questions.map((item) => [item.id, item.options[0].id]));
+    const completedDefinitionResponse = await fetch(`${base}/api/definition-sessions/${definitionSession.id}/finish`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ answers: definitionAnswers }),
+    });
+    assert.equal(completedDefinitionResponse.status, 200);
+    const completedDefinition = await completedDefinitionResponse.json();
+    assert.equal(completedDefinition.scores.metrics.find((metric) => metric.id === 'part_a_raw').value, 0);
+    assert.equal((await (await fetch(`${base}/api/demo-patients/demo-a/prescriptions`)).json())
+      .some((item) => item.id === assignedDefinition.id && item.status === 'completed'), true);
     const libraryResponse = await fetch(`${base}/api/assessment-library`);
     assert.equal(libraryResponse.status, 200);
     const library = await libraryResponse.json();
@@ -110,7 +134,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     const prescription = await prescriptionResponse.json();
     assert.equal(prescription.demoPatientId, 'demo-a');
     assert.equal(prescription.status, 'assigned');
-    assert.equal((await (await fetch(`${base}/api/prescriptions/${prescription.id}`)).json()).patient.label, 'Aarav Mehta · Sample A');
+    assert.equal((await (await fetch(`${base}/api/prescriptions/${prescription.id}`)).json()).patient.label, 'John Doe');
     const suggestion = await fetch(`${base}/api/recommendations`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ageGroup: '19to64', concerns: ['depression'], traumaExposure: 'notReported', safetyStatus: 'noneReported' }),
@@ -172,13 +196,16 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal(results[0].scores.rawTotal, 3);
     assert.equal(results[0].demoPatientId, 'demo-a');
     const firstTimeline = await (await fetch(`${base}/api/demo-patients/demo-a/analytics`)).json();
-    assert.equal(firstTimeline.totalCompleted, 1);
+    assert.equal(firstTimeline.totalCompleted, 2);
     assert.equal(firstTimeline.series[0].points[0].score, 3);
     assert.equal(firstTimeline.series[0].points[0].requiresHumanFollowUp, true);
+    assert.equal(firstTimeline.series.some((series) => series.formId === `definition:${asrs.id}` &&
+      series.metricId === 'part_a_raw' && series.points[0].score === 0), true);
     const overview = await (await fetch(`${base}/api/analytics/overview`)).json();
-    assert.equal(overview.totals.prescribed, 2);
-    assert.equal(overview.totals.completed, 1);
-    assert.equal(overview.totals.completionRate, 50);
+    assert.equal(overview.totals.prescribed, 3);
+    assert.equal(overview.totals.completed, 2);
+    assert.equal(overview.totals.completionRate, 67);
+    assert.equal(overview.byForm.some((item) => item.formId === `definition:${asrs.id}` && item.completed === 1), true);
     assert.equal((await (await fetch(`${base}/api/prescriptions/${prescription.id}`)).json()).status, 'completed');
     assert.equal((await (await fetch(`${base}/api/demo-patients/demo-a/reports`)).json()).length, 1);
     assert.equal((await (await fetch(`${base}/api/demo-patients/demo-b/reports`)).json()).length, 0);

@@ -6,7 +6,6 @@
   <title>NovoPsych Assessments | OpenMind</title>
   <link rel="stylesheet" href="/clinic.css">
   <link rel="stylesheet" href="/clinic-recommend.css">
-  <link rel="stylesheet" href="/assessment-library.css">
   <link rel="stylesheet" href="/analytics.css">
   <link rel="stylesheet" href="/doctor-chat.css">
 </head>
@@ -39,7 +38,7 @@
       <header class="topbar"><span class="app-switcher">Open MindScribe</span><span class="topbar-caption">Patient Assessments &amp; Tests <span aria-hidden="true">/</span> NovoPsych Assessment</span></header>
       <main class="content">
         <section id="prescribe-view">
-          <div class="page-heading"><div><p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p><h1>Prescribe Test</h1><p>Review the patient summary, compare relevant assessments, and choose a test.</p></div></div>
+          <div class="page-heading"><div><p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p><h1>Prescribe Test</h1><p>Select a patient, review the summary-based suggestion, discuss other options, and choose an assessment.</p></div></div>
           <div class="steps" aria-label="Prescription progress"><div id="step-one" class="step current"><span>1</span>Patient details</div><div class="step-line"></div><div id="step-two" class="step"><span>2</span>Confirm &amp; Prescribe</div></div>
           <section id="choose-patient">
             <label class="search-label" for="patient-search">Filter by Patient Name</label>
@@ -49,38 +48,23 @@
           </section>
           <section id="confirm-step" hidden>
             <div class="detail-grid"><article class="panel"><h2>Patient summary</h2><div id="patient-summary"></div></article><article class="panel"><h2>Assessment shortlist</h2><div id="suggestion-output"></div></article></div>
-            <section id="clarification-panel" class="panel decision-panel" hidden>
-              <h2>Quick clarification</h2>
-              <label class="search-label" for="clarification-focus" id="clarification-prompt"></label>
-              <select id="clarification-focus" class="patient-picker"></select>
-              <p class="decision-help">This helps prioritize the options below. Clinical requirements still apply.</p>
+            <section class="panel doctor-chat-panel">
+              <h2>Doctor conversation</h2>
+              <p>Describe additional current concerns to explore other relevant assessments. Use de-identified details only. The doctor makes the final choice.</p>
+              <div id="doctor-chat-messages" class="doctor-chat-messages" aria-live="polite"><p class="doctor-chat-intro">Ask about another concern or assessment, for example: “The patient also reports difficulty sleeping. Which assessments should I consider?”</p></div>
+              <form id="doctor-chat-form" class="doctor-chat-form"><label for="doctor-chat-input">Your message</label><textarea id="doctor-chat-input" maxlength="1200" rows="3" placeholder="Describe a current concern without names, contact details, or identifying notes"></textarea><button id="doctor-chat-send" class="button primary" type="submit">Send</button></form>
+              <div id="doctor-chat-suggestions" class="doctor-chat-suggestions"></div>
             </section>
             <section class="panel decision-panel">
               <h2>Doctor's final selection</h2>
-              <label class="search-label" for="assessment-search">Find an assessment</label>
-              <input id="assessment-search" class="patient-picker assessment-search" type="search" placeholder="Search 186 assessments" autocomplete="off">
-              <label class="search-label" for="assessment-select">Choose an assessment</label>
-              <select id="assessment-select" class="patient-picker" disabled><option value="">Review the patient summary first</option></select>
+              <label class="search-label" for="assessment-search">Assessment to prescribe</label>
+              <div id="assessment-combobox" class="assessment-combobox">
+                <input id="assessment-search" class="patient-picker assessment-search" type="search" role="combobox" aria-autocomplete="list" aria-controls="assessment-options" aria-expanded="false" placeholder="Search assessments" autocomplete="off" disabled>
+                <button id="assessment-open" class="assessment-open" type="button" aria-label="Show assessments" disabled>⌄</button>
+                <div id="assessment-options" class="assessment-options" role="listbox" hidden></div>
+              </div>
               <div id="selection-details" aria-live="polite"></div>
             </section>
-            <section class="panel doctor-chat-panel">
-              <h2>Doctor conversation</h2>
-              <p>Discuss current concerns with Gemini to explore other catalogue options. Use de-identified details only. The doctor reviews every suggestion before assigning.</p>
-              <div id="doctor-chat-messages" class="doctor-chat-messages" aria-live="polite"><p class="doctor-chat-intro">Ask about another concern or assessment, for example: “The patient also reports difficulty sleeping. Which assessments should I consider?”</p></div>
-              <form id="doctor-chat-form" class="doctor-chat-form"><label for="doctor-chat-input">Your message</label><textarea id="doctor-chat-input" maxlength="1200" rows="3" placeholder="Describe a current concern without names, contact details, or identifying notes"></textarea><button id="doctor-chat-send" class="button primary" type="submit">Ask Gemini</button></form>
-              <div id="doctor-chat-suggestions" class="doctor-chat-suggestions"></div>
-            </section>
-            <details id="library-view" class="panel library-embedded"><summary>Browse assessment questions and source details</summary>
-              <p class="library-notice">Imported definitions need clinical review. DASS-21 has an implemented score. Other imported forms save answers without a score until their scoring rules are verified. The 24 incomplete forms are unavailable.</p>
-              <div id="library-catalogue">
-                <div class="library-toolbar"><label class="search-label" for="library-search">Search assessments<input id="library-search" type="search" placeholder="Search by name" autocomplete="off"></label><label class="search-label" for="library-filter">Show<select id="library-filter"><option value="all">All assessments</option><option value="preview">Preview available</option><option value="incomplete">Needs source content</option></select></label></div>
-                <p id="library-count" class="library-count" aria-live="polite">Loading assessment library…</p>
-                <div id="library-list" class="library-list"></div>
-                <div class="library-pagination"><button id="library-previous" class="button outline" type="button">Previous</button><span id="library-page"></span><button id="library-next" class="button outline" type="button">Next</button></div>
-                <section class="library-sessions"><h2>Saved assessment reviews</h2><div id="library-sessions"><p class="empty-state">No saved reviews yet.</p></div></section>
-              </div>
-              <div id="library-detail" hidden></div>
-            </details>
             <div class="actions"><button id="back-step" class="button outline" type="button">Back to patients</button><button id="prescribe-button" class="button primary" type="button" disabled>Confirm &amp; Prescribe</button></div>
             <div id="prescription-result" aria-live="polite"></div>
           </section>
@@ -112,6 +96,5 @@
   <script type="module" src="/clinic.js"></script>
   <script type="module" src="/doctor-chat.js"></script>
   <script type="module" src="/analytics.js"></script>
-  <script type="module" src="/assessment-library.js"></script>
 </body>
 </html>

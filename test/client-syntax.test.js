@@ -24,10 +24,10 @@ test('browser scripts parse and the assessment screen has its referenced control
   for (const [, id] of clinic.matchAll(/\$\('([^']+)'\)/g)) {
     assert.match(clinicHtml, new RegExp(`id="${id}"`), `Missing clinic control ${id}`);
   }
-  const library = readFileSync(new URL('../public/assessment-library.js', import.meta.url), 'utf8');
-  for (const [, id] of library.matchAll(/byId\('([^']+)'\)/g)) {
-    assert.match(clinicHtml, new RegExp(`id="${id}"`), `Missing library control ${id}`);
-  }
+  assert.match(clinicHtml, /id="assessment-search"[^>]*role="combobox"/);
+  assert.match(clinicHtml, /id="assessment-options"[^>]*role="listbox"/);
+  assert.ok(clinicHtml.indexOf('id="doctor-chat-form"') < clinicHtml.indexOf('id="assessment-search"'));
+  assert.doesNotMatch(clinicHtml, /id="library-view"/);
   const analytics = readFileSync(new URL('../public/analytics.js', import.meta.url), 'utf8');
   for (const [, id] of analytics.matchAll(/byId\('([^']+)'\)/g)) {
     assert.match(clinicHtml, new RegExp(`id="${id}"`), `Missing analytics control ${id}`);

@@ -214,14 +214,16 @@ function renderState(nextState) {
   $('draft-question').textContent = question.text;
   const options = $('draft-options');
   options.replaceChildren();
-  if (nextState.mode === 'demo') {
-    question.options.forEach((option, value) => {
-      const button = element('button', option.label, 'draft-option');
-      button.type = 'button'; button.dataset.value = String(value);
-      button.addEventListener('click', () => send({ type: 'select', value }));
-      options.append(button);
-    });
-  }
+  question.options.forEach((option, value) => {
+    const choice = element(nextState.mode === 'demo' ? 'button' : 'div', option.label,
+      `draft-option${nextState.mode === 'live' ? ' voice-option' : ''}`);
+    if (nextState.mode === 'demo') {
+      choice.type = 'button';
+      choice.addEventListener('click', () => send({ type: 'select', value }));
+    }
+    choice.dataset.value = String(value);
+    options.append(choice);
+  });
   setStatus(nextState.mode === 'live' ? 'Describe your answer aloud or type it below.' : 'Choose an answer, then confirm it.');
 }
 
