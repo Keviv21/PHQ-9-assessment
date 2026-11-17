@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { form, getForm, currentQuestion, scoreAnswers } from '../src/assessment.js';
-import { openStore } from '../src/store.js';
+import { form, getForm, currentQuestion, scoreAnswers } from '../src/legacy/assessment.js';
+import { openStore } from '../src/storage/sqlite/standard-store.js';
 
 test('PHQ-9 uses nine items and the two-week frequency scale', () => {
   assert.equal(form.questions.length, 9);

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openWorkspaceStore } from "../src/workspace/store.js";
+import { openWorkspaceStore } from "../src/storage/sqlite/workspace-store.js";
 import { catalogue, definition } from "../src/workspace/catalogue.js";
 import { createRecommender } from "../src/workspace/recommendations.js";
 import {
@@ -268,5 +268,58 @@ test("Workspace translations include option labels and reject changes to canonic
     );
   } finally {
     store.close();
+  }
+});
+
+
+test("Session preferences preserve answers and reject stale, invalid or completed changes", async () => {
+  const store = openWorkspaceStore(":memory:", { seed: false });
+  const patient = store.createPatient(synthetic);
+  const rx = store.prescribe(patient.id, "GAD7");
+  let session = store.createSession(rx.id, definition("GAD7"), "en", "screen");
+  session = store.answer(session.id, { questionId: session.definition.questions[0].id, value: 1, revision: session.revision });
+  const saved = structuredClone(session);
+  const api = createWorkspaceApi(null, {
+    store, apiKey: "test-key",
+    translations: { async localize(d, language) {
+      if (language === "ta") throw Object.assign(new Error("Translation unavailable"), { status: 503 });
+      return { ...d, localized: { language, title: "Localized title", instructions: d.instructions, referencePeriod: d.referencePeriod, questions: structuredClone(d.questions) } };
+    } },
+  });
+  const server = http.createServer((req, res) => api.handle(req, res));
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/workspace/sessions/${session.id}/preferences`;
+  const patch = input => fetch(url, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+  try {
+    for (const mode of ["chat", "voice", "screen"]) {
+      const response = await patch({ language: "hi", mode, revision: session.revision });
+      assert.equal(response.status, 200);
+      session = await response.json();
+      assert.equal(session.id, saved.id);
+      assert.equal(session.language, "hi");
+      assert.equal(session.sessionMode, mode);
+      assert.deepEqual(session.answers, saved.answers);
+      assert.deepEqual(session.answerDetails, saved.answerDetails);
+      assert.deepEqual(session.answerRevisions, saved.answerRevisions);
+      assert.deepEqual(session.definition.questions, saved.definition.questions);
+      assert.equal(store.sessions(patient.id).length, 1);
+    }
+    assert.equal((await patch({ language: "en", mode: "screen", revision: saved.revision })).status, 409);
+    assert.equal((await patch({ language: "invalid", mode: "screen", revision: session.revision })).status, 400);
+    assert.equal((await patch({ language: "en", mode: "invalid", revision: session.revision })).status, 400);
+    assert.equal((await patch({ language: "ta", mode: "screen", revision: session.revision })).status, 503);
+    assert.deepEqual(store.get(session.id), session);
+    // An answer arriving while a translation is prepared must never be overwritten.
+    const beforeAnswer = session.revision;
+    session = store.answer(session.id, { questionId: session.definition.questions[1].id, value: 0, revision: session.revision });
+    assert.throws(() => store.preferences(session.id, { language: "en", mode: "screen", revision: beforeAnswer }, saved.definition), { status: 409 });
+    assert.deepEqual(store.get(session.id).answers, session.answers);
+    for (const q of session.definition.questions.slice(2))
+      session = store.answer(session.id, { questionId: q.id, value: 0, revision: session.revision });
+    session = store.finalize(session.id, session.revision);
+    assert.equal((await patch({ language: "en", mode: "screen", revision: session.revision })).status, 409);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+    api.close();
   }
 });

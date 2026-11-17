@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assessment Suggestions | OpenMind</title>
+  <link rel="stylesheet" href="/legacy/casebook.css">
+  <link rel="stylesheet" href="/legacy/assessment-polish.css">
+  <style>
+    .recommend-shell{max-width:1040px;margin:0 auto;padding:36px 20px 70px}
+    .recommend-intro{margin-bottom:24px}.recommend-intro h1{font-size:29px;margin:10px 0}.recommend-intro p{color:#647184;line-height:1.6;max-width:760px}
+    .recommend-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+    .recommend-card{background:white;border:1px solid #e1e8f2;border-radius:16px;padding:22px;box-shadow:0 8px 28px #1b4f980d}
+    .recommend-card h2{font-size:17px;margin:0 0 8px}.recommend-card p{font-size:13px;line-height:1.55;color:#647184}
+    .field{margin:22px 0}.field-label{display:block;font-size:13px;font-weight:700;margin-bottom:9px;color:#344054}.field select{width:100%;padding:11px;border:1px solid #d9e0ea;border-radius:10px;background:#fff}
+    .check-list{display:grid;gap:8px}.check-row{display:flex;align-items:flex-start;gap:10px;border:1px solid #e1e8f2;border-radius:10px;padding:11px;font-size:13px;line-height:1.4;cursor:pointer}.check-row:has(input:checked){border-color:#3b82f6;background:#eff6ff}.check-row input{accent-color:#2563eb;margin-top:2px}
+    .recommend-result{border-top:1px solid #e8edf4;padding:16px 0}.recommend-result:first-child{border-top:0;padding-top:0}.recommend-result h3{margin:0;font-size:16px}.recommend-result small{display:block;margin:6px 0;color:#647184}.recommend-result p{margin:8px 0}.recommend-result a{font-size:12px;color:#2563eb}.recommend-tag{display:inline-block;border-radius:6px;background:#eff6ff;color:#2563eb;padding:5px 7px;font-size:11px;font-weight:700;margin:8px 0}
+    .recommend-alert{padding:13px;border-radius:10px;background:#fff1f0;border:1px solid #f6c8c5;color:#8f2321!important;font-weight:700}.recommend-info{background:#f3f7ff;border-radius:10px;padding:13px}
+    @media(max-width:720px){.recommend-layout{grid-template-columns:1fr}.recommend-shell{padding-top:20px}}
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header"><div class="brand"><img class="brand-mark" src="/assets/openmind-mark.svg" alt=""><strong>OpenMind</strong><span class="header-divider"></span><span class="page-label">Assessment Suggestions</span></div><a href="/" class="button secondary">Back to assessments</a></header>
+    <main class="recommend-shell">
+      <div class="recommend-intro"><div class="breadcrumb">OpenMind <span aria-hidden="true">/</span> Assessments <span aria-hidden="true">/</span> Suggestions</div><h1>Which assessment fits this patient?</h1><p>Review current concerns and select the matching options below. Enter only de-identified information. A clinician decides which assessment to use.</p></div>
+      <div class="recommend-layout">
+        <form id="recommend-form" class="recommend-card">
+          <h2>De-identified patient context</h2><p>These selections are used locally for a recommendation. They are not saved and are not sent to Gemini.</p>
+          <div class="field"><label class="field-label" for="age-group">Age group</label><select id="age-group" required><option value="unknown">Not confirmed</option><option value="19to64">Adult, 19–64</option><option value="65plus">Adult, 65 or older</option><option value="under19">Under 19</option></select></div>
+          <fieldset class="field" style="border:0;padding:0;margin-left:0;margin-right:0"><legend class="field-label">Current concerns documented or confirmed</legend><div class="check-list">
+            <label class="check-row"><input type="checkbox" name="concern" value="depression">Low mood, loss of interest, or other depression symptoms</label>
+            <label class="check-row"><input type="checkbox" name="concern" value="anxiety">Persistent worry or other anxiety symptoms</label>
+            <label class="check-row"><input type="checkbox" name="concern" value="traumaSymptoms">Trauma-related symptoms</label>
+            <label class="check-row"><input type="checkbox" name="concern" value="stress">Stress, tension, or difficulty relaxing</label>
+          </div></fieldset>
+          <div class="field"><label class="field-label" for="trauma-exposure">Qualifying trauma exposure</label><select id="trauma-exposure"><option value="notReported">Not reported</option><option value="uncertain">Uncertain / needs review</option><option value="confirmed">Confirmed by clinician</option></select><p>Confirm the event using an appropriate trauma history. Stressful experiences alone do not establish PTSD Criterion A.</p></div>
+          <div class="field"><label class="field-label" for="safety-status">Immediate self-harm, suicide, or other safety concern</label><select id="safety-status"><option value="notReviewed">Not yet reviewed</option><option value="noneReported">No immediate concern reported after review</option><option value="concern">Concern present</option></select></div>
+          <button class="button primary" type="submit">Suggest assessments</button>
+        </form>
+        <section class="recommend-card" aria-live="polite"><h2>Suggestions for clinician review</h2><div id="recommend-output"><p class="recommend-info">Select the context and click “Suggest assessments.”</p></div></section>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/legacy/recommend.js"></script>
+</body>
+</html>

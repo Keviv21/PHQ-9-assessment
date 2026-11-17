@@ -4,11 +4,12 @@ import {
   currentQuestionIndex,
   visibleQuestion,
   responseLabel,
-} from "../../public/workspace-answers.js";
+} from "../../public/shared/answers.js";
 import { presentation } from "./presentation.js";
 import { randomUUID } from "node:crypto";
 import { scoreDefinition } from "./definition.js";
 import { HttpError } from "./errors.js";
+import { LANGUAGES } from "./languages.js";
 export function createPatientRecord(input) {
   if (
     typeof input.name !== "string" ||
@@ -151,4 +152,18 @@ export function finalizeState(state, revision) {
   });
   s.revision++;
   return s;
+}
+
+export function preferencesState(state, { language, mode, revision }, localized) {
+  if (state.status !== "draft" || revision !== state.revision)
+    throw new HttpError(409, "This session changed. Reload it before switching preferences.");
+  if (!LANGUAGES.some((item) => item.code === language) || !["screen", "chat", "voice"].includes(mode))
+    throw new HttpError(400, "Choose a supported language and mode.");
+  // Only the presentation changes; the frozen questions, scoring and answers remain intact.
+  const next = structuredClone(state);
+  next.definition.localized = localized.localized;
+  next.language = language;
+  next.sessionMode = mode;
+  next.revision++;
+  return next;
 }

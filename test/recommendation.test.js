@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recommendAssessments } from '../src/recommendation.js';
-import { getCatalogEntry, listAssessmentCatalog } from '../src/assessment-catalog.js';
-import { getAssessmentForm } from '../src/forms.js';
+import { recommendAssessments } from '../src/clinical/recommendation.js';
+import { getCatalogEntry, listAssessmentCatalog } from '../src/clinical/assessment-catalog.js';
+import { getAssessmentForm } from '../src/legacy/forms.js';
 
 const context = (changes = {}) => ({
   ageGroup: '19to64', concerns: [], traumaExposure: 'notReported', safetyStatus: 'noneReported', ...changes,

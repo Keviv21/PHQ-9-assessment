@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeTranscript, usesSelectedScript, numericChoicePrompt } from '../public/workspace-language-guard.js';
+import { mergeTranscript, usesSelectedScript, numericChoicePrompt, requestedLanguage } from '../public/shared/language-guard.js';
 import { validateTranslation, createTranslationsService } from '../src/workspace/translations.js';
 import { SESSION_LABELS } from '../src/workspace/presentation.js';
 import { GeminiBridge } from '../src/workspace/live-bridge.js';
-import { responseCounts, trendData } from '../public/workspace-analytics-charts.js';
+import { responseCounts, trendData } from '../public/workspace/analytics-charts.js';
 const phrases = {
   hi: { text: 'पिछले दो सप्ताह में आपको चिंता कितनी बार हुई?', labels: ['बिल्कुल नहीं', 'कई दिन', 'आधे से अधिक दिन', 'लगभग हर दिन'], instruction: 'अपना उत्तर बताएं।', retry: 'कृपया अपना उत्तर बताएं।' },
   te: { text: 'గత రెండు వారాలలో మీరు ఎంత తరచుగా ఆందోళన చెందారు?', labels: ['అస్సలు లేదు', 'కొన్ని రోజులు', 'సగం కంటే ఎక్కువ రోజులు', 'దాదాపు ప్రతి రోజు'], instruction: 'మీ సమాధానం చెప్పండి.', retry: 'దయచేసి మీ సమాధానం చెప్పండి.' },
@@ -100,4 +100,28 @@ test('Empty tool turns do not retry; interrupted audio is discarded before the n
  assert.ok(!sent.some(m=>m.type==='audio'||m.type==='transcript'));
  assert.equal(requests.length,0);
  bridge.stop();
+});
+
+
+test('explicit language requests are distinguished from assessment responses', () => {
+  for (const text of ['Can you explain me in Telugu?', 'Please switch to Telugu', 'Telugu please', 'తెలుగులో చెప్పండి'])
+    assert.equal(requestedLanguage(text), 'te');
+  assert.equal(requestedLanguage('Please explain this question in Hindi'), 'hi');
+  assert.equal(requestedLanguage('Use English'), 'en');
+  for (const text of ['I speak Telugu at home', 'I speak in Telugu at home', 'I cannot speak in Telugu', 'Several days', "Do not switch to Telugu", "Don't explain in Telugu", 'Explain in Telugu or Hindi', 'I feel worried when I speak English'])
+    assert.equal(requestedLanguage(text), null, text);
+});
+
+test('spoken language requests interrupt the old turn and never record an assessment answer', async () => {
+  const sent = [];
+  let answers = 0;
+  const state = { language: 'en', definition: source, answers: [null], revision: 0, status: 'draft' };
+  const bridge = new GeminiBridge({ client: {}, state, send: m => sent.push(m), getState: async () => state, recordAnswer: async () => { answers++; } });
+  await bridge.onMessage({ serverContent: { inputTranscription: { text: 'Can you explain me in' } } });
+  await bridge.onMessage({ serverContent: { inputTranscription: { text: ' Telugu?' }, outputTranscription: { text: 'English reply' } }, toolCall: { functionCalls: [{ id: 'a', name: 'record_answer', args: { questionId: 'q1', revision: 0, value: 1, summary: 'Several days' } }] } });
+  await bridge.onMessage({ serverContent: { turnComplete: true, outputTranscription: { text: 'Old language reply' } } });
+  assert.equal(answers, 0);
+  assert.equal(sent.filter(m => m.type === 'language_request').length, 1);
+  assert.equal(sent.find(m => m.type === 'language_request').language, 'te');
+  assert.equal(sent.some(m => m.speaker === 'assistant'), false);
 });

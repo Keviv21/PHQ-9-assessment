@@ -5,7 +5,7 @@ import {
   visibleQuestion,
   conditionState,
   isSkipped,
-} from "../../public/workspace-answers.js";
+} from "../../public/shared/answers.js";
 // Definitions and answers share the browser/server contract; scoring stays explicit.
 export function validateDefinition(d) {
   const fail = () => {

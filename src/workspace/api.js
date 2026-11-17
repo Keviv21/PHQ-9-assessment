@@ -144,7 +144,26 @@ export function createWorkspaceApi(
             ));
       } else if (p[0] === "sessions" && p.length === 2 && req.method === "GET")
         data = (await store.get(p[1]));
-      else if (
+      else if (p[0] === "sessions" && p.length === 3 && p[2] === "preferences" && req.method === "PATCH") {
+        const input = await body(req);
+        if (!LANGUAGES.some((l) => l.code === input.language) || !["chat", "voice", "screen"].includes(input.mode))
+          throw new HttpError(400, "Choose a supported language and mode.");
+        if (input.mode !== "screen" && !apiKey?.trim())
+          throw new HttpError(503, "Conversation is unavailable. You can continue with answer choices.");
+        const current = await store.get(p[1]);
+        if (current.status !== "draft" || current.revision !== input.revision)
+          throw new HttpError(409, "This session changed. Reload it before switching preferences.");
+        const localized = input.language === current.language ? current.definition
+          : await translations.localize(current.definition, input.language);
+        data = await store.preferences(p[1], input, localized);
+        // A live conversation must restart with the updated language and mode.
+        const previous = live.get(p[1]);
+        if (previous) {
+          previous.bridge.stop();
+          previous.socket.close(1000, "Preferences changed");
+          live.delete(p[1]);
+        }
+      } else if (
         p[0] === "sessions" &&
         p[2] === "answers" &&
         req.method === "PATCH"

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { form, getForm } from '../src/assessment.js';
-import { openStore } from '../src/store.js';
-import { renderReport } from '../public/report-view.js';
-import { getAssessmentForm } from '../src/forms.js';
+import { form, getForm } from '../src/legacy/assessment.js';
+import { openStore } from '../src/storage/sqlite/standard-store.js';
+import { renderReport } from '../public/legacy/report-view.js';
+import { getAssessmentForm } from '../src/legacy/forms.js';
 
 class FakeElement {
   constructor(tag) { this.tagName = tag; this.children = []; this.attributes = {}; this.style = {}; this.content = ''; }

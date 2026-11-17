@@ -35,7 +35,7 @@ test('repaired import keeps saved form IDs and uses printed scale values as labe
       },
     ] }));
     const result = spawnSync(process.execPath, [
-      fileURLToPath(new URL('../scripts/import-assessment-bundle.mjs', import.meta.url)),
+      fileURLToPath(new URL('../scripts/legacy/import-assessment-bundle.mjs', import.meta.url)),
       sourcePath, outputPath, previousPath,
     ], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);

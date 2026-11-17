@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { questionIssue } from "../../public/workspace-answers.js";
+import { questionIssue } from "../../public/shared/answers.js";
 import { validateDefinition } from "./definition.js";
 // Preserve the application's existing identifier when the source bundle renames GAD-7.
 const sourceAliases = {

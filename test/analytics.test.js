@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildOverview, buildPatientAnalytics } from '../src/analytics.js';
+import { buildOverview, buildPatientAnalytics } from '../src/legacy/analytics.js';
 
 test('patient timelines compare only the same assessment and version', () => {
   const rows = [

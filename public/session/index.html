@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Patient assessment | OpenMind</title>
+    <link rel="stylesheet" href="/shared/base.css" />
+    <link rel="stylesheet" href="/shared/workspace.css" />
+  </head>
+  <body class="workspace-ui assessment-session-ui">
+    <header class="session-topbar">
+      <a href="/" class="session-logo"
+        ><img src="/assets/openmind-mark.svg" alt="" />OpenMind</a
+      ><a id="back-patient" href="/">← Back to patient</a>
+    </header>
+    <main class="session-page">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">PATIENT ASSESSMENT</p>
+          <h1 id="session-title">Preparing assessment…</h1>
+          <p id="session-patient"></p>
+        </div>
+      </div>
+      <p id="session-error" role="alert" class="notice alert" hidden></p>
+      <section id="session-setup" class="panel session-setup session-preferences" aria-label="Assessment preferences">
+        <div class="session-preference-fields">
+          <label class="language-select">Language<select id="session-language" disabled></select></label>
+          <fieldset id="session-modes" class="session-mode-switch" disabled>
+            <legend>Answer using</legend>
+            <label><input type="radio" name="mode" value="screen" checked /><span>Answer choices</span></label>
+            <label><input type="radio" name="mode" value="chat" /><span>Text conversation</span></label>
+            <label><input type="radio" name="mode" value="voice" /><span>Voice conversation</span></label>
+          </fieldset>
+          <button id="pause-assessment" type="button" class="button outline pause-assessment" disabled>Pause assessment</button>
+          <button id="session-start" class="button outline" disabled hidden>Retry loading assessment</button>
+        </div>
+        <p id="setup-note" class="muted-text">Switch language or response mode here at any time. Your saved answers stay in place.</p>
+        <p id="session-status" role="status">Opening assessment…</p>
+      </section>
+      <div class="assessment-workspace">
+        <div class="assessment-main">
+          <div id="question-chat-grid" class="question-chat-grid" hidden>
+            <section
+              class="panel question-panel"
+              aria-label="Assessment question"
+            >
+              <div class="panel-heading">
+                <span id="question-progress" class="eyebrow"></span
+                ><span id="saved-indicator" class="tag"
+                  >Saved automatically</span
+                >
+              </div>
+              <progress
+                id="question-progress-bar"
+                max="100"
+                value="0"
+              ></progress>
+              <p id="question-context" class="muted-text"></p>
+              <h2 id="question-title"></h2>
+              <p id="question-period" class="muted-text"></p>
+              <div
+                id="question-options"
+                class="workspace-options"
+                role="radiogroup"
+                aria-label="Answer choices"
+              ></div>
+              <p id="question-hint" class="muted-text"></p>
+              <div id="browser-speech-controls" class="session-assist" hidden>
+                <button id="read-question" type="button" class="button outline">
+                  Read question and choices
+                </button>
+                <button id="speak-option" type="button" class="button outline">
+                  Speak an answer choice
+                </button>
+                <button id="stop-speech" type="button" class="button outline">
+                  Stop speech
+                </button>
+                <p id="speech-status" role="status" class="muted-text"></p>
+                <p class="muted-text">
+                  Optional browser speech tools. Speak a full answer label to
+                  save it. Your browser may send audio to its speech service;
+                  this does not call Gemini.
+                </p>
+              </div>
+              <details>
+                <summary>Original wording</summary>
+                <div id="original-question"></div>
+              </details>
+            </section>
+            <section id="session-chat" class="panel session-chat">
+              <div class="conversation-heading">
+                <h2>Assessment conversation</h2>
+                <div class="conversation-controls">
+                  <span id="conversation-status" class="conversation-status" role="status"></span>
+                  <button id="microphone-toggle" type="button" class="button outline" disabled>Mute microphone</button>
+                </div>
+              </div>
+              <div
+                id="session-transcript"
+                class="chat-log"
+                role="log"
+                aria-label="Assessment conversation"
+              ></div>
+              <form id="session-chat-form">
+                <label for="session-text">Your answer</label
+                ><textarea
+                  id="session-text"
+                  maxlength="1000"
+                  rows="3"
+                  placeholder="Type your response…"
+                  disabled
+                ></textarea
+                ><button id="session-send" class="button primary" disabled>
+                  Send answer
+                </button>
+              </form>
+            </section>
+          </div>
+          <section id="session-review" class="panel" hidden>
+            <h2 id="review-title">Review your answers</h2>
+            <p id="review-hint">You can edit each response before saving.</p>
+            <div id="review-answers"></div>
+            <button id="save-assessment" class="button primary">
+              Submit assessment
+            </button>
+          </section>
+          <section id="session-complete" class="panel completion-panel" hidden>
+            <span class="completion-icon">✓</span>
+            <h2>Assessment submitted</h2>
+            <p>Responses are saved to this patient's record.</p>
+            <div id="completed-report"></div>
+            <a id="completed-analytics" class="button primary" href="#"
+              >View patient analytics</a
+            ><a id="completed-patient" class="button outline" href="#"
+              >Back to patient reports</a
+            >
+          </section>
+        </div>
+        <aside class="workspace-side session-sidebar">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Session controls</h2>
+              <span id="mode-badge" class="tag">Not started</span>
+            </div>
+            <div class="camera-preview">
+              <video
+                id="camera-preview"
+                autoplay
+                muted
+                playsinline
+                hidden
+              ></video
+              ><span id="camera-placeholder">Camera off</span>
+            </div>
+            <button id="camera-toggle" class="button outline">
+              Turn camera on</button
+            ><button id="disconnect-session" class="button outline" disabled>
+              Disconnect conversation
+            </button>
+            <label class="camera-share-label"
+              ><input id="share-camera" type="checkbox" disabled /> Share camera
+              frames with Gemini during this voice session</label
+            >
+            <p id="camera-sharing-status" class="muted-text">
+              Camera preview stays on this device unless sharing is enabled.
+            </p>
+            <p class="muted-text">
+              Voice audio is sent to Gemini during a connected voice session.
+              Answers and brief assessment response summaries are saved. Audio,
+              video and full chat transcripts are not stored. Camera frames
+              never determine responses or scores.
+            </p>
+          </section>
+          <section class="panel guide">
+            <h2>How this works</h2>
+            <ol>
+              <li>Answer by typing, speaking or choosing an option.</li>
+              <li>Clear responses save automatically.</li>
+              <li>Review your answers before completing.</li>
+            </ol>
+            <p>
+              Imported questionnaire content and assisted translations need
+              clinician review.
+            </p>
+            <a id="side-analytics" href="#">Patient analytics →</a>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <dialog id="exit-assessment" class="exit-assessment-dialog" aria-labelledby="exit-assessment-title" aria-describedby="exit-assessment-description">
+      <h2 id="exit-assessment-title">Pause this assessment?</h2>
+      <p id="exit-assessment-description">Your saved answers and progress will be kept. Choose Resume assessment in the patient's reports to continue later.</p>
+      <p class="notice">The conversation transcript and any unsent text will not be restored. Your microphone and camera will turn off when you leave.</p>
+      <p id="exit-assessment-status" role="status" class="muted-text"></p>
+      <div class="exit-assessment-actions">
+        <button id="continue-assessment" type="button" class="button outline" autofocus>Continue assessment</button>
+        <button id="confirm-exit-assessment" type="button" class="button primary">Pause &amp; return</button>
+      </div>
+    </dialog>
+    <script type="module" src="/session/app.js"></script>
+  </body>
+</html>

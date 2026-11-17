@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Assessment Review | OpenMind</title>
+  <link rel="stylesheet" href="/legacy/draft-live.css">
+</head>
+<body>
+  <header class="draft-header"><a class="draft-brand" href="/"><img src="/assets/openmind-mark.svg" alt=""><strong>penMind</strong></a><span>Assessment Library</span><a href="/?view=library">Back to library</a></header>
+  <main class="draft-layout">
+    <section class="draft-main">
+      <p class="draft-eyebrow">IMPORTED ASSESSMENT · INTERNAL REVIEW</p>
+      <h1 id="draft-title">Loading assessment…</h1>
+      <p id="draft-period" class="draft-muted"></p>
+      <a id="draft-source" class="draft-source" href="#" target="_blank" rel="noopener noreferrer">Questionnaire source</a>
+      <p class="draft-notice">This imported definition needs clinical review. Responses are saved locally for this review, but no clinical score, diagnosis, or patient report is generated.</p>
+      <div id="draft-start" class="draft-start"><button id="draft-start-live" class="draft-button primary" type="button" disabled>Start voice conversation</button><button id="draft-start-screen" class="draft-button secondary" type="button" disabled>Complete on screen</button></div>
+      <p id="draft-status" class="draft-status" role="status">Loading…</p>
+      <section id="draft-question-card" class="draft-card" hidden>
+        <div class="draft-progress"><span id="draft-progress">Question 1</span><span id="draft-mode">OFF</span></div>
+        <div class="draft-track"><div id="draft-progress-bar"></div></div>
+        <h2 id="draft-question"></h2>
+        <div id="draft-options" class="draft-options"></div>
+        <div id="draft-confirmation" class="draft-confirmation" hidden><p id="draft-proposal"></p><div class="draft-actions"><button id="draft-cancel" class="draft-button secondary" type="button">Let me clarify</button><button id="draft-confirm" class="draft-button primary" type="button">Yes, that's right</button></div></div>
+      </section>
+      <section id="draft-review" class="draft-card" hidden><h2>Final answer review</h2><p>Check each selected response before saving this unscored review.</p><div id="draft-review-items"></div><div class="draft-actions"><button id="draft-finish" class="draft-button primary" type="button">Save reviewed answers</button></div></section>
+      <section id="draft-complete" class="draft-card" hidden><h2>Review saved</h2><p>All confirmed answers are stored locally. No score was calculated.</p><div id="draft-result-items"></div><p id="draft-saved-at" class="draft-muted"></p><button id="draft-print" class="draft-button secondary" type="button">Print answer summary</button></section>
+      <section class="draft-transcript-card"><h2>Conversation</h2><div id="draft-transcript" class="draft-transcript" aria-live="polite"><p class="draft-muted">The conversation will appear here.</p></div><form id="draft-text-form" class="draft-text-form"><input id="draft-text" type="text" maxlength="1000" placeholder="Type a response during a live conversation" disabled aria-label="Type a response"><button id="draft-send" class="draft-button primary" type="submit" disabled>Send</button></form></section>
+    </section>
+    <aside class="draft-side"><div class="draft-card"><h2>Session controls</h2><div class="draft-camera"><video id="draft-video" autoplay muted playsinline></video><span id="draft-camera-off">Camera is off</span></div><div class="draft-side-actions"><button id="draft-mic" class="draft-button secondary" type="button" disabled>Mute microphone</button><button id="draft-camera-toggle" class="draft-button secondary" type="button" disabled>Turn camera on</button></div><p class="draft-muted">Camera frames provide conversational context only. Answers come from confirmed speech or on-screen choices.</p></div><div class="draft-card"><h2>How it works</h2><ol><li>Describe your experience in your own words.</li><li>Confirm the assistant's interpretation before it is saved.</li><li>Review all answers at the end.</li></ol><p class="draft-muted">Voice answer mapping is experimental and requires human review. This page does not notify a clinician or emergency service.</p></div></aside>
+  </main>
+  <script type="module" src="/legacy/draft-live.js"></script>
+</body>
+</html>

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { doctorGuidance } from "../src/workspace/doctor-guidance.js";
 import { definition } from "../src/workspace/catalogue.js";
-import { openWorkspaceStore } from "../src/workspace/store.js";
+import { openWorkspaceStore } from "../src/storage/sqlite/workspace-store.js";
 import { createWorkspaceApi } from "../src/workspace/api.js";
 import http from "node:http";
 const patient = {

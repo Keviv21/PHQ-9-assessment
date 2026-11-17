@@ -3,9 +3,9 @@ import {
   answerType,
   currentQuestionIndex,
   canSkip,
-} from "../../public/workspace-answers.js";
-import { mergeTranscript, usesSelectedLanguage, numericChoicePrompt } from "../../public/workspace-language-guard.js";
-import { responseLabel } from "../../public/workspace-answers.js";
+} from "../../public/shared/answers.js";
+import { mergeTranscript, usesSelectedLanguage, numericChoicePrompt, requestedLanguage } from "../../public/shared/language-guard.js";
+import { responseLabel } from "../../public/shared/answers.js";
 import { presentation } from "./presentation.js";
 import { languageName } from "./languages.js";
 import { GoogleGenAI, Modality } from "@google/genai";
@@ -75,6 +75,8 @@ export class GeminiBridge {
     this.stopped = false;
     this.ready = false;
     this.hasResponse = false;
+    this.inputText = "";
+    this.languageRequestPending = false;
     this.paused = false;
     this.pending = null;
     this.queue = Promise.resolve();
@@ -307,7 +309,7 @@ export class GeminiBridge {
     this.send({ type: "turn_complete" });
   }
   async onMessage(message) {
-    if (this.stopped) return;
+    if (this.stopped || this.languageRequestPending) return;
     const content = message.serverContent;
     if (content?.interrupted) {
       this.clearOutput();
@@ -315,6 +317,16 @@ export class GeminiBridge {
       this.send({ type: "turn_complete" });
     }
     if (content?.inputTranscription?.text) {
+      this.inputText = mergeTranscript(this.inputText, content.inputTranscription.text);
+      const language = requestedLanguage(this.inputText);
+      if (language && language !== this.state.language) {
+        this.hasResponse = false;
+        this.languageRequestPending = true;
+        this.clearOutput();
+        this.send({ type: "audio_interrupt" });
+        this.send({ type: "language_request", language, text: this.inputText });
+        return;
+      }
       this.hasResponse = true;
       this.send({
         type: "transcript",
@@ -338,7 +350,10 @@ export class GeminiBridge {
         }
         this.outputAudio.push(part.inlineData.data);
       }
-    if (content?.turnComplete && !content?.interrupted) this.finishOutput();
+    if (content?.turnComplete && !content?.interrupted) {
+      this.finishOutput();
+      this.inputText = "";
+    }
     if (message.toolCallCancellation?.ids?.includes(this.pending)) {
       this.pending = null;
       this.send({ type: "proposal_cleared" });

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GeminiBridge } from '../src/gemini-bridge.js';
-import { openDraftStore } from '../src/draft-store.js';
-import { getLiveDraftForm } from '../src/draft-library.js';
-import { getForm } from '../src/assessment.js';
-import { openStore } from '../src/store.js';
+import { GeminiBridge } from '../src/legacy/gemini-bridge.js';
+import { openDraftStore } from '../src/storage/sqlite/draft-store.js';
+import { getLiveDraftForm } from '../src/legacy/draft-library.js';
+import { getForm } from '../src/legacy/assessment.js';
+import { openStore } from '../src/storage/sqlite/standard-store.js';
 
 test('conversational mapping waits for confirmation and asks the next PHQ-9 item', async () => {
   const store = openStore(':memory:');

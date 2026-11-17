@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { HttpError } from "./errors.js";
 import { LANGUAGES, languageName } from "./languages.js";
-import { usesSelectedLanguage, unchangedTranslation } from "../../public/workspace-language-guard.js";
+import { usesSelectedLanguage, unchangedTranslation } from "../../public/shared/language-guard.js";
 import { SESSION_LABELS } from "./presentation.js";
 
 const object = (properties) => ({

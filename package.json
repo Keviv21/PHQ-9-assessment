@@ -1,5 +1,5 @@
 {
-  "name": "phq9-gemini-live-prototype",
+  "name": "pod-assessment-platform",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,13 +7,14 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
     "start": "node --env-file-if-exists=.env src/server.js",
     "test": "node --test",
-    "import:assessments": "node scripts/import-assessment-bundle.mjs",
-    "audit:assessments": "node scripts/audit-assessment-bundle.mjs",
-    "smoke:live": "node scripts/smoke-draft-live.mjs",
-    "db:migrate": "node --env-file-if-exists=.env scripts/migrate-sqlite-to-postgres.mjs"
+    "import:assessments": "node scripts/assessments/import-catalogue.mjs",
+    "audit:assessments": "node scripts/legacy/audit-assessment-bundle.mjs",
+    "smoke:live": "node scripts/legacy/smoke-draft-live.mjs",
+    "db:migrate": "node --env-file-if-exists=.env scripts/database/migrate-sqlite.mjs",
+    "import:legacy": "node scripts/legacy/import-assessment-bundle.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",

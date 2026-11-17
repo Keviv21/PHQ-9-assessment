@@ -1,8 +1,8 @@
 import {
   recommendAssessments,
   validateRecommendationContext,
-} from "../recommendation.js";
-import { suggestForDemoPatient } from "../demo-patients.js";
+} from "../clinical/recommendation.js";
+import { suggestForDemoPatient } from "../legacy/demo-patients.js";
 import { definition } from "./catalogue.js";
 import { HttpError } from "./errors.js";
 

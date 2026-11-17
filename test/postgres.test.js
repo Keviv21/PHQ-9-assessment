@@ -5,16 +5,57 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import http from "node:http";
-import { openPostgres } from "../src/postgres/database.js";
-import { openPostgresWorkspace } from "../src/postgres/workspace-store.js";
-import { openPostgresLegacy } from "../src/postgres/legacy-store.js";
-import { openWorkspaceStore } from "../src/workspace/store.js";
-import { openStore } from "../src/store.js";
+import { openPostgres } from "../src/storage/postgres/database.js";
+import { openPostgresWorkspace } from "../src/storage/postgres/workspace-store.js";
+import { openPostgresLegacy } from "../src/storage/postgres/legacy-store.js";
+import { openWorkspaceStore } from "../src/storage/sqlite/workspace-store.js";
+import { openStore } from "../src/storage/sqlite/standard-store.js";
 import { definition } from "../src/workspace/catalogue.js";
 import { createWorkspaceApi } from "../src/workspace/api.js";
-import { migrateSqlite } from "../scripts/migrate-sqlite-to-postgres.mjs";
+import { migrateSqlite } from "../scripts/database/migrate-sqlite.mjs";
 import { createTranslationsService } from "../src/workspace/translations.js";
-import { openApplicationStorage } from "../src/storage.js";
+import { openApplicationStorage } from "../src/storage/index.js";
+import { copyPostgresDatabase } from "../scripts/database/copy-postgres.mjs";
+import { TABLE_NAMES } from "../src/storage/postgres/database.js";
+
+test("Named tables preserve existing schemas and database copies reject conflicts", { skip: !process.env.TEST_DATABASE_URL }, async () => {
+  const url = process.env.TEST_DATABASE_URL;
+  const sourceSchema = "copy_source_" + randomUUID().replaceAll("-", "");
+  const targetSchema = "copy_target_" + randomUUID().replaceAll("-", "");
+  let source = await openPostgres(url, { schema: sourceSchema });
+  let target;
+  try {
+    const store = await openPostgresWorkspace(source, { seed: false });
+    const patient = await store.createPatient({ name: "Synthetic copy patient", historySummary: "Synthetic only" });
+    const rx = await store.prescribe(patient.id, "GAD7");
+    const session = await store.createSession(rx.id, definition("GAD7"), "en", "screen");
+    // Simulate the previous release's schema, including its linked records.
+    for (const [oldName, newName] of Object.entries(TABLE_NAMES))
+      await source.pool.query(`ALTER TABLE "${sourceSchema}"."${newName}" RENAME TO "${oldName}"`);
+    const counts = await copyPostgresDatabase(url, sourceSchema, url, targetSchema);
+    assert.equal(counts.patients, 1);
+    assert.equal(counts.assessment_sessions, 1);
+    target = await openPostgres(url, { schema: targetSchema });
+    const copied = await openPostgresWorkspace(target, { seed: false });
+    assert.deepEqual(await copied.get(session.id), session);
+    assert.deepEqual(await copyPostgresDatabase(url, sourceSchema, url, targetSchema), counts);
+    const reopened = await openPostgres(url, { schema: sourceSchema });
+    await source.close(); source = reopened;
+    assert.deepEqual(await (await openPostgresWorkspace(source, { seed: false })).get(session.id), session);
+    const oldTables = await source.pool.query("SELECT tablename FROM pg_tables WHERE schemaname=$1 AND tablename LIKE 'workspace_%'", [sourceSchema]);
+    assert.equal(oldTables.rows.length, 0);
+    // A late conflict must roll back earlier inserts as well.
+    await source.pool.query(`INSERT INTO ${source.table("workspace_patients")} VALUES ('new-copy-patient', $1)`, [JSON.stringify({ id: "new-copy-patient" })]);
+    await target.pool.query(`UPDATE ${target.table("workspace_sessions")} SET data = data || '{"revision":99}'::jsonb`);
+    await assert.rejects(() => copyPostgresDatabase(url, sourceSchema, url, targetSchema), /Copy verification failed/);
+    assert.equal((await copied.listPatients()).length, 1);
+    assert.equal((await copied.get(session.id)).revision, 99);
+  } finally {
+    await source.pool.query(`DROP SCHEMA IF EXISTS "${sourceSchema}" CASCADE`);
+    await source.pool.query(`DROP SCHEMA IF EXISTS "${targetSchema}" CASCADE`);
+    await target?.close(); await source.close();
+  }
+});
 
 test(
   "PostgreSQL migration, shared sessions, concurrency, cache and HTTP reports",

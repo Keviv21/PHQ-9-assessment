@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Assessments | OpenMind</title>
+    <link rel="stylesheet" href="/shared/base.css" />
+    <link rel="stylesheet" href="/workspace/navigation.css" />
+    <link rel="stylesheet" href="/workspace/library.css" />
+    <link rel="stylesheet" href="/workspace/analytics.css" />
+    <link rel="stylesheet" href="/shared/workspace.css" />
+  </head>
+  <body class="workspace-ui">
+    <svg
+      class="icon-definitions"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <symbol id="icon-book" viewBox="0 0 24 24">
+        <path
+          d="M4 4.5h6.5A3.5 3.5 0 0 1 14 8v11H7a3 3 0 0 0-3 1V4.5Zm16 0h-3a3 3 0 0 0-3 3V19h3a3 3 0 0 1 3 1V4.5ZM4 20h16"
+        />
+      </symbol>
+      <symbol id="icon-edit" viewBox="0 0 24 24">
+        <path
+          d="M4 20h16M5 16.5l.5-4L16.8 1.2l4 4L9.5 16.5l-4.5.5Zm9.5-13 4 4"
+        />
+      </symbol>
+      <symbol id="icon-sliders" viewBox="0 0 24 24">
+        <path
+          d="M3 6h8m4 0h6M3 18h4m4 0h10M11 6a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM7 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"
+        />
+      </symbol>
+      <symbol id="icon-clipboard" viewBox="0 0 24 24">
+        <path
+          d="M9 4H6a2 2 0 0 0-2 2v15h16V6a2 2 0 0 0-2-2h-3M9 2h6v4H9V2Zm-1 9h8M8 15h8"
+        />
+      </symbol>
+      <symbol id="icon-add" viewBox="0 0 24 24">
+        <path d="M5 3h9l4 4v5M5 3v18h8M14 3v5h4M18 15v7m-3.5-3.5h7" />
+      </symbol>
+      <symbol id="icon-chart" viewBox="0 0 24 24">
+        <path d="M4 3v18h17M8 16v-5m5 5V7m5 9V4" />
+      </symbol>
+      <symbol id="icon-library" viewBox="0 0 24 24">
+        <path d="M4 5h5v15H4zM10 3h5v17h-5zM16 7h4v13h-4z" />
+      </symbol>
+    </svg>
+    <div class="clinic-app prescribing-active patient-selection-active">
+      <aside class="sidebar" aria-label="Main navigation">
+        <button
+          id="sidebar-toggle"
+          class="logo"
+          type="button"
+          aria-label="Collapse sidebar"
+          aria-controls="sidebar-navigation"
+          aria-expanded="true"
+          title="Collapse sidebar"
+        >
+          <img class="logo-mark" src="/assets/openmind-mark.svg" alt="" /><span
+            class="logo-word"
+            >penMind</span
+          ><svg class="collapse-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m14 5-7 7 7 7" />
+          </svg>
+        </button>
+        <p class="nav-caption">Clinical workspace</p>
+        <nav id="sidebar-navigation" aria-label="Patient assessment navigation">
+          <div class="nav-row muted" title="Deep Research">
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-edit"></use></svg
+            ><span class="nav-label">Deep Research</span>
+          </div>
+          <div class="nav-row muted" title="Patient Casebooks">
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-book"></use></svg
+            ><span class="nav-label">Patient Casebooks</span>
+          </div>
+          <div class="nav-row muted" title="MindScribe">
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-sliders"></use></svg
+            ><span class="nav-label">MindScribe</span>
+          </div>
+          <div class="nav-row section" title="Patient Assessments & Tests">
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-clipboard"></use></svg
+            ><span class="nav-label">Assessments</span>
+          </div>
+          <div class="nav-row subsection">Patient care</div>
+          <button
+            id="nav-prescribe"
+            class="nav-row nav-action active"
+            type="button"
+            aria-label="Prescribe Test"
+            title="Prescribe Test"
+          >
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-add"></use></svg
+            ><span class="nav-label">Prescribe Test</span>
+          </button>
+          <button
+            id="nav-reports"
+            class="nav-row nav-action"
+            type="button"
+            aria-label="View Test Reports"
+            title="View Test Reports"
+          >
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-chart"></use></svg
+            ><span class="nav-label">View Test Reports</span>
+          </button>
+          <button
+            id="nav-analytics"
+            class="nav-row nav-action"
+            type="button"
+            aria-label="Analytics"
+            title="Analytics"
+          >
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-chart"></use></svg
+            ><span class="nav-label">Analytics</span>
+          </button>
+          <button
+            id="nav-library"
+            class="nav-row nav-action"
+            type="button"
+            aria-label="Assessment Library"
+            title="Assessment Library"
+          >
+            <svg class="nav-icon" aria-hidden="true">
+              <use href="#icon-library"></use></svg
+            ><span class="nav-label">Assessment Library</span>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="workspace-avatar" aria-hidden="true">OM</span>
+          <div class="footer-label">
+            <strong>Assessment workspace</strong><small>Patient records</small>
+          </div>
+        </div>
+      </aside>
+      <div class="main-column">
+        <header class="topbar">
+          <span class="app-switcher"><span class="workspace-dot" aria-hidden="true"></span>Clinical workspace</span
+          ><span class="topbar-caption"
+            >Patient Assessments &amp; Tests
+            <span aria-hidden="true">/</span> Assessments</span
+          >
+        </header>
+        <main class="content">
+          <section id="prescribe-view">
+            <div class="prescription-heading">
+              <div class="prescription-title">
+          <button id="workspace-back" class="button outline workspace-back" type="button" aria-label="Back to patients" title="Back to patients" hidden>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m10 5-7 7 7 7M3 12h18" /></svg>
+            Back
+          </button>
+                <h1>Prescribe Test</h1>
+              </div>
+              <div class="steps" aria-label="Prescription progress">
+                <div id="step-one" class="step current">
+                  <span>1</span>Select patient
+                </div>
+                <div class="step-line"></div>
+                <div id="step-two" class="step">
+                  <span>2</span>Confirm &amp; Prescribe
+                </div>
+              </div>
+            </div>
+            <section id="choose-patient" class="patient-selection panel">
+              <div class="patient-selection-heading">
+                <h2>Select a patient</h2>
+                <span id="patient-count" class="tag" role="status">Loading patients…</span>
+              </div>
+              <label class="visually-hidden" for="patient-search"
+                >Search patients</label
+              >
+              <div class="patient-toolbar">
+                <div class="search-box">
+                  <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg
+                  ><input
+                    id="patient-search"
+                    type="search"
+                    placeholder="Search patients…"
+                    autocomplete="off"
+                  />
+                </div>
+                <button id="add-patient" class="button primary" type="button">
+                  ＋ Add patient
+                </button>
+              </div>
+              <div
+                id="patient-list"
+                class="patient-list"
+                role="radiogroup"
+                aria-label="Patients"
+              ></div>
+              <nav id="patient-pagination" class="patient-pagination" aria-label="Patient pages" hidden>
+                <span id="patient-page-range" class="patient-page-range" role="status"></span>
+                <div class="patient-page-controls">
+                  <button id="patient-previous" class="button outline" type="button" aria-label="Previous patient page" aria-controls="patient-list">← Previous</button>
+                  <label class="visually-hidden" for="patient-page">Patient page</label>
+                  <select id="patient-page" aria-controls="patient-list"></select>
+                  <button id="patient-next" class="button outline" type="button" aria-label="Next patient page" aria-controls="patient-list">Next →</button>
+                </div>
+              </nav>
+              <div class="actions">
+                <p id="patient-selection-status" class="selection-status" role="status"></p>
+                <button
+                  id="next-step"
+                  class="button primary"
+                  type="button"
+                  disabled
+                >
+                  Continue <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </section>
+            <section id="confirm-step" hidden>
+              <div class="workspace-grid prescription-layout">
+                <aside class="workspace-side" aria-label="Patient context">
+                  <article class="panel patient-context-panel">
+                    <div class="panel-heading">
+                      <h2>Patient overview</h2>
+                      <button id="back-step" class="button outline change-patient" type="button">Change patient</button>
+                    </div>
+                    <div id="patient-summary"></div>
+                    <div class="patient-context-actions">
+                      <button id="patient-reports" class="button outline" type="button">Reports</button>
+                      <button id="patient-analytics" class="button outline" type="button">Analytics</button>
+                    </div>
+                  </article>
+                  <article class="panel recent-assessments-panel">
+                    <h2>Recent assessments</h2>
+                    <div id="patient-recent-results" aria-live="polite">
+                      <p>Select a patient to see saved sessions.</p>
+                    </div>
+                  </article>
+                </aside>
+                <div class="workspace-main">
+                  <article class="panel suggested-assessments-panel">
+                    <div class="panel-heading">
+                      <div>
+                        <h2 id="suggested-assessments-title"><span class="flow-number" aria-hidden="true">1</span>Suggested assessments</h2>
+                        <p class="panel-description">Review the options suggested from the patient’s history.</p>
+                      </div>
+                      <button id="refresh-suggestions" class="button outline" type="button" aria-label="Refresh suggested assessments">Refresh</button>
+                    </div>
+                    <div id="suggestion-output" class="suggestion-scroll" role="region" aria-labelledby="suggested-assessments-title" tabindex="0" aria-live="polite"></div>
+                  </article>
+                  <section id="doctor-conversation" class="panel doctor-conversation-panel" aria-labelledby="symptom-discussion-title">
+                    <div class="panel-heading">
+                      <div>
+                        <h2 id="symptom-discussion-title"><span class="flow-number" aria-hidden="true">2</span>Discuss symptoms</h2>
+                        <p class="panel-description">Share patient-reported symptoms or doctor observations to explore suitable assessments.</p>
+                      </div>
+                      <span class="tag">AI-assisted</span>
+                    </div>
+                    <div id="doctor-messages" class="chat-log" role="log" aria-label="Symptom discussion"></div>
+                    <form id="doctor-form" class="symptom-composer">
+                      <label for="doctor-text">Symptoms or observations</label>
+                      <textarea id="doctor-text" maxlength="6000" rows="3" aria-describedby="symptom-input-hint" placeholder="Describe the symptoms, when they started, and how they affect daily life…"></textarea>
+                      <div class="symptom-composer-actions">
+                        <p id="symptom-input-hint">Include duration, frequency, and impact on daily life.</p>
+                        <button id="doctor-send" class="button primary" type="submit" disabled>Suggest assessments</button>
+                      </div>
+                      <p id="discussion-status" class="muted-text" role="status"></p>
+                    </form>
+                    <section id="discussion-results" class="discussion-results" aria-labelledby="discussion-results-title" hidden>
+                      <h3 id="discussion-results-title">Based on your discussion</h3>
+                      <div id="doctor-suggestions" class="suggestion-scroll" role="region" aria-labelledby="discussion-results-title" tabindex="0" aria-live="polite"></div>
+                    </section>
+                    <p class="discussion-note">AI-assisted suggestions support clinician review. This conversation is not saved to the patient record.</p>
+                  </section>
+                  <section class="panel decision-panel" aria-labelledby="assessment-selection-title">
+                    <div class="panel-heading">
+                      <div>
+                        <h2 id="assessment-selection-title"><span class="flow-number" aria-hidden="true">3</span>Select &amp; prescribe</h2>
+                        <p class="panel-description">Choose a suggested assessment or search the full catalogue.</p>
+                      </div>
+                    </div>
+                    <details id="assessment-dropdown" class="assessment-dropdown">
+                      <summary id="assessment-dropdown-toggle" aria-label="Choose an assessment">
+                        <span id="assessment-dropdown-value">Choose an assessment…</span>
+                        <span aria-hidden="true">⌄</span>
+                      </summary>
+                      <div class="assessment-dropdown-menu">
+                    <div class="assessment-filters">
+                      <label for="assessment-search">Search assessments
+                        <input id="assessment-search" type="search" placeholder="Name or purpose" />
+                      </label>
+                      <label for="assessment-category">Category
+                        <select id="assessment-category"><option value="">All categories</option></select>
+                      </label>
+                    </div>
+                    <div class="assessment-list-heading">
+                      <span id="assessment-list-label">Assessments</span>
+                      <div class="assessment-list-tools">
+                        <p id="assessment-match-count" class="muted-text" role="status"></p>
+                        <button id="assessment-reset" class="button outline" type="button" hidden>Clear filters</button>
+                      </div>
+                    </div>
+                    <div id="assessment-list" class="assessment-list" role="radiogroup" aria-labelledby="assessment-list-label">
+                      <p class="muted-text">Loading assessments…</p>
+                    </div>
+                      </div>
+                    </details>
+                    <div class="assessment-selection-footer">
+                      <p id="selection-source" class="muted-text"></p>
+                      <div id="selection-details" aria-live="polite"></div>
+                      <div class="prescription-actions">
+                        <button id="prescribe-button" class="button primary" type="button" disabled>Confirm &amp; Prescribe</button>
+                      </div>
+                    </div>
+                    <div id="prescription-result" aria-live="polite"></div>
+                  </section>
+                </div>
+              </div>
+            </section>
+          </section>
+          <section id="reports-view" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p>
+                <h1>View Test Reports</h1>
+                <p>
+                  Choose a patient to see assigned assessments and completed
+                  reports.
+                </p>
+              </div>
+            </div>
+            <label class="search-label" for="report-patient">Patient</label>
+            <select id="report-patient" class="patient-picker">
+              <option value="">Choose a patient</option>
+            </select>
+            <div id="report-content" aria-live="polite">
+              <p class="empty-state">
+                Choose a patient to view their test reports.
+              </p>
+            </div>
+          </section>
+          <section id="analytics-view" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p>
+                <h1>Patient analytics</h1>
+                <p>
+                  Compare completed visits and review each patient's saved
+                  assessments.
+                </p>
+              </div>
+            </div>
+            <section class="panel pa-page">
+              <div class="pa-toolbar">
+                <label
+                  >Patient<select id="analytics-patient" class="patient-picker">
+                    <option value="">Choose a patient</option>
+                  </select></label
+                ><label
+                  >Period<select id="analytics-range">
+                    <option value="all">All time</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="30">Last 30 days</option>
+                  </select></label
+                >
+              </div>
+              <div id="analytics-dashboard"></div>
+            </section>
+          </section>
+          <section id="library-view" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p>
+                <h1>Assessment Library</h1>
+                <p>
+                  Browse imported assessment definitions and review their
+                  question structure.
+                </p>
+              </div>
+            </div>
+            <p class="library-notice">
+              Browse the same questionnaire definitions used for patient
+              sessions. Preview questions and answer choices, then select an
+              assessment for a patient. Categories help browsing; they do not
+              establish suitability.
+            </p>
+            <div id="library-catalogue">
+              <div class="library-toolbar">
+                <label class="search-label" for="library-search"
+                  >Search assessments<input
+                    id="library-search"
+                    type="search"
+                    placeholder="Search by name"
+                    autocomplete="off" /></label
+                ><label class="search-label" for="library-filter"
+                  >Show<select id="library-filter">
+                    <option value="all">All assessments</option>
+                    <option value="preview">Available questionnaires</option>
+                    <option value="incomplete">Needs source content</option>
+                  </select></label
+                >
+              </div>
+              <label class="search-label"
+                >Category<select id="library-category">
+                  <option value="">All categories</option>
+                </select></label
+              >
+              <p id="library-count" class="library-count" aria-live="polite">
+                Loading assessment library…
+              </p>
+              <div id="library-list" class="library-list"></div>
+              <div class="library-pagination">
+                <button
+                  id="library-previous"
+                  class="button outline"
+                  type="button"
+                >
+                  Previous</button
+                ><span id="library-page"></span
+                ><button id="library-next" class="button outline" type="button">
+                  Continue to assessments <span aria-hidden="true">→</span>
+                </button>
+              </div>
+              <section class="library-sessions">
+                <h2>Saved assessment reviews</h2>
+                <div id="library-sessions">
+                  <p class="empty-state">No saved reviews yet.</p>
+                </div>
+              </section>
+            </div>
+            <div id="library-detail" hidden></div>
+          </section>
+          <p class="clinical-note">
+            Patient records. Assessment suggestions support clinician review and
+            do not establish a diagnosis.
+          </p>
+        </main>
+      </div>
+    </div>
+    <dialog id="patient-dialog" aria-labelledby="add-patient-title">
+      <form id="add-patient-form" class="patient-form">
+        <div class="panel-heading">
+          <h2 id="add-patient-title">Add patient</h2>
+          <button id="close-patient" class="button outline" type="button">
+            Close
+          </button>
+        </div>
+        <label
+          >Name<input name="name" required maxlength="150" autocomplete="name"
+        /></label>
+        <div class="form-pair">
+          <label>Age<input name="age" type="number" min="0" max="130" /></label
+          ><label
+            >Gender<select name="gender">
+              <option value="">Not provided</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+              <option>Prefer not to say</option>
+            </select></label
+          >
+        </div>
+        <label
+          >Email (optional)<input
+            name="email"
+            type="email"
+            maxlength="254" /></label
+        ><label
+          >Patient history summary<textarea
+            name="historySummary"
+            required
+            maxlength="24000"
+            rows="6"
+            placeholder="Documented symptoms, relevant history, duration and current concerns"
+          ></textarea>
+        </label>
+        <p id="patient-form-error" role="alert"></p>
+        <button class="button primary" type="submit">Save patient</button>
+      </form>
+    </dialog>
+    <dialog
+      id="patient-analytics-dialog"
+      class="patient-analytics"
+      aria-labelledby="pa-dialog-title"
+    >
+      <header class="pa-header">
+        <div>
+          <p class="pa-eyebrow">Clinician review</p>
+          <h2 id="pa-dialog-title">Patient analytics</h2>
+          <p id="pa-patient-name" class="pa-patient-name"></p>
+        </div>
+        <form method="dialog">
+          <button class="button outline" autofocus>Close</button>
+        </form>
+      </header>
+      <div id="analytics-dialog-dashboard" class="pa-body"></div>
+    </dialog>
+    <script type="module" src="/workspace/app.js"></script>
+
+    <script type="module" src="/workspace/library.js"></script>
+  </body>
+</html>

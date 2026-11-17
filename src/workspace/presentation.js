@@ -11,6 +11,8 @@ export const SESSION_LABELS = {
   saved: "Saved",
   review: "Review your answers",
   reviewHint: "You can change any response before saving.",
+  submit: "Submit assessment",
+  submitting: "Submitting assessment…",
   save: "Save assessment",
   saving: "Saving assessment…",
   autoSave:

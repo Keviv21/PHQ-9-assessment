@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openDraftStore } from '../src/draft-store.js';
-import { getLiveDraftForm, listDraftAssessments } from '../src/draft-library.js';
+import { openDraftStore } from '../src/storage/sqlite/draft-store.js';
+import { getLiveDraftForm, listDraftAssessments } from '../src/legacy/draft-library.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

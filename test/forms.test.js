@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getAssessmentForm, scoreAssessment } from '../src/forms.js';
-import { openStore } from '../src/store.js';
+import { getAssessmentForm, scoreAssessment } from '../src/legacy/forms.js';
+import { openStore } from '../src/storage/sqlite/standard-store.js';
 
 test('GAD-7 and PCL-5 imported forms have the expected item and response ranges', () => {
   const gad7 = getAssessmentForm('gad7');

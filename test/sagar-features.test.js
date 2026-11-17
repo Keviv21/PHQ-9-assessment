@@ -2,11 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
-import { openWorkspaceStore } from "../src/workspace/store.js";
+import { openWorkspaceStore } from "../src/storage/sqlite/workspace-store.js";
 import { definition, catalogue } from "../src/workspace/catalogue.js";
 import { assessmentReport, reportHtml } from "../src/workspace/report.js";
 import { GeminiBridge } from "../src/workspace/live-bridge.js";
-import { PcmResampler, matchSpokenOption } from "../public/workspace-media.js";
+import { PcmResampler, matchSpokenOption } from "../public/session/media.js";
 
 for (const rate of [16000, 44100, 48000]) {
   for (const type of ["worklet", "fallback"])
@@ -22,7 +22,7 @@ for (const rate of [16000, 44100, 48000]) {
         let Processor;
         runInNewContext(
           readFileSync(
-            new URL("../public/audio-worklet.js", import.meta.url),
+            new URL("../public/shared/audio-worklet.js", import.meta.url),
             "utf8",
           ),
           {

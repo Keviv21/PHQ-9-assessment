@@ -3,7 +3,7 @@ import {
   responseLabel,
   visibleQuestion,
   isSkipped,
-} from "../../public/workspace-answers.js";
+} from "../../public/shared/answers.js";
 import { presentation } from "./presentation.js";
 import { HttpError } from "./errors.js";
 const escape = (value) =>

@@ -4,8 +4,8 @@ import { mkdtempSync, rmSync, rmdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { scoreAnswers } from '../src/assessment.js';
-import { openStore } from '../src/store.js';
+import { scoreAnswers } from '../src/legacy/assessment.js';
+import { openStore } from '../src/storage/sqlite/standard-store.js';
 
 test('existing completed results survive the final-review schema upgrade', () => {
   const dir = mkdtempSync(join(tmpdir(), 'phq9-legacy-'));

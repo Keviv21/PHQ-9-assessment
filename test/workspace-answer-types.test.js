@@ -10,14 +10,14 @@ import {
   visibleQuestion,
   numericSchema,
   responseLabel,
-} from "../public/workspace-answers.js";
+} from "../public/shared/answers.js";
 import { normalizeAssessment } from "../src/workspace/normalize.js";
 import {
   validateDefinition,
   scoreDefinition,
 } from "../src/workspace/definition.js";
 import { definition, catalogue } from "../src/workspace/catalogue.js";
-import { openWorkspaceStore } from "../src/workspace/store.js";
+import { openWorkspaceStore } from "../src/storage/sqlite/workspace-store.js";
 import { assessmentReport, reportHtml } from "../src/workspace/report.js";
 import { GeminiBridge } from "../src/workspace/live-bridge.js";
 import { createTranslationsService } from "../src/workspace/translations.js";

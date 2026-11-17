@@ -4,7 +4,7 @@ import {
   visibleQuestion,
   isSkipped,
   responseLabel,
-} from "../../public/workspace-answers.js";
+} from "../../public/shared/answers.js";
 import { createHash } from "node:crypto";
 import { presentation } from "./presentation.js";
 // Adapted from sagar: group repeat visits by instrument, version and language.

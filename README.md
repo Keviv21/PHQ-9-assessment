@@ -1,126 +1,98 @@
-# Chandrika assessment workspace
+# Pod Assessment Platform
 
-The `chandrika` branch uses shared PostgreSQL storage configured by `DATABASE_URL` and provides the patient workspace at `/`. Main and sagar are unchanged. This workspace adapts the platform's assessment layout, complete-option translation validation and live-answer handling, and sagar's history recommendation, doctor consultation, right-side session controls and per-patient analytics flow.
+OpenMind clinical assessment workspace on the `chandrika` branch. It combines patient history, clinician review and Gemini-assisted recommendations with multilingual chat, voice and on-screen questionnaires, saved responses, reports and patient analytics.
 
-- The first patient is imported from `local-data/neurotwin-patient.json` (or `NEUROTWIN_PATIENT_FILE`), followed by four sample patients. The clinical JSON is ignored by Git; keep it local. Added patients, summaries, prescriptions, assessment answers, reports and caches are saved in PostgreSQL.
-- `data/assessments/novopsych-source.json` is the exact source export supplied as `all-assessments-cleaned-20261116.json`. Its SHA-256 checksum is recorded in the generated catalogue.
-- `data/assessments/catalogue.json` contains 186 normalized entries (4,927 questions) from `all-assessments-cleaned-20261116.json`. All appear in the prescription dropdown; 181 questionnaires can run with single choice, multiple choice, text, integer and number responses. Five remain blocked: SDQ has no captured questions; four WHODAS variants require school/work context the app does not collect. Unavailable forms identify the exact affected question and dependency. Repaired display labels are used, including source-provided numeric labels where verbal anchors were not printed. Definitions retain source answer types, input specifications, option IDs, conditional rules, context prompts, source hashes and review status.
-- CSS presents Q1–Q8 as five-option radios, permits Q7 to be explicitly skipped as not applicable, and saves Q9–Q10 as written feedback. Checkboxes and typed answers have a Save response button. Numeric limits come from the source; text does not require options and never contributes to numeric scoring. Conditional questions are shown only when their earlier answers meet the source rule. Editing a parent clears newly inapplicable answers with an audit entry. Skips and hidden answers are never substituted with zero.
-- Clicking Next requests Gemini suggestions from the patient summary and catalogue. The leading runnable recommendation is selected automatically. Doctor follow-up conversations can refine suggestions, and manual selection remains available. Doctor conversations are not saved. Cached history suggestions are invalidated when the summary, demographics, catalogue or model changes.
-- **Doctor-suggested assessments** reuses main’s structured recommendation rules alongside Gemini. Sample summaries pre-fill the review context and supporting observations; imported and added patients require clinician-entered concerns and review details. Multiple concerns offer a priority selector. Suggestions link to the full catalogue and clinical references. These temporary reviews do not call Gemini or write to the database. Main’s age, safety and trauma review checks are retained for these suggestions.
-- Confirm & Prescribe creates a patient-linked prescription. The next page offers language, Chat, Voice and On-screen choices. Translations include every option label; sessions freeze the complete definition and keep the chosen mode/language when resumed. Clear answers save automatically, with a final editable review.
-- Patient reports and analytics are accessible from the patient sidebar and completed session. The patient sidebar opens Sagar's analytics dialog; the Analytics tab shows the same dashboard with patient/date filters. Pick an assessment to see latest/previous score comparisons where scores are recorded, completed visits, elapsed time, a visit trend, history links and saved answers. The view refreshes every 30 seconds while open, supports manual retry, and stops refreshing when closed. Completed-session links select the relevant assessment automatically. Questionnaire content, version, language and score scale are kept separate. Reports download as HTML or print to PDF. The supplied repaired catalogue disables scoring, so its results show response history instead of clinical scores, subscales or population percentiles. The implementation does not copy Sagar's inferred/default scores or normative estimates into these unscored records.
-- The right-side camera is a local preview only. Voice audio and typed live responses are sent to Gemini; this app does not retain audio, video or live transcripts. Known direct identifiers are removed from recommendation inputs; this is not full de-identification.
+## Run
 
-Run `npm run dev`, then open `http://localhost:4174`. Stop any other process on that port first. Set `DATABASE_URL` in `.env` to your Neon connection URL. The default `DATABASE_SCHEMA=chandrika` keeps these tables separate from Sagar's existing schemas. Neon connections verify the TLS certificate and hostname. A failed connection stops startup; the app never silently falls back to SQLite. `DB_PATH` is used only for explicit offline operation when `DATABASE_URL` is unset.
-
-`GEMINI_API_KEY` enables recommendations and live sessions. Optional `GEMINI_RECOMMENDATION_MODEL`, `GEMINI_TRANSLATION_MODEL` and `GEMINI_LIVE_MODEL` override their defaults. Without Gemini, English on-screen questionnaires remain available. Provider availability/quota still governs AI features.
+Use Node.js 24 or later, install dependencies with `npm ci`, then copy `.env.example` to `.env` **only for a new checkout**. Keep an existing configured `.env`.
 
 ```bash
-cd /home/chandrikak/Pod_Dev/PHQ-9-assessment
 npm run dev
 ```
 
-To replace the patient-workspace catalogue, run `node scripts/import-workspace-catalogue.mjs data/assessments/novopsych-source.json data/assessments/catalogue.json` after updating the source file and restart the app. The importer preserves canonical IDs, validates runnable forms, and records the file checksum. History recommendation and translation caches use content hashes. Existing assessment sessions retain their saved definitions. The original legacy library previews below remain separate from the patient-workspace catalogue.
+Open <http://localhost:4174>. Configure `DATABASE_URL` for the separate Neon database `pod_assessment_platform`, and `DATABASE_SCHEMA=assessments`. Configure `GEMINI_API_KEY` for recommendations, translations and live conversation. The on-screen English questionnaire can run without Gemini. Database failures stop startup; there is no silent SQLite fallback.
 
-Validation: `npm test`. The workspace tests cover patient imports, catalogue choices, recommendation grounding and caching, temporary doctor messages, translation integrity, saved session revisions, reports and analytics. Provider responses are mocked in tests.
+## Project layout
 
-## Legacy prototype reference
-
-The notes below describe the original main-branch routes and separate library previews; the patient workspace above supersedes their prescription screen.
-
-### PHQ-9, GAD-7 and PCL-5 Gemini Live prototype
-
-Standalone Casebook-style conversational prototype for **PHQ-9**, **GAD-7**, and **PCL-5**. It uses its own code and SQLite file, separate from the earlier DASS-21 prototype.
-
-## What it does
-
-- Uses the nine English PHQ-9 items and the **past two weeks** reference period from the [NovoPsych PHQ-9 form](https://novopsych.com/wp-content/uploads/2023/02/phq-9_assessment.pdf). A Hindi option uses fixed item wording from a [published Hindi PHQ-9 appendix](https://www.leprosy-information.org/media/1391/download). Its score-zero response label is drawn from the [Multicultural Mental Health Resource Centre Hindi form](https://multiculturalmentalhealth.ca/wp-content/uploads/2019/07/PHQ-9-HINDI.pdf), because the appendix's extracted zero label is ambiguous. Gemini does not create new question translations during a session.
-- In Live mode, Gemini asks each item, accepts a natural spoken or typed response, may clarify the response anchor, proposes a value, and waits for confirmation. The application saves only confirmed answers. PHQ-9 and GAD-7 use 0–3; PCL-5 uses 0–4.
-- In form-test mode, the person selects an option directly. This works without Gemini.
-- Before scoring, the person reviews every answer and can make final corrections. Corrections are recorded in an `answer_revisions` audit table.
-- Scoring is deterministic on the server: PHQ-9 totals 0–27 with its severity band and item-9 follow-up flag; GAD-7 totals 0–21 with four bands; PCL-5 totals 0–80 without a severity band or diagnosis.
-- A positive response to item 9 sets `requiresHumanFollowUp` regardless of total score. The result UI calls out the follow-up need.
-- Shows a printable report after final review with the score and every confirmed response. Saved results reopen the report.
-- Opens with a clinician-facing NovoPsych Assessment screen based on the current Casebook navigation. **Prescribe Test** selects one of five synthetic patients, reviews their summary and an explained shortlist, asks an optional priority question when the summary has multiple current concerns, and shows a ranked dropdown of PHQ-9, GAD-7, and PCL-5 for the doctor's final selection. **View Test Reports** filters prescriptions and completed reports by patient. Suggestions use deterministic retrieval and checks, not Gemini.
-
-## Run locally
-
-Requires Node.js 24 or later.
-
-```powershell
-cd D:\phq9-gemini-live-prototype
-npm ci
-Copy-Item .env.example .env
+```text
+public/
+  workspace/       Patient selection, recommendations, library and analytics UI
+  session/         Assessment session, answer controls and audio/media clients
+  shared/          Shared styles, response rules, language labels and helpers
+  assets/          OpenMind brand asset
+  legacy/          Original standard-assessment and draft-review pages
+src/
+  server.js        HTTP/WebSocket entry point
+  http/            Explicit public asset routing and compatibility URLs
+  workspace/       Current assessment API, Gemini services and domain logic
+  clinical/        Structured clinician-guidance rules and metadata retrieval
+  storage/
+    index.js       Selects PostgreSQL, or explicit offline SQLite
+    postgres/      Neon connection, current workspace and compatibility stores
+    sqlite/        Offline stores used by tests and migration tooling
+  legacy/          Original standard-assessment/report compatibility logic
+scripts/
+  assessments/     Current catalogue import
+  database/        PostgreSQL copy and SQLite migration tools
+  docs/            Rebuilds the editable workflow diagram and SVG preview
+  legacy/          Original import/audit and live-review utilities
+data/
+  assessments/     Active source export and normalized catalogue
+  clinical/        Metadata used by structured doctor guidance
+  fixtures/        Synthetic sample patients
+  legacy/          Original definitions required by compatibility routes
+test/             Unit and integration tests
+docs/             Architecture, answer types, workflow and editable diagram
+local-data/       Private patient import and recovery backups (Git-ignored)
 ```
 
-If using Live mode, put a **new, active** Gemini API key in `.env`. Do not reuse any compromised key. Do not paste keys into chat or commit `.env`.
+The legacy folders preserve the original PHQ-9/GAD-7/PCL-5 and draft-review routes and saved-report compatibility. They are separate from the active 186-assessment workspace. Shared validation modules live in `public/shared/` because they run in both browser and server. No React framework or frontend build step is required.
 
-```powershell
-npm run dev
+## Assessment source
+
+- `data/assessments/novopsych-source.json`: exact November 16 supplied source export.
+- `data/assessments/catalogue.json`: normalized runtime definitions, metadata and source hashes.
+- Current import: **186 assessments, 4,927 questions, 181 runnable questionnaires**. SDQ lacks captured questions; four WHODAS variants require work/school context the app does not collect.
+- The source currently disables scoring. New sessions show responses and completion analytics rather than invented scores. Historical scored definitions retain their original scoring behavior.
+
+Regenerate the active catalogue explicitly:
+
+```bash
+npm run import:assessments -- data/assessments/novopsych-source.json data/assessments/catalogue.json
 ```
 
-On the prescription screen, review the shortlist, answer the optional clarification if shown, then **select a test in the dropdown** before clicking **Confirm & Prescribe**. The dropdown is ordered by relevance; the clinician makes the final choice. Click the OpenMind sidebar header to collapse or pin it open; when collapsed, hover over the icon rail to expand it temporarily.
+The importer preserves question IDs, answer types, input limits, option IDs, conditional rules and source-review flags. Each session freezes the definition and language used when it starts. See [answer types](docs/ANSWER_TYPES.md).
 
-Open <http://127.0.0.1:4174>. Select **NovoPsych Assessment → Prescribe Test**, choose a sample patient, and click **Next**. Sample A suggests PHQ-9, B suggests GAD-7, and C suggests PCL-5. Review the evidence, click **Confirm & Prescribe**, then open the patient assessment link. The patient can use **Complete on screen** without Gemini or **Start voice conversation** with a configured Gemini key. Hindi is currently available for PHQ-9 only. After completion, return to **View Test Reports** and open the patient's report. Run `npm test` for automated checks.
+## Patient records and database
 
-Select **Analytics** in the sidebar for prescribed, completed, in-progress, and awaiting-start counts, completion rate, median prescription-to-completion time, and completed prescriptions by month. Choose a sample patient to see PHQ-9, GAD-7, or PCL-5 score timelines; filter to all time, 90 days, or 30 days. Results are grouped by assessment, version, and language, and each point links to its saved report. A single result appears as one point rather than an implied trend. The charts use saved assessment records, so an empty database displays an empty state. Imported Assessment Library reviews remain unscored and do not appear in score timelines. The overview counts only prescribed tests; patient timelines include all scored tests linked to that sample patient. These sample analytics have no production patient authentication or aggregate privacy controls.
+Private NeuroTwin data is read from `local-data/neurotwin-patient.json`, or the path in `NEUROTWIN_PATIENT_FILE`. It is not committed. The imported patient appears first, followed by four sample patients. Added patients and completed assessments are shared between team instances using the same database and schema.
 
-### Imported assessment library
+The app uses **`pod_assessment_platform.assessments`**. See [architecture and table ownership](docs/ARCHITECTURE.md). `sagar prototype` is a separate database; the app does not need it. Keep credentials in the ignored `.env` and backups under ignored `local-data/backups/`.
 
-The **Assessment Library** sidebar item lists all 186 records from the supplied repaired JSON (13 November 2026). Search and filter the list, then open a record. The 162 records with complete question and answer-option structures have an interactive preview and a **Start live review** link. This includes 53 forms made available by the repaired export. For 16 of those, the source prints numbered response scales with words only at their endpoints; the importer displays those printed numbers as answer labels. Live review uses Gemini voice and optional camera context when a key is configured; **Complete on screen** provides a local test path. Each response is confirmed, final answers can be edited, and the completed answers are saved in SQLite. Open them again from **Saved assessment reviews**. No score or clinical report is generated. The remaining 24 records show why a complete preview is unavailable: 23 have missing answer sets and one has no extracted questions. The imported definitions still need clinical review and cannot be prescribed through the patient workflow. The repaired JSON does not provide verified scoring or complete content for every assessment.
+Doctor conversations and their resulting suggestions are temporary. History-based suggestions and validated translations are cached. Sessions retain typed answers, brief response summaries, corrections, definition snapshots and final results. Full chat transcripts, audio and video are not stored. Known identifiers are removed before recommendation requests, but the remaining clinical information is still sensitive.
 
-See [assessment import status](docs/ASSESSMENT_IMPORT_STATUS.md) for the remaining source gaps.
+Before importing an old SQLite installation, stop its app server and run `npm run db:migrate`. The migration tool creates a backup, preserves IDs and verifies conflicts before committing. For isolated offline tests, unset `DATABASE_URL` and set an explicit `DB_PATH`; normal app use remains PostgreSQL.
 
-To try a live review, restart the server, open **Assessment Library**, search for **Brief Resilience Scale**, and select **Start live review**. Choose **Start voice conversation**, allow the microphone, answer each question naturally, and confirm each interpretation. After the last item, edit any response and select **Save reviewed answers**. Use **Saved assessment reviews** to reopen the unscored answer summary. The optional `npm run smoke:live -- 4174` command connects to Gemini briefly and uses the configured API key; it does not check spoken-answer quality.
+## Workflow diagrams
 
-To regenerate `data/draft-assessments.json` from an approved source bundle, run `npm run import:assessments -- <source-json-path> <output-json-path> data/draft-assessments.json`, using a temporary output path and replacing the catalogue only after reviewing the import. The importer keeps existing runnable forms and their IDs unchanged so previously saved answer indexes retain their meaning. It uses repaired content for records that were previously unavailable. It does not import scoring rules or source assets. Confirm the scope of the client's content rights before distributing the imported catalogue or using any draft assessment with patients.
+- [Editable Excalidraw workflow](docs/diagrams/assessment-workflow.excalidraw)
+- [Scalable SVG preview](docs/diagrams/assessment-workflow.svg)
+- [Workflow explanation](docs/WORKFLOW.md)
 
-Demo patient D suggests DASS-21, which remains a separate prototype and cannot be prescribed here. Demo patient E is patterned after the _structure and themes_ of the supplied Digital Twin report, without copying its patient data: historical low mood, seizure-related fear, and sleep disruption do not automatically become current psychiatric concerns. Because its immediate safety status is not reviewed, the engine pauses recommendations. The earlier patient suggestion page remains at <http://127.0.0.1:4174/patient-suggest.html>; the manual context screen remains at <http://127.0.0.1:4174/recommend.html>.
+Open the `.excalidraw` file in Excalidraw to edit its individual shapes, labels and connectors. To regenerate both diagram files from the maintained source:
 
-After the last answer (9 for PHQ-9, 7 for GAD-7, or 20 for PCL-5), review every selected option. Change any response, then click **Confirm answers and generate report**. The report appears on the assessment page; **Open printable report** supports browser **Print / Save as PDF**. Reports do not reproduce NovoPsych percentile calculations or comparison charts.
+```bash
+python3 scripts/docs/generate-workflow.py
+```
 
-## Data and limits
+## Verification
 
-For patient B, the optional clarification asks which documented current concern should be prioritized. It changes the order of suggestions but does not add clinical facts or override eligibility. The final dropdown contains only the three runnable tests. PHQ-9 and GAD-7 can be explicit clinician choices without a matching summary observation. PCL-5 stays disabled unless current trauma-related symptoms and clinician-confirmed qualifying exposure are documented. DASS-21 may appear in the shortlist but is not in the prescription dropdown. The doctor must actively choose a test. The server rechecks eligibility when prescribing and when the patient starts a session.
+```bash
+npm test
+```
 
-The original offline database was `data/prototype.sqlite`. In PostgreSQL, `chandrika.legacy_prescriptions` links a synthetic patient and form ID to an assessment session. `GET /api/demo-patients/{id}/prescriptions` lists assignments; `GET /api/demo-patients/{id}/reports` lists completed results. `GET /api/results/{id}` includes individual answers. A new assessment session requires a valid prescription ID. This local prototype has no authentication, real patient delivery, or clinician notification. Do not expose the server beyond localhost or use real patient data.
+PostgreSQL-specific tests also run when `TEST_DATABASE_URL` points to a disposable test database. They create and remove their own test schemas. Tests cover typed responses, conditional questions, translations, Gemini tools, report escaping, revisions, migration and rollback. Model responses are mocked; tests do not measure live Gemini quality, latency or quota.
 
-Synthetic summaries live in `data/demo-patients.json`. `GET /api/demo-patients` lists aliases; `GET /api/demo-patients/{id}/recommendations` returns the selected summary, normalized concerns, supporting observations, ignored observations, and a ranked shortlist. `src/demo-patients.js` maps only explicitly current structured observations; historical low mood, seizure-related fear, and sleep disruption are not automatically equated with depression or generalized anxiety. Each suggestion lists its matching observations and any missing prerequisite. The four-entry, prototype-curated metadata catalogue is in `data/assessment-catalog.json`; it is **not** a clinical approval. `src/assessment-catalog.js` retrieves matching entries by structured concern. `src/recommendation.js` applies safety, age, trauma, and availability checks before the UI allows prescription. The server repeats the eligibility check when a prescription is submitted. This is structured retrieval, **not an AI or vector RAG system**. The supplied real Digital Twin report and full 24 MB draft assessment export are not copied into the repository or loaded at runtime. `scripts/import_assessment_forms.py` extracts the 7 GAD-7 and 20 PCL-5 items and response options into small local JSON files. Scoring is implemented separately from primary instrument guidance; unverified catalogue entries are not made runnable automatically. A real Casebook integration still needs authenticated per-patient summary access, clinician-verified concern mapping, and patient ownership checks.
+The browser flow supports English, Spanish, Hindi, Marathi, Tamil, Telugu, Kannada, Malayalam and Bengali. Questions, full option labels and session controls use the selected language. Local language checks reject common drift but are not clinical translation validation. Clinicians review recommendations and questionnaire suitability; this prototype does not establish diagnoses and does not yet provide production authentication or patient authorization.
 
-The routing rules prioritize PHQ-9 for depression concerns, GAD-7 for anxiety concerns, PCL-5 for trauma-related symptoms **after qualifying trauma exposure is confirmed**, and DASS-21 for stress or overlapping depression/anxiety concerns. With no selected concerns, adult preventive screening suggests PHQ-9 and, for ages 19–64, GAD-7. Age under 19 or unknown pauses suggestions. Age 65+ adds an anxiety evidence caveat. Safety status must be explicitly reviewed; any immediate concern pauses all suggestions and calls for clinician safety review. These rules are a workflow aid, not a diagnosis or automatic assignment. Clinical sources: [USPSTF depression screening](https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-depression-suicide-risk-adults), [USPSTF anxiety screening](https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/anxiety-adults-screening), [VA PCL-5](https://www.ptsd.va.gov/Professional/Assessment/Adult-Sr/Ptsd-Checklist.Asp), [UNSW DASS FAQ](https://dass.psy.unsw.edu.au/DASSFAQ.htm).
-
-The PHQ-9 source form linked above has nine scored items. A functional difficulty question appears in some PHQ-9 formats but is not included in that form; it is outside this prototype's scoring flow. The Hindi wording is sourced, but this particular combined form and conversational administration have not been validated for the intended patient population. GAD-7 and PCL-5 are English only. The [Pfizer statement](https://www.pfizer.com/news/press-release/press-release-detail/pfizer_to_offer_free_public_access_to_mental_health_assessment_tools_to_improve_diagnosis_and_patient_care) describes PHQ and GAD-7 use without copyright restriction; the [VA PCL-5 page](https://www.ptsd.va.gov/professional/assessment/adult-sr/ptsd-checklist.asp) identifies PCL-5 as public domain. The supplied NovoPsych export itself remains a draft and requires wording and use review before production.
-
-**Clinical review is required before patient use.** These are screening or symptom measures, not diagnoses. Conversational AI mapping changes the standard self-report administration and has not been validated here. PCL-5 has no established severity bands; its total requires clinician interpretation. PHQ-9 item 9 is not a complete suicide risk assessment. A positive item 9 answer needs prompt human follow-up under a clinician-approved protocol; this prototype only records and displays a flag. Current danger or intent needs immediate local emergency help. The client must define the actual escalation owner, notification route, and response time before integration.
-
-## Implementation
-
-- `data/phq9.json`, `data/gad7.json`, `data/pcl5.json`: fixed wording, response anchors, and source references.
-- `scripts/import_assessment_forms.py`: reproduces the GAD-7 and PCL-5 extraction from the supplied draft export.
-- `src/assessment.js` and `src/forms.js`: form validation and deterministic scoring.
-- `src/gemini-bridge.js`: Gemini Live session and propose/confirm/cancel tool flow.
-- `src/store.js`: local SQLite schema and persistence.
-- `src/server.js`: HTTP and WebSocket server.
-- `src/recommendation.js`: validated, deterministic recommendation rules.
-- `data/assessment-catalog.json` and `src/assessment-catalog.js`: small curated assessment metadata set and structured retrieval.
-- `public/clinic.html`, `public/clinic.js`, `public/clinic.css`, `public/clinic-recommend.css`: clinician prescription and report screens.
-- `public/recommend.html` and `public/recommend.js`: clinician-facing recommendation screen.
-- `public/`: Casebook-style browser UI, audio and optional camera capture.
-- `docs/WORKFLOW_AND_PERFORMANCE.md`: end-to-end workflow diagram, data rates, latency points, and token/cost illustration.
-
-### Patient analytics and conversation language
-
-Patient analytics adapts Sagar's score-range and response bar charts to saved workspace visits. Scored sessions use only their frozen source-defined score range; unscored sessions show response completion and full-label response counts. Feedback, skipped questions and numeric measurements are excluded from choice counts. No population percentiles or diagnostic bands are inferred from the draft catalogue. The November 16 source currently disables scoring, so new sessions show response graphs.
-
-Questionnaire translations include the full question text, context, answer labels and session controls. All nine selector languages (English, Spanish, Hindi, Marathi, Tamil, Telugu, Kannada, Malayalam and Bengali) use the same response checks. Script checks, common wrong-language words for shared scripts, and unchanged-English translation checks run before translations are cached; older incomplete cached translations are regenerated for new sessions. The main branch's cumulative transcript handling is used in the conversation view. Live output is buffered until the turn transcript can be checked, so voice replies begin after that check. Wrong-script replies, common wrong-language phrases or numeric menu prompts in any supported language are withheld and retried once; if the retry still fails, the prepared question and complete answer labels are shown on screen. These local script and lexical checks catch common language drift; they cannot guarantee language detection, translation accuracy or clinical validation. No extra language-check API call is made. Saved session snapshots and completed reports keep their original wording; start a new assessment to use freshly prepared translations.
-
-## Shared PostgreSQL setup and migration
-
-Install dependencies with `npm install`, configure `DATABASE_URL` and optional `DATABASE_SCHEMA` in your ignored `.env`, and run `npm run dev`. Team checkouts using the same URL and schema share patient records and completed results. Patient data and database credentials stay outside Git. The assessment catalogue remains versioned JSON; every session stores its full definition and language snapshot in PostgreSQL.
-
-Before switching an existing SQLite installation, stop its app server and run `npm run db:migrate`. The importer first creates a consistent SQLite backup under ignored `local-data/backups/`, then imports patients, prescriptions, draft/completed sessions, correction histories and cached recommendations/translations in a PostgreSQL transaction. It preserves IDs and existing session definitions. The original SQLite file is retained as a backup, not used by the Neon app. Re-running the same snapshot is a no-op; conflicting existing rows abort and roll back the whole import without overwriting newer records. Start the app only after the import succeeds.
-
-Session creation and answer updates use row locks. Concurrent edits to the same revision return a conflict so a teammate's answer cannot be silently replaced. Doctor conversations remain temporary; changing database storage does not add conversation logging.
-
-`npm test` runs the existing offline tests. For PostgreSQL integration coverage, set `TEST_DATABASE_URL` to a disposable local PostgreSQL database and run `npm test`; the tests create and remove a uniquely named test schema. They exercise import/re-import/rollback, shared reads, concurrent saves, text/skip responses, reports and completed-session protection.
+See [cleanup notes](docs/CLEANUP.md) for moved files, removed obsolete assets, preserved routes and private recovery data.

@@ -27,14 +27,14 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.match(page, /Assessments/);
     assert.match(page, /Prescribe Test/);
     assert.match(page, /View Test Reports/);
-    assert.match(page, /clinic\.js/);
+    assert.match(page, /workspace\/app\.js/);
     assert.equal((await fetch(`${base}/clinic.css`)).status, 200);
     assert.equal((await fetch(`${base}/clinic-recommend.css`)).status, 200);
     assert.equal((await fetch(`${base}/clinic.js`)).status, 200);
-    assert.equal((await fetch(`${base}/analytics.js`)).status, 200);
+    assert.equal((await fetch(`${base}/analytics.js`)).status, 404);
     assert.equal((await fetch(`${base}/workspace-analytics-charts.js`)).status, 200);
     assert.equal((await fetch(`${base}/workspace-language-guard.js`)).status, 200);
-    assert.equal((await fetch(`${base}/analytics.css`)).status, 200);
+    assert.equal((await fetch(`${base}/analytics.css`)).status, 404);
     assert.match(page, /Patient analytics/);
     const emptyOverview = await (await fetch(`${base}/api/analytics/overview`)).json();
     assert.equal(emptyOverview.totals.prescribed, 0);
@@ -54,7 +54,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal((await fetch(`${base}/patient-suggest.html`)).status, 200);
     assert.equal((await fetch(`${base}/patient-suggest.js`)).status, 200);
     assert.equal((await fetch(`${base}/assessment-library.css`)).status, 200);
-    assert.equal((await fetch(`${base}/assessment-library.js`)).status, 200);
+    assert.equal((await fetch(`${base}/assessment-library.js`)).status, 404);
     const libraryResponse = await fetch(`${base}/api/assessment-library`);
     assert.equal(libraryResponse.status, 200);
     const library = await libraryResponse.json();

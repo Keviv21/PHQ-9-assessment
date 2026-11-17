@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LANGUAGES } from '../src/workspace/languages.js';
-import { LANGUAGES as browserLanguages } from '../public/workspace-languages.js';
-import { usesSelectedLanguage, numericChoicePrompt } from '../public/workspace-language-guard.js';
+import { LANGUAGES as browserLanguages } from '../public/shared/languages.js';
+import { usesSelectedLanguage, numericChoicePrompt } from '../public/shared/language-guard.js';
 import { validateTranslation, createTranslationsService } from '../src/workspace/translations.js';
 import { SESSION_LABELS } from '../src/workspace/presentation.js';
 import { GeminiBridge, systemInstruction } from '../src/workspace/live-bridge.js';

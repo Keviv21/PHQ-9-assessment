@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from '../src/demo-patients.js';
-import { openStore } from '../src/store.js';
+import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from '../src/legacy/demo-patients.js';
+import { openStore } from '../src/storage/sqlite/standard-store.js';
 
 test('patient selection derives current concerns and a primary suggestion with evidence', () => {
   assert.equal(listDemoPatients().length, 5);

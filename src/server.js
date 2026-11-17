@@ -1,16 +1,17 @@
+import { STATIC_ASSETS } from './http/static-assets.js';
 import { createWorkspaceApi } from './workspace/api.js';
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { languages } from './assessment.js';
-import { assessmentQuestion, getAssessmentForm } from './forms.js';
-import { openApplicationStorage } from './storage.js';
-import { GeminiBridge } from './gemini-bridge.js';
-import { recommendAssessments } from './recommendation.js';
-import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from './demo-patients.js';
-import { getDraftAssessment, getLiveDraftForm, listDraftAssessments } from './draft-library.js';
+import { languages } from './legacy/assessment.js';
+import { assessmentQuestion, getAssessmentForm } from './legacy/forms.js';
+import { openApplicationStorage } from './storage/index.js';
+import { GeminiBridge } from './legacy/gemini-bridge.js';
+import { recommendAssessments } from './clinical/recommendation.js';
+import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from './legacy/demo-patients.js';
+import { getDraftAssessment, getLiveDraftForm, listDraftAssessments } from './legacy/draft-library.js';
 
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -25,7 +26,6 @@ const { store, draftStore, workspaceStore } = storage;
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/workspace-analytics-charts.js', '/workspace-language-guard.js', '/workspace-answers.js', '/workspace-answer-input.js', '/workspace-media.js', '/workspace-library.js', '/workspace-analytics.js', '/workspace-analytics.css', '/workspace.css', '/workspace-session.html', '/workspace-session.js', '/workspace-common.js', '/workspace-audio.js', '/workspace-presentation.js', '/workspace-languages.js', '/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css']);
 const activeAssessments = new Set();
 const workspace = createWorkspaceApi(null, {apiKey, model, port, store:workspaceStore});
 
@@ -167,8 +167,8 @@ async function handleRequest(request, response) {
     if (!assessment || assessment.status !== 'completed') return json(response, 404, { error: 'Result not found.' });
     return json(response, 200, assessment);
   }
-  if (!allowedStatic.has(url.pathname)) return json(response, 404, { error: 'Not found.' });
-  const filename = url.pathname === '/' ? 'clinic.html' : url.pathname === '/assessment.html' ? 'index.html' : url.pathname.slice(1);
+  if (!Object.hasOwn(STATIC_ASSETS, url.pathname)) return json(response, 404, { error: 'Not found.' });
+  const filename = STATIC_ASSETS[url.pathname];
   const path = join(publicRoot, filename);
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
   try {
