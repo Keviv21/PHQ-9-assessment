@@ -231,6 +231,12 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     const firstHindi = await nextHindi();
     assert.equal(firstHindi.assessment.language, 'hi');
     assert.equal(firstHindi.question.text, hindiForm.questions[0].text);
+    socket.send(JSON.stringify({ type: 'set_language', language: 'mr' }));
+    const switchedToMarathi = await nextHindi();
+    assert.equal(switchedToMarathi.question.text, marathiForm.questions[0].text);
+    socket.send(JSON.stringify({ type: 'set_language', language: 'hi' }));
+    const switchedBackToHindi = await nextHindi();
+    assert.equal(switchedBackToHindi.question.text, hindiForm.questions[0].text);
     for (let number = 1; number <= 9; number++) {
       socket.send(JSON.stringify({ type: 'select', value: 0 }));
       assert.equal((await nextHindi()).number, number);

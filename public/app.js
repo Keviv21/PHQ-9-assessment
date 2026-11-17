@@ -353,7 +353,7 @@ async function start(nextMode) {
   pending = null;
   state = null;
   mode = nextMode;
-  ui.language.disabled = true;
+  ui.language.disabled = formId === 'pcl5';
   ui.mode.textContent = nextMode.toUpperCase();
   ui.liveLabel.textContent = nextMode === 'live' ? 'CONNECTING' : 'DEMO';
   ui.textInput.disabled = true;
@@ -404,7 +404,7 @@ async function start(nextMode) {
     if (socket !== connection) return;
     ui.startLive.disabled = !config.geminiConfigured || (lockedMode && lockedMode !== 'live') || state?.status === 'completed';
     ui.startDemo.disabled = (lockedMode && lockedMode !== 'demo') || state?.status === 'completed';
-    ui.language.disabled = Boolean(lockedMode) || formId === 'pcl5';
+    ui.language.disabled = formId === 'pcl5';
     ui.textInput.disabled = true;
     ui.sendText.disabled = true;
     if (state?.status !== 'completed') { setStatus(t('disconnected')); stopMedia(); }
@@ -447,20 +447,32 @@ ui.language.addEventListener('change', async () => {
     if (!response.ok) throw new Error(t('formLoadFailed'));
     form = await response.json();
     language = selected;
-    state = null;
-    pending = null;
-    ui.questionArea.replaceChildren();
-    const heading = document.createElement('h2'); heading.dataset.i18n = 'chooseMode';
-    const info = document.createElement('p'); info.dataset.i18n = 'cameraInfo';
-    ui.questionArea.append(heading, info);
-    ui.options.replaceChildren();
-    ui.confirmation.classList.add('hidden');
-    ui.results.classList.add('hidden');
-    ui.progressLabel.textContent = `0 / ${form.questions.length}`;
-    ui.progressBar.style.width = '0%';
     localizePage();
+
+    if (socket?.readyState === WebSocket.OPEN) {
+      send({ type: 'set_language', language: selected });
+    }
+
+    if (state) {
+      renderState(state);
+      if (pending) {
+        ui.pendingLabel.textContent = mode === 'live' ? pending.summary : `${pending.value} — ${form.options[pending.value]?.label || ''}`;
+      }
+    } else {
+      ui.questionArea.replaceChildren();
+      const heading = document.createElement('h2'); heading.dataset.i18n = 'chooseMode';
+      heading.textContent = t('chooseMode');
+      const info = document.createElement('p'); info.dataset.i18n = 'cameraInfo';
+      info.textContent = t('cameraInfo');
+      ui.questionArea.append(heading, info);
+      ui.options.replaceChildren();
+      ui.confirmation.classList.add('hidden');
+      ui.results.classList.add('hidden');
+      ui.progressLabel.textContent = `0 / ${form.questions.length}`;
+      ui.progressBar.style.width = '0%';
+    }
   } catch (error) { ui.language.value = language; appendTranscript('system', error.message); }
-  finally { ui.language.disabled = false; }
+  finally { ui.language.disabled = formId === 'pcl5'; }
 });
 ui.confirm.addEventListener('click', () => send({ type: 'confirm' }));
 ui.cancel.addEventListener('click', () => send({ type: 'cancel' }));
@@ -491,7 +503,7 @@ try {
     language = prescription.language;
     form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
     ui.language.value = language;
-    ui.language.disabled = true;
+    ui.language.disabled = formId === 'pcl5';
   }
   localizePage();
   ui.progressLabel.textContent = `0 / ${form.questions.length}`;

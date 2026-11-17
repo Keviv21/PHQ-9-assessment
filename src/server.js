@@ -308,7 +308,7 @@ async function handleScoredConnection(socket, request) {
   }
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
   const mode = url.searchParams.get('mode');
-  const language = url.searchParams.get('language') || 'en';
+  let language = url.searchParams.get('language') || 'en';
   const prescriptionId = url.searchParams.get('prescriptionId') || '';
   const prescription = await store.getPrescription(prescriptionId);
   const demoPatientId = prescription?.demoPatientId || null;
@@ -414,6 +414,21 @@ async function handleScoredConnection(socket, request) {
       } else if (message.type === 'cancel') {
         if (bridge) { bridge.cancel(); await bridge.afterCancellation(); }
         else { pending = null; send({ type: 'proposal_cleared' }); }
+      } else if (message.type === 'set_language') {
+        const nextLang = message.language;
+        try {
+          const nextForm = getAssessmentForm(formId, nextLang);
+          form = nextForm;
+          language = nextLang;
+          if (bridge) {
+            bridge.language = nextLang;
+            bridge.form = nextForm;
+          }
+          const currentState = await store.get(assessment.id);
+          if (currentState) sendState(currentState);
+        } catch (err) {
+          send({ type: 'error', message: err.message });
+        }
       } else if (message.type === 'finalize') {
         const state = await store.finalize(assessment.id, message.answers);
         sendState(state);
