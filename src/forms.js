@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { form as phq9, hindiForm as phq9Hindi, scoreAnswers as scorePhq9 } from './assessment.js';
+import { form as phq9, hindiForm as phq9Hindi, scoreAnswers as scorePhq9, languages } from './assessment.js';
+import { formTranslations } from './form-translations.js';
 
 const gad7 = JSON.parse(readFileSync(new URL('../data/gad7.json', import.meta.url), 'utf8'));
 const pcl5 = JSON.parse(readFileSync(new URL('../data/pcl5.json', import.meta.url), 'utf8'));
@@ -19,9 +20,34 @@ for (const [formId, translations] of Object.entries(forms)) {
 }
 
 export function getAssessmentForm(formId, language = 'en') {
-  const form = forms[formId]?.[language];
-  if (!form) throw new RangeError('Unsupported assessment or language.');
-  return form;
+  if (!languages.some((l) => l.code === language)) {
+    throw new RangeError('Unsupported assessment or language.');
+  }
+  const base = forms[formId];
+  if (!base) throw new RangeError('Unsupported assessment or language.');
+
+  if (base[language]) return base[language];
+
+  const translation = formTranslations[formId]?.[language];
+  if (translation) {
+    const enForm = base.en;
+    return {
+      ...enForm,
+      language,
+      title: translation.title || enForm.title,
+      shortTitle: translation.shortTitle || enForm.shortTitle,
+      referencePeriod: translation.referencePeriod || enForm.referencePeriod,
+      intro: translation.intro || enForm.intro,
+      options: translation.options || enForm.options,
+      questions: translation.questions || enForm.questions,
+    };
+  }
+
+  if (formId === 'pcl5') {
+    throw new RangeError('Unsupported assessment or language.');
+  }
+
+  return { ...base.en, language };
 }
 
 export function assertAssessmentAnswer(formId, value) {

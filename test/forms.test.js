@@ -41,3 +41,27 @@ test('GAD-7 and PCL-5 persisted sessions accept their full response ranges', () 
     }
   } finally { store.close(); }
 });
+
+test('multi-language forms resolve translations for PHQ-9 and GAD-7 across supported languages', () => {
+  const phq9Mr = getAssessmentForm('phq9', 'mr');
+  assert.equal(phq9Mr.language, 'mr');
+  assert.equal(phq9Mr.questions.length, 9);
+  assert.match(phq9Mr.questions[0].text, /गोष्टी करण्यात कमी स्वारस्य/);
+
+  const phq9Es = getAssessmentForm('phq9', 'es');
+  assert.equal(phq9Es.language, 'es');
+  assert.equal(phq9Es.questions.length, 9);
+  assert.match(phq9Es.questions[0].text, /Poco interés o placer/);
+
+  const gad7Hi = getAssessmentForm('gad7', 'hi');
+  assert.equal(gad7Hi.language, 'hi');
+  assert.equal(gad7Hi.questions.length, 7);
+
+  const gad7Mr = getAssessmentForm('gad7', 'mr');
+  assert.equal(gad7Mr.language, 'mr');
+  assert.equal(gad7Mr.questions.length, 7);
+
+  const gad7Es = getAssessmentForm('gad7', 'es');
+  assert.equal(gad7Es.language, 'es');
+  assert.equal(gad7Es.questions.length, 7);
+});

@@ -15,7 +15,7 @@ export function openStore(path) {
       id TEXT PRIMARY KEY,
       form_id TEXT NOT NULL CHECK (form_id IN ('phq9', 'gad7', 'pcl5')),
       form_version TEXT NOT NULL,
-      language TEXT NOT NULL CHECK (language IN ('en', 'hi')),
+      language TEXT NOT NULL,
       mode TEXT NOT NULL CHECK (mode IN ('demo', 'live')),
       collection_method TEXT NOT NULL CHECK (collection_method IN ('explicit_choice', 'conversational_inference')),
       status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed')),
@@ -64,7 +64,7 @@ export function openStore(path) {
           id TEXT PRIMARY KEY,
           form_id TEXT NOT NULL CHECK (form_id = 'phq9'),
           form_version TEXT NOT NULL,
-          language TEXT NOT NULL CHECK (language IN ('en', 'hi')),
+          language TEXT NOT NULL,
           mode TEXT NOT NULL CHECK (mode IN ('demo', 'live')),
           collection_method TEXT NOT NULL CHECK (collection_method IN ('explicit_choice', 'conversational_inference')),
           status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed')),
@@ -88,13 +88,13 @@ export function openStore(path) {
     db.exec('ALTER TABLE assessments ADD COLUMN demo_patient_id TEXT');
   }
   const currentSql = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'assessments'").get().sql;
-  if (/CHECK\s*\(\s*form_id\s*=\s*'phq9'\s*\)/i.test(currentSql)) {
+  if (/CHECK\s*\(\s*form_id\s*=\s*'phq9'\s*\)/i.test(currentSql) || /CHECK\s*\(\s*language\s*IN\s*\('en',\s*'hi'\)\s*\)/i.test(currentSql)) {
     db.exec('PRAGMA foreign_keys = OFF');
     try {
       db.exec(`BEGIN IMMEDIATE;
         CREATE TABLE assessments_multi (
           id TEXT PRIMARY KEY, form_id TEXT NOT NULL CHECK (form_id IN ('phq9', 'gad7', 'pcl5')),
-          form_version TEXT NOT NULL, language TEXT NOT NULL CHECK (language IN ('en', 'hi')),
+          form_version TEXT NOT NULL, language TEXT NOT NULL,
           mode TEXT NOT NULL CHECK (mode IN ('demo', 'live')),
           collection_method TEXT NOT NULL CHECK (collection_method IN ('explicit_choice', 'conversational_inference')),
           status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed')),

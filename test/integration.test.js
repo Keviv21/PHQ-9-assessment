@@ -153,7 +153,10 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal(hindiForm.language, 'hi');
     assert.equal(hindiForm.questions.length, 9);
     assert.equal(hindiForm.options[0].label, 'एक भी दिन नहीं');
-    assert.equal((await fetch(`${base}/api/form?language=mr`)).status, 400);
+    const marathiForm = await (await fetch(`${base}/api/form?language=mr`)).json();
+    assert.equal(marathiForm.language, 'mr');
+    assert.equal(marathiForm.questions.length, 9);
+    assert.equal((await fetch(`${base}/api/form?language=unsupported`)).status, 400);
     const noPatient = new WebSocket(`ws://127.0.0.1:${port}/ws?mode=demo&language=en`);
     await once(noPatient, 'open');
     const [closeCode] = await once(noPatient, 'close');

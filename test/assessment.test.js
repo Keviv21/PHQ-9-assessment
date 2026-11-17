@@ -19,7 +19,10 @@ test('Hindi uses fixed PHQ-9 items and the same scored response values', () => {
   assert.deepEqual(hindi.options.map((option) => option.value), [0, 1, 2, 3]);
   assert.equal(hindi.options[0].label, 'एक भी दिन नहीं');
   assert.equal(currentQuestion(9, 'hi').text, hindi.questions[8].text);
-  assert.throws(() => getForm('mr'), /Unsupported/);
+  const marathi = getForm('mr');
+  assert.equal(marathi.language, 'mr');
+  assert.equal(marathi.questions.length, 9);
+  assert.throws(() => getForm('unsupported'), /Unsupported/);
   const store = openStore(':memory:');
   try {
     let state = store.create('demo', 'hi');

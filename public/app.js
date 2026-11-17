@@ -22,24 +22,29 @@ let formId = 'phq9';
 const prescriptionId = new URLSearchParams(location.search).get('prescriptionId');
 let demoPatientId = null;
 let demoPatientLabel = null;
-const t = (key) => copy[language][key];
+const t = (key) => copy[language]?.[key] || copy.en?.[key] || '';
 function localizePage() {
   document.documentElement.lang = language;
-  for (const element of document.querySelectorAll('[data-i18n]')) element.textContent = t(element.dataset.i18n);
+  for (const element of document.querySelectorAll('[data-i18n]')) {
+    const text = t(element.dataset.i18n);
+    if (text) element.textContent = text;
+  }
   if (!state) setStatus(t('ready'));
   ui.cameraToggle.textContent = t(camera ? 'turnCameraOff' : 'turnCameraOn');
   ui.micToggle.textContent = t(muted ? 'turnMicOn' : 'turnMicOff');
   if (config) ui.keyNote.textContent = t(config.geminiConfigured ? 'keyDetected' : 'keyMissing');
-  ui.selectedLanguage.textContent = ui.language.selectedOptions[0].textContent;
-  ui.textInput.placeholder = t('textPlaceholder');
+  if (ui.selectedLanguage && ui.language?.selectedOptions?.[0]) {
+    ui.selectedLanguage.textContent = ui.language.selectedOptions[0].textContent;
+  }
+  ui.textInput.placeholder = t('textPlaceholder') || 'You can type a response here during a Live session';
   if (demoPatientLabel) ui.patientContext.textContent = `${t('selectedPatient')}: ${demoPatientLabel}`;
   if (form) {
     const name = formId.toUpperCase();
     document.title = `${name} Assessment | OpenMind`;
-    ui.assessmentTitle.textContent = name;
+    ui.assessmentTitle.textContent = form.shortTitle || name;
     ui.assessmentAvatar.textContent = formId === 'phq9' ? 'PH' : formId === 'gad7' ? 'GA' : 'PC';
-    ui.assessmentPeriod.textContent = `ASSESSMENT · ${form.referencePeriod.toUpperCase()}`;
-    ui.assessmentIntro.textContent = form.instructions;
+    ui.assessmentPeriod.textContent = `ASSESSMENT · ${(form.referencePeriod || 'Past two weeks').toUpperCase()}`;
+    ui.assessmentIntro.textContent = form.instructions || form.intro || '';
     ui.questionCount.textContent = String(form.questions.length);
     const badge = ui.questionArea.querySelector('.question-number');
     if (badge) badge.textContent = name;
@@ -399,7 +404,7 @@ async function start(nextMode) {
     if (socket !== connection) return;
     ui.startLive.disabled = !config.geminiConfigured || (lockedMode && lockedMode !== 'live') || state?.status === 'completed';
     ui.startDemo.disabled = (lockedMode && lockedMode !== 'demo') || state?.status === 'completed';
-    ui.language.disabled = Boolean(lockedMode) || formId !== 'phq9';
+    ui.language.disabled = Boolean(lockedMode) || formId === 'pcl5';
     ui.textInput.disabled = true;
     ui.sendText.disabled = true;
     if (state?.status !== 'completed') { setStatus(t('disconnected')); stopMedia(); }
@@ -487,7 +492,7 @@ try {
   }
   localizePage();
   ui.progressLabel.textContent = `0 / ${form.questions.length}`;
-  if (formId !== 'phq9') { ui.language.value = 'en'; ui.language.disabled = true; }
+  if (formId === 'pcl5') { ui.language.value = 'en'; ui.language.disabled = true; }
   ui.startLive.disabled = !config.geminiConfigured || (prescription.status === 'in_progress' && prescription.mode !== 'live');
   ui.startDemo.disabled = prescription.status === 'in_progress' && prescription.mode !== 'demo';
   ui.keyNote.textContent = config.geminiConfigured
