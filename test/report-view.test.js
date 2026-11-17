@@ -2,8 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { form, getForm } from '../src/assessment.js';
 import { openStore } from '../src/store.js';
-import { renderReport } from '../public/report-view.js';
+import { renderDASS21Report, renderDefinitionReport, renderDraftReport, renderReport } from '../public/report-view.js';
 import { getAssessmentForm } from '../src/forms.js';
+import { getDraftAssessment, listDraftAssessments } from '../src/draft-library.js';
+import { dass21DraftId } from '../src/draft-scoring.js';
+import { openDraftStore } from '../src/draft-store.js';
+import { getDefinition } from '../src/definition-library.js';
+import { openDefinitionStore } from '../src/definition-store.js';
 
 class FakeElement {
   constructor(tag) { this.tagName = tag; this.children = []; this.attributes = {}; this.style = {}; this.content = ''; }
@@ -75,11 +80,83 @@ test('GAD-7 and PCL-5 reports show all responses and only supported score interp
       renderReport(container, state, getAssessmentForm(formId), { printableLink: true });
       assert.match(container.textContent, new RegExp(`${maximum} / ${maximum}`));
       assert.ok(container.textContent.includes(getAssessmentForm(formId).questions[count - 1].text));
-      assert.match(container.textContent, formId === 'pcl5' ? /no established severity bands/ : /SCORE BAND/);
-      assert.match(container.textContent, /not a diagnosis/);
+      if (formId === 'pcl5') assert.doesNotMatch(container.textContent, /SCORE BAND/);
+      else assert.match(container.textContent, /SCORE BAND/);
+      assert.doesNotMatch(container.textContent, /not a diagnosis|clinically validated/i);
     }
   } finally {
     store.close();
+    globalThis.document = previousDocument;
+  }
+});
+
+test('completed DASS-21 assignment renders a printable report with subscales and final answers', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = { createElement: (tag) => new FakeElement(tag) };
+  const store = openDraftStore(':memory:');
+  try {
+    const prescription = store.prescribe('demo-b', dass21DraftId);
+    const session = store.startPrescription(prescription.id, 'demo');
+    for (let number = 1; number <= 21; number++) store.record(session.id, number, 0, 'demo');
+    const finalAnswers = Array(21).fill(0);
+    finalAnswers[2] = 3;
+    const completed = store.finalize(session.id, finalAnswers);
+    const container = new FakeElement('main');
+    renderDASS21Report(container, completed, getDraftAssessment(dass21DraftId));
+    assert.match(container.textContent, /ASSESSMENT REPORT/);
+    assert.match(container.textContent, /3 \/ 63/);
+    assert.match(container.textContent, /Depression 3 \/ 21 6/);
+    assert.match(container.textContent, /Confirmed responses/);
+    assert.ok(container.textContent.includes(getDraftAssessment(dass21DraftId).questions[20].text));
+    assert.doesNotMatch(container.textContent, /not a diagnosis|clinically validated/i);
+    assert.throws(() => renderDASS21Report(container, { ...completed, status: 'review' }, getDraftAssessment(dass21DraftId)), /completed DASS-21/);
+  } finally {
+    store.close();
+    globalThis.document = previousDocument;
+  }
+});
+
+test('completed imported review opens the same report layout without inventing a score', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = { createElement: (tag) => new FakeElement(tag) };
+  const store = openDraftStore(':memory:');
+  try {
+    const draft = listDraftAssessments().find((item) => item.title === 'Flourishing Scale (FS)');
+    const form = getDraftAssessment(draft.id);
+    let state = store.create(draft.id, 'demo');
+    for (let number = 1; number <= form.questions.length; number++) {
+      state = store.record(state.id, number, 0, 'demo');
+    }
+    state = store.finalize(state.id, state.answers.map((answer) => answer.value));
+    const container = new FakeElement('main');
+    renderDraftReport(container, state, form);
+    assert.match(container.textContent, /ASSESSMENT REPORT/);
+    assert.match(container.textContent, /No score available/);
+    assert.ok(container.textContent.includes(form.questions[0].text));
+  } finally {
+    store.close();
+    globalThis.document = previousDocument;
+  }
+});
+
+test('completed catalogue assignment renders draft metrics and recorded responses in the common report', async () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = { createElement: (tag) => new FakeElement(tag) };
+  const store = openDefinitionStore({ path: ':memory:' });
+  try {
+    const form = getDefinition('adult-adhd-self-report-scale-asrs--814829bfeff1');
+    const prescription = await store.prescribe('demo-a', form.id);
+    const session = await store.start(prescription.id);
+    const answers = Object.fromEntries(form.questions.map((item) => [item.id, item.options[0].id]));
+    const completed = await store.save(session.id, answers, true);
+    const container = new FakeElement('main');
+    renderDefinitionReport(container, completed);
+    assert.match(container.textContent, /ASSESSMENT REPORT/);
+    assert.match(container.textContent, /Scoring results/);
+    assert.ok(container.textContent.includes(form.questions[0].text));
+    assert.doesNotMatch(container.textContent, /Draft raw calculations|No clinical validation/);
+  } finally {
+    await store.close();
     globalThis.document = previousDocument;
   }
 });

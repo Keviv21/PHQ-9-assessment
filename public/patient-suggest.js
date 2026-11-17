@@ -6,7 +6,6 @@ let requestNumber = 0;
 const availability = {
   available: 'Available to prescribe',
   not_implemented: 'Questionnaire not implemented here',
-  separate_prototype: 'DASS-21 is not available for prescription here',
   requires_trauma_review: 'Review trauma exposure first',
 };
 const ageGroup = { under19: 'Under 19', '19to64': 'Adult, 19–64', '65plus': 'Adult, 65 or older', unknown: 'Unknown age' };
@@ -60,10 +59,6 @@ function renderSuggestions(result) {
       const start = element('a', `Prescribe ${item.title} in clinician view`, 'button primary');
       start.href = '/';
       const action = element('p'); action.append(start); card.append(action);
-    } else if (item.id === 'dass21') {
-      const link = element('a', 'Open DASS-21 assessment');
-      link.href = 'http://127.0.0.1:4173';
-      const action = element('p'); action.append(link); card.append(action);
     }
     output.append(card);
   }

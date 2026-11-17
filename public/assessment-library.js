@@ -47,8 +47,8 @@ function renderList() {
   for (const record of filtered.slice((page - 1) * pageSize, page * pageSize)) {
     const card = node('article', undefined, 'library-card');
     const heading = node('h2', record.title);
-    const detail = node('p', `${record.extractedItemCount} extracted questions · ${record.previewAvailable ? 'Unscored preview available' : 'Incomplete source content'}`);
-    const status = node('span', record.previewAvailable ? 'Needs clinical review' : 'Needs source content', `library-status${record.previewAvailable ? '' : ' incomplete'}`);
+    const detail = node('p', `${record.extractedItemCount} questions · ${record.previewAvailable ? 'Preview available' : 'Questions unavailable'}`);
+    const status = node('span', record.previewAvailable ? 'Available' : 'Unavailable', `library-status${record.previewAvailable ? '' : ' incomplete'}`);
     const button = node('button', record.previewAvailable ? 'Preview questions' : 'View details', 'button outline');
     button.type = 'button';
     button.addEventListener('click', () => openDetail(record.id));
@@ -96,7 +96,7 @@ function detailHeader(record) {
   back.type = 'button';
   back.addEventListener('click', showCatalogue);
   const title = node('h2', record.title);
-  const status = node('p', 'Imported definition · Needs clinical review · No scoring', 'library-detail-status');
+  const status = node('p', 'Questionnaire preview', 'library-detail-status');
   fragment.append(back, title, status);
   if (record.referencePeriod) fragment.append(node('p', `Reference period: ${record.referencePeriod}`));
   if (record.instructions) fragment.append(node('p', record.instructions, 'library-instructions'));
@@ -181,7 +181,7 @@ function renderReview() {
     answers = [];
   });
   actions.append(edit, finish);
-  area.append(list, actions, node('p', 'This preview is not a clinical administration or validated report.', 'library-disclaimer'));
+  area.append(list, actions);
 }
 
 async function openDetail(id) {

@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs';
 
-// Prototype-curated metadata. Clinical approval is still required before real patient use.
 const entries = JSON.parse(readFileSync(new URL('../data/assessment-catalog.json', import.meta.url), 'utf8'));
 const concernSet = new Set(['depression', 'anxiety', 'traumaSymptoms', 'stress']);
-const statuses = new Set(['available', 'separate_prototype']);
+const statuses = new Set(['available']);
 
 if (!Array.isArray(entries) || new Set(entries.map((entry) => entry.id)).size !== entries.length ||
     entries.some((entry) => !/^[a-z][a-z0-9]*$/.test(entry.id) || !entry.title || !entry.purpose ||

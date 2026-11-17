@@ -7,8 +7,8 @@ export function buildPatientAnalytics(patientId, rows) {
     const scores = typeof row.scores_json === 'string' ? JSON.parse(row.scores_json) : row.scores;
     if (!Number.isFinite(Date.parse(row.completed_at))) continue;
     const isImported = Boolean(row.prescription_id);
-    const detailUrl = row.kind === 'definition' ? `/definition.html?prescriptionId=${encodeURIComponent(row.prescription_id)}` :
-      isImported ? `/draft-live.html?prescriptionId=${encodeURIComponent(row.prescription_id)}` :
+    const detailUrl = row.kind === 'definition' ? `/report.html?definitionSessionId=${encodeURIComponent(row.id)}` :
+      isImported ? `/report.html?draftSessionId=${encodeURIComponent(row.id)}` :
       `/report.html?id=${encodeURIComponent(row.id)}`;
     const draftMetrics = scores?.metrics?.filter((metric) => Number.isFinite(metric.value) &&
       Number.isFinite(metric.maximum) && metric.maximum > 0 && (metric.minimum ?? 0) >= 0) ?? [];

@@ -4,7 +4,6 @@ const output = document.querySelector('#recommend-output');
 const availability = {
   available: 'Available to prescribe',
   not_implemented: 'Questionnaire not implemented here',
-  separate_prototype: 'DASS-21 is not available for prescription here',
   requires_trauma_review: 'Review trauma exposure first',
 };
 
@@ -37,12 +36,9 @@ form.addEventListener('submit', async (event) => {
       card.append(title, tag, reason);
       if (item.note) card.append(note);
       card.append(source);
-      if (item.id === 'phq9') {
+      if (item.availability === 'available') {
         const link = document.createElement('p'); const anchor = document.createElement('a');
         anchor.href = '/'; anchor.textContent = 'Open assessments'; link.append(anchor); card.append(link);
-      } else if (item.id === 'dass21') {
-        const link = document.createElement('p'); const anchor = document.createElement('a');
-        anchor.href = 'http://127.0.0.1:4173'; anchor.textContent = 'Open DASS-21 assessment (if available)'; link.append(anchor); card.append(link);
       }
       output.append(card);
     }

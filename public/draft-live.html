@@ -3,34 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Live Assessment Review | OpenMind</title>
+  <title>Patient Assessment | OpenMind</title>
+  <link rel="stylesheet" href="/casebook.css">
+  <link rel="stylesheet" href="/assessment-polish.css">
+  <link rel="stylesheet" href="/report-view.css">
   <link rel="stylesheet" href="/draft-live.css">
+  <link rel="stylesheet" href="/assessment-unified.css">
 </head>
 <body>
-  <header class="draft-header"><a class="draft-brand" href="/"><img src="/openmind-mark.svg" alt=""><strong>penMind</strong></a><span>Assessment review</span><a href="/">Back to assessments</a></header>
-  <main class="draft-layout">
-    <section class="draft-main">
-      <p class="draft-eyebrow">IMPORTED ASSESSMENT · INTERNAL REVIEW</p>
-      <h1 id="draft-title">Loading assessment…</h1>
-      <p id="draft-patient" class="draft-muted"></p>
-      <p id="draft-period" class="draft-muted"></p>
-      <a id="draft-source" class="draft-source" href="#" target="_blank" rel="noopener noreferrer">Questionnaire source</a>
-      <p id="draft-notice" class="draft-notice">This imported definition needs clinical review.</p>
-      <div id="draft-start" class="draft-start"><button id="draft-start-live" class="draft-button primary" type="button" disabled>Start voice conversation</button><button id="draft-start-screen" class="draft-button secondary" type="button" disabled>Complete on screen</button></div>
-      <p id="draft-status" class="draft-status" role="status">Loading…</p>
-      <section id="draft-question-card" class="draft-card" hidden>
-        <div class="draft-progress"><span id="draft-progress">Question 1</span><span id="draft-mode">OFF</span></div>
-        <div class="draft-track"><div id="draft-progress-bar"></div></div>
-        <h2 id="draft-question"></h2>
-        <div id="draft-options" class="draft-options"></div>
-        <div id="draft-confirmation" class="draft-confirmation" hidden><p id="draft-proposal"></p><div class="draft-actions"><button id="draft-cancel" class="draft-button secondary" type="button">Let me clarify</button><button id="draft-confirm" class="draft-button primary" type="button">Yes, that's right</button></div></div>
-      </section>
-      <section id="draft-review" class="draft-card" hidden><h2>Final answer review</h2><p id="draft-review-help">Check each selected response before saving.</p><div id="draft-review-items"></div><div class="draft-actions"><button id="draft-finish" class="draft-button primary" type="button">Save reviewed answers</button></div></section>
-      <section id="draft-complete" class="draft-card" hidden><h2>Review saved</h2><p id="draft-complete-help">All confirmed answers are stored locally.</p><div id="draft-score" hidden></div><div id="draft-result-items"></div><p id="draft-saved-at" class="draft-muted"></p><button id="draft-print" class="draft-button secondary" type="button">Print answer summary</button></section>
-      <section class="draft-transcript-card"><h2>Conversation</h2><div id="draft-transcript" class="draft-transcript" aria-live="polite"><p class="draft-muted">The conversation will appear here.</p></div><form id="draft-text-form" class="draft-text-form"><input id="draft-text" type="text" maxlength="1000" placeholder="Type a response during a live conversation" disabled aria-label="Type a response"><button id="draft-send" class="draft-button primary" type="submit" disabled>Send</button></form></section>
-    </section>
-    <aside class="draft-side"><div class="draft-card"><h2>Session controls</h2><div class="draft-camera"><video id="draft-video" autoplay muted playsinline></video><span id="draft-camera-off">Camera is off</span></div><div class="draft-side-actions"><button id="draft-mic" class="draft-button secondary" type="button" disabled>Mute microphone</button><button id="draft-camera-toggle" class="draft-button secondary" type="button" disabled>Turn camera on</button></div><p class="draft-muted">Camera frames provide conversational context only. Answers come from confirmed speech or on-screen choices.</p></div><div class="draft-card"><h2>How it works</h2><ol><li>Describe your experience in your own words.</li><li>Confirm the assistant's interpretation before it is saved.</li><li>Review all answers at the end.</li></ol><p class="draft-muted">Voice answer mapping is experimental and requires human review. This page does not notify a clinician or emergency service.</p></div></aside>
-  </main>
+  <div class="app-shell">
+    <header class="app-header"><div class="brand"><img class="brand-mark" src="/openmind-mark.svg" alt=""><strong>OpenMind</strong><span class="header-divider"></span><span class="page-label">Patient Assessment</span></div><span id="draft-status" class="status" role="status">Loading…</span></header>
+    <div class="workspace draft-layout">
+      <aside class="context-panel draft-context" aria-label="Assessment setup">
+        <div class="breadcrumb"><a href="/">Patient Assessments</a><span aria-hidden="true">/</span><strong>Assessments</strong></div>
+        <div class="assessment-identity"><div class="assessment-avatar">AS</div><div><h1 id="draft-title">Loading assessment…</h1><p id="draft-period">ASSESSMENT</p></div></div>
+        <p id="draft-patient" class="context-summary"></p>
+        <div class="context-meta"><div><span>Questions</span><strong id="draft-count">—</strong></div></div>
+        <a class="button secondary assessment-back" href="/">Back to assessments</a><div class="mode-actions" id="draft-start"><button id="draft-start-live" class="button primary" type="button" disabled>Start voice conversation</button><button id="draft-start-screen" class="button secondary" type="button" disabled>Complete on screen</button></div>
+        <a id="draft-source" class="draft-source" href="#" target="_blank" rel="noopener noreferrer">Questionnaire source</a>
+      </aside>
+      <main class="conversation-panel draft-main">
+        <div class="conversation-header"><div class="assistant-avatar" aria-hidden="true"><span></span></div><div><h2>Assessment conversation</h2><p>Share your experience in your own words. Confirm each response before it is saved.</p></div><span id="draft-mode" class="live-badge">OFF</span></div>
+        <div class="conversation-body">
+          <section id="draft-question-card" class="assessment-card draft-card" aria-label="Current question"><div class="assessment-topline"><span>CURRENT QUESTION</span><span id="draft-progress">0 / 0</span></div><div class="progress-track"><div id="draft-progress-bar"></div></div><div class="question-area"><span id="draft-question-number" class="question-number">ASSESSMENT</span><h2 id="draft-question">Choose a mode to begin</h2><p id="draft-question-help">Use the controls in the assessment setup panel to start.</p></div><div id="draft-options" class="draft-options answer-options"></div><div id="draft-confirmation" class="draft-confirmation confirmation" hidden><div><span class="eyebrow">IS THIS WHAT YOU MEANT?</span><strong id="draft-proposal"></strong></div><div class="draft-actions confirm-actions"><button id="draft-cancel" class="button secondary" type="button">Let me clarify</button><button id="draft-confirm" class="button primary" type="button">Yes, that's right</button></div></div></section>
+          <section id="draft-review" class="assessment-card draft-card" hidden><h2>Final answer review</h2><p id="draft-review-help">Check each selected response before saving.</p><div id="draft-review-items"></div><div class="draft-actions"><button id="draft-finish" class="button primary" type="button">Generate report</button></div></section>
+          <section id="draft-complete" class="assessment-card draft-card" hidden><div id="draft-inline-report"></div><a id="draft-report-link" class="button primary" href="#" hidden>Open printable report</a></section>
+          <section id="draft-transcript" class="transcript draft-transcript" aria-label="Conversation" aria-live="polite"><p class="empty draft-muted">The conversation will appear here.</p></section>
+        </div>
+        <form id="draft-text-form" class="composer draft-text-form"><input id="draft-text" type="text" maxlength="1000" placeholder="Type a response during a live conversation" disabled aria-label="Type a response"><button id="draft-send" class="button primary" type="submit" disabled>Send</button></form>
+      </main>
+      <aside class="session-panel draft-side" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2>LIVE SESSION</h2><span id="draft-session-mode">OFF</span></div><div class="camera-box draft-camera"><video id="draft-video" autoplay muted playsinline></video><span id="draft-camera-off">Camera is off</span><span class="camera-badge">CAMERA PREVIEW</span></div><div class="media-actions"><button id="draft-mic" class="button secondary" type="button" disabled>Turn microphone off</button><button id="draft-camera-toggle" class="button secondary" type="button" disabled>Turn camera on</button></div><p class="support-note">Confirmed answers and available scores are saved. Audio and camera frames are used during a live conversation.</p></section><section class="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>The assistant may ask a short follow-up.</li><li>Confirm the response before it is saved.</li></ol><p>Review your answers before generating the report.</p></section></aside>
+    </div>
+  </div>
   <script type="module" src="/draft-live.js"></script>
 </body>
 </html>

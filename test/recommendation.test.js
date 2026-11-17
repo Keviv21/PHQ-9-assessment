@@ -24,13 +24,13 @@ test('PCL-5 requires trauma exposure review', () => {
   assert.equal(confirmed.recommendations[0].availability, 'available');
 });
 
-test('prototype catalogue maps runnable forms to supported languages and keeps DASS separate', () => {
+test('catalogue maps core forms to supported languages and marks DASS-21 assignable', () => {
   const catalog = listAssessmentCatalog();
   assert.equal(catalog.length, 4);
-  for (const entry of catalog.filter((item) => item.availability === 'available')) {
+  for (const entry of catalog.filter((item) => ['phq9', 'gad7', 'pcl5'].includes(item.id))) {
     for (const language of entry.languages) assert.equal(getAssessmentForm(entry.id, language).language, language);
   }
-  assert.equal(getCatalogEntry('dass21').availability, 'separate_prototype');
+  assert.equal(getCatalogEntry('dass21').availability, 'available');
   assert.equal(getCatalogEntry('unknown'), null);
 });
 

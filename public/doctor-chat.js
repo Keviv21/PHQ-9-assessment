@@ -30,7 +30,7 @@ function renderSuggestions(items) {
     const row = node('div', undefined, 'doctor-chat-suggestion');
     const text = node('div');
     const scoreLabel = item.kind === 'scored' ? 'Scored assessment' :
-      item.kind === 'answer_only' ? 'Answer report only' : 'Draft scoring for review';
+      item.kind === 'answer_only' ? 'Answers only' : 'Score available';
     text.append(node('strong', item.title), node('p', item.reason), node('small', scoreLabel));
     const choose = node('button', 'Select', 'button outline');
     choose.type = 'button';

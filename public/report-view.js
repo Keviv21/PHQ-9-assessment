@@ -20,10 +20,7 @@ const reportCopy = {
     scoreSummary: 'Score summary', total: 'TOTAL SCORE', severity: 'SEVERITY BAND', scale: 'Score on the 0–27 scale',
     scoreOutOf: (score) => `Score ${score} out of 27`, responses: 'Confirmed responses', period: 'Reference period: the past two weeks.',
     headers: ['#', 'PHQ-9 item', 'Response'],
-    liveNote: 'Gemini inferred response values from conversation and the participant confirmed them. This conversational method has not been clinically validated. The score is not a diagnosis.',
-    formNote: 'This score summarizes the nine confirmed PHQ-9 responses. It is not a diagnosis.',
     revision: (count) => `${count} answer${count === 1 ? '' : 's'} changed during final review. The responses shown above are the final choices.`,
-    norms: 'Percentile comparisons are not included in this report.',
     source: 'Questionnaire source', printable: 'Open printable report',
     safety: 'Item 9 was answered positively. Please contact a qualified clinician promptly for follow-up. This assessment does not send an alert. If you may not be able to stay safe, seek immediate local emergency help.',
     bands: severityNames,
@@ -33,10 +30,7 @@ const reportCopy = {
     scoreSummary: 'अंकों का सारांश', total: 'कुल अंक', severity: 'गंभीरता का स्तर', scale: '0–27 अंक का पैमाना',
     scoreOutOf: (score) => `27 में से ${score} अंक`, responses: 'पुष्टि किए गए उत्तर', period: 'संदर्भ अवधि: पिछले दो सप्ताह।',
     headers: ['#', 'PHQ-9 प्रश्न', 'उत्तर'],
-    liveNote: 'Gemini ने बातचीत से उत्तर का अनुमान लगाया और प्रतिभागी ने उसकी पुष्टि की। बातचीत का यह तरीका चिकित्सकीय रूप से प्रमाणित नहीं है। यह अंक निदान नहीं है।',
-    formNote: 'ये अंक PHQ-9 के नौ पुष्टि किए गए उत्तरों का सारांश हैं। ये निदान नहीं हैं।',
     revision: (count) => `अंतिम समीक्षा में ${count} उत्तर बदले गए। ऊपर अंतिम उत्तर दिखाए गए हैं।`,
-    norms: 'इस रिपोर्ट में प्रतिशतक तुलना शामिल नहीं है।',
     source: 'प्रश्नावली का स्रोत', printable: 'प्रिंट करने योग्य रिपोर्ट खोलें',
     safety: 'प्रश्न 9 का उत्तर सकारात्मक है। कृपया जल्द किसी योग्य चिकित्सक से संपर्क करें। यह आकलन किसी को सूचना नहीं भेजता। यदि आप अपनी सुरक्षा को लेकर आश्वस्त नहीं हैं, तो तुरंत स्थानीय आपातकालीन सहायता लें।',
     bands: { minimal: 'न्यूनतम या नहीं', mild: 'हल्का', moderate: 'मध्यम', 'moderately severe': 'मध्यम से गंभीर', severe: 'गंभीर' },
@@ -48,6 +42,169 @@ function element(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+export function renderDASS21Report(container, assessment, form) {
+  if (assessment.status !== 'completed' || !assessment.scores || !form.scoringAvailable ||
+      assessment.formId !== form.id || !Array.isArray(assessment.answers) ||
+      assessment.answers.length !== 21 || form.questions?.length !== 21) {
+    throw new Error('A completed DASS-21 result is required.');
+  }
+  const report = element('article', 'phq-report');
+  const header = element('header', 'phq-report-header');
+  const patient = assessment.demoPatientId ? ` · Sample patient ${assessment.demoPatientId.slice(-1).toUpperCase()}` : '';
+  header.append(element('p', 'phq-report-eyebrow', 'ASSESSMENT REPORT'),
+    element('h2', '', form.title),
+    element('p', 'phq-report-meta', `Completed ${new Date(assessment.completedAt).toLocaleString()} · ${assessment.collectionMethod === 'conversational_inference' ? 'AI-assisted conversation' : 'Direct form responses'}${patient}`));
+  report.append(header);
+
+  const summary = element('section', 'phq-report-summary');
+  const total = element('div', 'phq-report-score');
+  total.append(element('span', '', 'TOTAL RAW SCORE'), element('strong', '', `${assessment.scores.rawTotal} / 63`));
+  summary.append(total);
+  report.append(summary);
+
+  const subscales = element('section', 'phq-report-responses');
+  subscales.append(element('h3', '', 'Subscale scores'));
+  const subscaleTable = element('table', 'phq-report-table');
+  const subscaleHead = element('thead');
+  const subscaleHeading = element('tr');
+  for (const label of ['Subscale', 'Raw score', 'DASS-42 equivalent', 'Severity band']) subscaleHeading.append(element('th', '', label));
+  subscaleHead.append(subscaleHeading);
+  const subscaleBody = element('tbody');
+  for (const name of ['depression', 'anxiety', 'stress']) {
+    const row = element('tr');
+    row.append(element('td', '', name[0].toUpperCase() + name.slice(1)),
+      element('td', '', `${assessment.scores.rawSubscales[name]} / 21`),
+      element('td', '', String(assessment.scores.dass42EquivalentSubscales[name])),
+      element('td', '', assessment.scores.severity[name]));
+    subscaleBody.append(row);
+  }
+  subscaleTable.append(subscaleHead, subscaleBody);
+  subscales.append(subscaleTable);
+  report.append(subscales);
+
+  const responses = element('section', 'phq-report-responses');
+  responses.append(element('h3', '', 'Confirmed responses'));
+  if (form.referencePeriod) responses.append(element('p', '', `Reference period: ${form.referencePeriod}.`));
+  const table = element('table', 'phq-report-table');
+  const thead = element('thead');
+  const heading = element('tr');
+  for (const label of ['#', 'Item', 'Response']) heading.append(element('th', '', label));
+  thead.append(heading);
+  const tbody = element('tbody');
+  for (const answer of assessment.answers) {
+    const question = form.questions[answer.number - 1];
+    const option = question?.options[answer.value];
+    if (!option) throw new Error('Saved response does not match the DASS-21 form.');
+    const row = element('tr');
+    row.append(element('td', '', String(answer.number)), element('td', '', question.text),
+      element('td', '', `${option.label} (${answer.value})`));
+    tbody.append(row);
+  }
+  table.append(thead, tbody);
+  responses.append(table);
+  report.append(responses);
+
+  const notes = element('section', 'phq-report-notes');
+  if (assessment.reviewChangeCount) notes.append(element('p', '', `${assessment.reviewChangeCount} answer(s) changed during final review.`));
+  if (assessment.scores.source?.startsWith('https://')) {
+    const source = element('a', '', 'Scoring reference');
+    source.href = assessment.scores.source;
+    source.target = '_blank';
+    source.rel = 'noopener noreferrer';
+    notes.append(source);
+  }
+  report.append(notes);
+  container.replaceChildren(report);
+}
+
+export function renderDraftReport(container, assessment, form) {
+  if (assessment.scores) return renderDASS21Report(container, assessment, form);
+  if (assessment.status !== 'completed' || assessment.formId !== form.id ||
+      !Array.isArray(assessment.answers) || assessment.answers.length !== form.questions?.length) {
+    throw new Error('A completed assessment result is required.');
+  }
+  const report = element('article', 'phq-report');
+  const header = element('header', 'phq-report-header');
+  const patient = assessment.demoPatientId ? ` · Sample patient ${assessment.demoPatientId.slice(-1).toUpperCase()}` : '';
+  header.append(element('p', 'phq-report-eyebrow', 'ASSESSMENT REPORT'),
+    element('h2', '', form.title),
+    element('p', 'phq-report-meta', `Completed ${new Date(assessment.completedAt).toLocaleString()} · ${assessment.collectionMethod === 'conversational_inference' ? 'AI-assisted conversation' : 'Direct form responses'}${patient}`));
+  report.append(header);
+  const notice = element('section', 'phq-report-notes');
+  notice.append(element('h3', '', 'Responses recorded · No score available'));
+  report.append(notice);
+  const responses = element('section', 'phq-report-responses');
+  responses.append(element('h3', '', 'Confirmed responses'));
+  if (form.referencePeriod) responses.append(element('p', '', `Reference period: ${form.referencePeriod}.`));
+  const table = element('table', 'phq-report-table');
+  const heading = element('tr');
+  for (const label of ['#', 'Item', 'Response']) heading.append(element('th', '', label));
+  const thead = element('thead'); thead.append(heading);
+  const tbody = element('tbody');
+  for (const answer of assessment.answers) {
+    const question = form.questions[answer.number - 1];
+    const option = question?.options[answer.value];
+    if (!option) throw new Error('Saved response does not match the assessment form.');
+    const row = element('tr');
+    row.append(element('td', '', String(answer.number)), element('td', '', question.text),
+      element('td', '', option.label));
+    tbody.append(row);
+  }
+  table.append(thead, tbody); responses.append(table); report.append(responses);
+  if (assessment.reviewChangeCount) report.append(element('p', 'phq-report-meta', `${assessment.reviewChangeCount} answer(s) changed during final review.`));
+  container.replaceChildren(report);
+}
+
+export function renderDefinitionReport(container, assessment) {
+  const form = assessment.formSnapshot;
+  if (assessment.status !== 'completed' || !form?.questions || !assessment.scores ||
+      !assessment.answers || typeof assessment.answers !== 'object') {
+    throw new Error('A completed assessment result is required.');
+  }
+  const report = element('article', 'phq-report');
+  const header = element('header', 'phq-report-header');
+  const patient = assessment.demoPatientId ? ` · Sample patient ${assessment.demoPatientId.slice(-1).toUpperCase()}` : '';
+  header.append(element('p', 'phq-report-eyebrow', 'ASSESSMENT REPORT'),
+    element('h2', '', form.title),
+    element('p', 'phq-report-meta', `Completed ${new Date(assessment.completedAt).toLocaleString()} · ${Object.keys(assessment.answers).length} recorded responses${patient}`));
+  report.append(header);
+  const scoring = element('section', 'phq-report-responses');
+  scoring.append(element('h3', '', 'Scoring results'));
+  if (!assessment.scores.metrics?.length) scoring.append(element('p', '', 'No numeric scoring rule is present in this definition.'));
+  else {
+    const table = element('table', 'phq-report-table');
+    const heading = element('tr');
+    for (const label of ['Measure', 'Result', 'Score band']) heading.append(element('th', '', label));
+    const thead = element('thead'); thead.append(heading);
+    const tbody = element('tbody');
+    for (const metric of assessment.scores.metrics) {
+      const row = element('tr');
+      row.append(element('td', '', metric.label), element('td', '', metric.value === null ? `Withheld: ${metric.reason || 'Insufficient scoring data'}` : String(metric.value)),
+        element('td', '', metric.value === null ? '—' : metric.band || '—'));
+      tbody.append(row);
+    }
+    table.append(thead, tbody); scoring.append(table);
+  }
+  report.append(scoring);
+  const responses = element('section', 'phq-report-responses');
+  responses.append(element('h3', '', 'Confirmed responses'));
+  const table = element('table', 'phq-report-table');
+  const heading = element('tr');
+  for (const label of ['#', 'Item', 'Response']) heading.append(element('th', '', label));
+  const thead = element('thead'); thead.append(heading);
+  const tbody = element('tbody');
+  for (const item of form.questions.filter((question) => Object.hasOwn(assessment.answers, question.id))) {
+    const answer = assessment.answers[item.id];
+    const label = (value) => item.options?.find((option) => option.id === value)?.text || String(value ?? '');
+    const row = element('tr');
+    row.append(element('td', '', String(item.order ?? '')), element('td', '', item.text),
+      element('td', '', Array.isArray(answer) ? answer.map(label).join(', ') : label(answer)));
+    tbody.append(row);
+  }
+  table.append(thead, tbody); responses.append(table); report.append(responses);
+  container.replaceChildren(report);
 }
 
 function renderAdditionalReport(container, assessment, form, printableLink) {
@@ -85,10 +242,6 @@ function renderAdditionalReport(container, assessment, form, printableLink) {
   }
   table.append(thead, tbody); responses.append(table); report.append(responses);
   const notes = element('section', 'phq-report-notes');
-  notes.append(element('p', '', assessment.formId === 'pcl5'
-    ? 'PCL-5 has no established severity bands. This symptom total is not a diagnosis and requires clinician interpretation.'
-    : 'GAD-7 score bands summarize symptoms. This screening result is not a diagnosis.'));
-  if (assessment.collectionMethod === 'conversational_inference') notes.append(element('p', '', 'Gemini suggested response values from conversation; the participant confirmed each answer. This administration method has not been clinically validated here.'));
   if (assessment.reviewChangeCount) notes.append(element('p', '', `${assessment.reviewChangeCount} answer(s) changed during final review.`));
   const source = element('a', '', 'Questionnaire source'); source.href = form.source; source.target = '_blank'; source.rel = 'noopener noreferrer';
   notes.append(source);
@@ -179,11 +332,9 @@ export function renderReport(container, assessment, form, { printableLink = fals
     safetyNotice = element('p', 'phq-report-alert', labels.safety);
     safetyNotice.setAttribute('role', 'alert');
   }
-  notes.append(element('p', '', assessment.collectionMethod === 'conversational_inference' ? labels.liveNote : labels.formNote));
   if (assessment.reviewChangeCount) {
     notes.append(element('p', '', labels.revision(assessment.reviewChangeCount)));
   }
-  notes.append(element('p', '', labels.norms));
   const source = element('a', '', labels.source);
   source.href = form.source;
   source.target = '_blank';

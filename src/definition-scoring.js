@@ -1,5 +1,3 @@
-// Source formulas are draft calculations. This module never infers a percentile,
-// diagnosis, or clinical interpretation from an unpublished scoring rule.
 const numeric = (value) => typeof value === 'number' && Number.isFinite(value);
 const compare = (left, operator, right) => {
   if (operator === 'equals') return left === right;
@@ -30,7 +28,7 @@ export function conditionState(condition, answers, questions, context = {}) {
   if (!item || !Object.hasOwn(answers, item.id)) return null;
   const answer = answers[item.id];
   let value = answer;
-  if (condition.value_field && condition.value_field !== 'answer_id') {
+  if (condition.value_field && condition.value_field !== 'answer_id' && typeof answer === 'string') {
     const option = item.options?.find(({ id }) => id === answer);
     value = option?.[condition.value_field];
   }
@@ -127,6 +125,5 @@ export function scoreDefinition(definition, answers, context = {}) {
     metrics,
     calculatedCount: metrics.filter((metric) => metric.value !== null).length,
     withheldCount: metrics.filter((metric) => metric.value === null).length,
-    note: 'Draft raw calculations from the supplied JSON. No clinical validation, percentile, diagnosis, or NovoPsych report equivalence is claimed.',
   };
 }

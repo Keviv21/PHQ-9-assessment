@@ -202,7 +202,7 @@ function assessmentChoices() {
       label: `${item.title}${item.id === suggestion.primaryAssessmentId ? ' · Recommended' : ''}` })),
     ...catalogue.filter((item) => item.id === 'depression-anxiety-stress-scales-short-form-dass-21--acf13d5bf87b')
       .map((item) => ({ id: `draft:${item.id}`, title: item.title, enabled: item.previewAvailable,
-        label: item.title })),
+        label: `${item.title}${suggestion?.primaryAssessmentId === 'dass21' ? ' · Recommended' : ''}` })),
     ...definitions.filter((item) => !retainedLegacyIds.has(item.id))
       .map((item) => ({ id: `definition:${item.id}`, title: item.title, enabled: item.available,
         label: item.title })),
@@ -290,13 +290,11 @@ function updateSelectedChoice() {
   $('prescribe-button').textContent = allowed ? 'Confirm & Assign' : 'Confirm & Prescribe';
   const area = $('selection-details');
   if (draft) {
-    area.replaceChildren(notice(draft.scoringAvailable ?
-      `${draft.title} has an implemented score. Review the final answers before interpreting the result.` :
-      `${draft.title} saves answers, but its scoring rules have not been verified. No score will be generated.`));
+    area.replaceChildren(el('p', `${draft.title} · ${draft.extractedItemCount} questions${draft.scoringAvailable ? '' : ' · Answers only'}`));
     return;
   }
   if (definition) {
-    area.replaceChildren(notice(`${definition.title} has ${definition.questionCount} questions and ${definition.ruleCount} draft scoring rules. This definition is awaiting clinical review; a clinician should review the report.`));
+    area.replaceChildren(el('p', `${definition.title} · ${definition.questionCount} questions`));
     return;
   }
   if (!choice) {
@@ -358,8 +356,8 @@ async function prescribe() {
     const title = record.kind === 'definition' ? definitions.find((item) => item.id === record.formId)?.title || record.formId :
       record.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId : record.formId.toUpperCase();
     card.append(el('h3', `${title} assigned`), el('p', record.kind === 'definition' ?
-      `${suggestion.patient.label} can complete this source-draft questionnaire by voice conversation or on screen. The report shows available raw calculations and any withheld results.` : record.kind === 'draft' ?
-      `${suggestion.patient.label} can complete the assessment. ${record.unscored ? 'Its answers will be saved without a score.' : 'A score will be shown after final answer review.'}` :
+      `${suggestion.patient.label} can complete the assessment by voice conversation or on screen.` : record.kind === 'draft' ?
+      `${suggestion.patient.label} can complete the assessment by voice conversation or on screen.` :
       `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
     const actions = el('div', undefined, 'prescribed-actions');
     const url = new URL(`${record.kind === 'definition' ? '/definition.html' : record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`, location.href);
@@ -395,9 +393,8 @@ async function loadReports(patientId) {
     if (current !== loadNumber) return;
     const completedDrafts = prescriptions.filter((item) => item.kind === 'draft' && item.status === 'completed');
     const completedDefinitions = prescriptions.filter((item) => item.kind === 'definition' && item.status === 'completed');
-    const scoredImported = completedDrafts.filter((item) => !item.unscored).length;
-    const answerReviews = completedDrafts.length - scoredImported;
-    area.replaceChildren(el('h2', `${reports.length + scoredImported + completedDefinitions.length} assessment report${reports.length + scoredImported + completedDefinitions.length === 1 ? '' : 's'} · ${answerReviews} answer review${answerReviews === 1 ? '' : 's'}`));
+    const reportCount = reports.length + completedDrafts.length + completedDefinitions.length;
+    area.replaceChildren(el('h2', `${reportCount} assessment report${reportCount === 1 ? '' : 's'}`));
     const list = el('div', undefined, 'report-list');
     for (const report of reports) {
       const row = el('div', undefined, 'report-row');
@@ -410,17 +407,17 @@ async function loadReports(patientId) {
       const row = el('div', undefined, 'report-row');
       const info = el('div');
       const title = catalogue.find((item) => item.id === record.formId)?.title || record.formId;
-      info.append(el('strong', `${title} · ${record.unscored ? 'Answer review' : 'Score and answers'}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
-      const link = el('a', record.unscored ? 'View reviewed answers' : 'View score and answers');
-      link.href = `/draft-live.html?prescriptionId=${encodeURIComponent(record.id)}`;
+      info.append(el('strong', `${title} · ${record.unscored ? 'Answer report · No score' : 'Report'}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
+      const link = el('a', 'View report');
+      link.href = `/report.html?draftSessionId=${encodeURIComponent(record.assessmentId)}`;
       row.append(info, link); list.append(row);
     }
     for (const record of completedDefinitions) {
       const row = el('div', undefined, 'report-row');
       const info = el('div');
       const title = definitions.find((item) => item.id === record.formId)?.title || record.formId;
-      info.append(el('strong', `${title} · Draft report`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
-      const link = el('a', 'View report'); link.href = `/definition.html?prescriptionId=${encodeURIComponent(record.id)}`;
+      info.append(el('strong', `${title} · Report`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
+      const link = el('a', 'View report'); link.href = `/report.html?definitionSessionId=${encodeURIComponent(record.assessmentId)}`;
       row.append(info, link); list.append(row);
     }
     for (const record of prescriptions.filter((item) => item.status !== 'completed')) {

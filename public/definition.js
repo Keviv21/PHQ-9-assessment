@@ -1,3 +1,5 @@
+import { renderDefinitionReport } from './report-view.js';
+
 const $ = (id) => document.getElementById(id);
 const prescriptionId = new URL(location.href).searchParams.get('prescriptionId');
 let state;
@@ -7,7 +9,22 @@ let voice;
 const transcriptRows = new Map();
 const screens = ['intro', 'questionnaire', 'review', 'report'];
 const node = (tag, text, className) => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; };
-function show(name) { for (const id of screens) $(id).hidden = id !== name; $('error').hidden = true; }
+function show(name) {
+  for (const id of screens) $(id).hidden = id !== name;
+  $('definition-start').hidden = name !== 'intro';
+  $('definition-modes').hidden = name !== 'intro';
+  $('error').hidden = true;
+  const isVoice = name === 'questionnaire' && Boolean(voice?.active);
+  $('definition-live-label').textContent = isVoice ? 'VOICE' : name === 'questionnaire' ? 'ON SCREEN' : 'OFF';
+  $('definition-mode-label').textContent = $('definition-live-label').textContent;
+  $('voice-text').disabled = !isVoice;
+  $('voice-send').disabled = !isVoice;
+  $('voice-mute').disabled = !isVoice || !voice?.microphone;
+  $('voice-mute').textContent = voice?.muted ? 'Turn microphone on' : 'Turn microphone off';
+  $('voice-camera-toggle').disabled = !isVoice;
+  $('voice-camera-toggle').textContent = voice?.camera ? 'Turn camera off' : 'Turn camera on';
+  $('voice-camera-placeholder').hidden = Boolean(voice?.camera);
+}
 function fail(message) { $('error').textContent = message; $('error').hidden = false; }
 async function api(path, options) {
   const response = await fetch(path, options);
@@ -30,7 +47,7 @@ function conditionCheck(condition, answers) {
   const answer = answers[condition.item_id];
   if (answer === undefined) return false;
   const item = state.formSnapshot.questions.find((candidate) => candidate.id === condition.item_id);
-  const value = condition.value_field && condition.value_field !== 'answer_id' ?
+  const value = condition.value_field && condition.value_field !== 'answer_id' && typeof answer === 'string' ?
     item?.options?.find((option) => option.id === answer)?.[condition.value_field] : answer;
   if (condition.operator === 'contains_any') return Array.isArray(answer) && condition.value.some((id) => answer.includes(id));
   if (condition.operator === 'equals') return value === condition.value;
@@ -38,10 +55,6 @@ function conditionCheck(condition, answers) {
   return false;
 }
 function visibleItems(answers) { return state.formSnapshot.questions.filter((item) => condition(item.displayIf, answers)); }
-function answerLabel(item, answer) {
-  if (Array.isArray(answer)) return answer.map((id) => item.options.find((option) => option.id === id)?.text || id).join(', ');
-  return item.options?.find((option) => option.id === answer)?.text || String(answer ?? '');
-}
 function inputFor(item, answer, review = false) {
   const wrap = node('div');
   if (['choice', 'single_choice', 'multiple_choice'].includes(item.responseType)) {
@@ -92,10 +105,15 @@ function renderVoiceAnswerGuide(item) {
   const guide = $('voice-answer-guide');
   guide.replaceChildren();
   if (['choice', 'single_choice', 'multiple_choice'].includes(item.responseType)) {
-    guide.append(node('p', item.responseType === 'multiple_choice' ?
-      'Possible responses (you may describe more than one):' : 'Possible responses:', 'voice-guide-label'));
+    if (item.responseType === 'multiple_choice') guide.append(node('p', 'You may describe more than one response.', 'voice-guide-label'));
     const options = node('div', undefined, 'voice-reference-options');
-    for (const option of item.options) options.append(node('div', option.text || option.id, 'voice-reference-option'));
+    for (const [index, option] of item.options.entries()) {
+      const choice = node('div', undefined, 'option voice-reference-option voice-choice');
+      choice.dataset.optionId = option.id;
+      choice.append(node('span', String(index + 1), 'number'));
+      choice.append(node('strong', option.text || option.id));
+      options.append(choice);
+    }
     guide.append(options);
   } else if (['integer', 'number'].includes(item.responseType)) {
     const schema = item.inputSpec?.answer_schema || {};
@@ -112,8 +130,9 @@ function question() {
   index = Math.min(index, items.length - 1);
   const item = items[index];
   if (!item) { review(); return; }
-  $('progress-text').textContent = `Question ${index + 1} of ${items.length}`;
+  $('progress-text').textContent = `${index + 1} / ${items.length}`;
   $('progress-fill').style.width = `${Math.round((index + 1) / items.length * 100)}%`;
+  $('question-number').textContent = `QUESTION ${index + 1}`;
   $('question').textContent = item.text;
   $('reference').textContent = state.formSnapshot.referencePeriod?.instruction_claims?.join(', ') || '';
   $('input-area').replaceChildren(inputFor(item, state.answers[item.id]));
@@ -123,7 +142,6 @@ function question() {
   $('back').disabled = index === 0;
   $('next').textContent = index === items.length - 1 ? 'Review answers' : 'Save & continue';
   $('screen-actions').hidden = Boolean(voice?.active);
-  $('voice-toggle').hidden = Boolean(voice?.active);
   $('voice-panel').hidden = !voice?.active;
   show('questionnaire');
 }
@@ -173,40 +191,19 @@ async function finish() {
 }
 function report() {
   show('report');
-  const form = state.formSnapshot;
-  $('report-title').textContent = form.title;
-  $('report-meta').textContent = `Completed ${new Date(state.completedAt).toLocaleString()} · ${Object.keys(state.answers).length} recorded responses · Definition ${state.formVersion}`;
-  const metrics = $('metrics'); metrics.replaceChildren();
-  if (!state.scores.metrics.length) metrics.append(node('p', 'No numeric scoring rule is present in the supplied definition. Review the responses below.'));
-  for (const metric of state.scores.metrics) {
-    const row = node('div', undefined, `metric${metric.value === null ? ' withheld' : ''}`);
-    const info = node('div'); info.append(node('strong', metric.label));
-    info.append(node('small', metric.value === null ? metric.reason :
-      `Draft source calculation${metric.band ? ` · ${metric.band}` : ''}`));
-    if (metric.value !== null && Number.isFinite(metric.minimum) && Number.isFinite(metric.maximum) && metric.maximum > metric.minimum) {
-      const track = node('div', undefined, 'score-track');
-      const fill = node('div', undefined, 'score-fill');
-      fill.style.width = `${Math.max(0, Math.min(100, (metric.value - metric.minimum) / (metric.maximum - metric.minimum) * 100))}%`;
-      track.append(fill); info.append(track);
-      info.append(node('small', `Source draft range: ${metric.minimum}–${metric.maximum}`));
-    }
-    row.append(info, node('span', metric.value === null ? 'Withheld' : String(metric.value), 'value'));
-    metrics.append(row);
-  }
-  const list = $('report-answers'); list.replaceChildren();
-  for (const item of visibleItems(state.answers)) {
-    const row = node('div', undefined, 'answer-row');
-    row.append(node('strong', `${item.order ?? ''}. ${item.text}`), node('span', answerLabel(item, state.answers[item.id])));
-    list.append(row);
-  }
+  renderDefinitionReport($('definition-inline-report'), state);
+  $('open-report').href = `/report.html?definitionSessionId=${encodeURIComponent(state.id)}`;
 }
 async function init() {
   if (!prescriptionId) throw new Error('Open this assessment from an assigned patient link.');
   const prescription = await api(`/api/definition-prescriptions/${prescriptionId}`);
   if (prescription.assessmentId) state = await api(`/api/definition-sessions/${prescription.assessmentId}`);
   const form = state?.formSnapshot || await api(`/api/definitions/${encodeURIComponent(prescription.formId)}`);
-  $('title').textContent = form.title; $('description').textContent = form.description;
-  $('patient').textContent = `Assigned to ${prescription.patient?.label || 'patient'}`;
+  $('side-title').textContent = form.title;
+  $('side-description').textContent = form.description;
+  $('side-count').textContent = String(form.questions.length);
+  $('intro-count').textContent = `0 / ${form.questions.length}`;
+  $('side-patient').textContent = `Assigned to ${prescription.patient?.label || 'patient'}`;
   const keys = new Set(form.questions.map((item) => item.displayIf?.context_key).filter(Boolean));
   if (form.rules.some((rule) => (Array.isArray(rule.context_constraints) ? rule.context_constraints : [rule.context_constraints])
     .some((constraint) => constraint?.context_key === 'source_scoring_sex'))) keys.add('source_scoring_sex');
@@ -265,7 +262,8 @@ function appendTranscript(speaker, text, messageId = null) {
   const key = messageId ? `${speaker}:${messageId}` : null;
   if (key && transcriptRows.has(key)) transcriptRows.get(key).lastChild.textContent = text;
   else {
-    const row = node('div', undefined, `voice-line ${speaker}`);
+    if (area.firstElementChild?.classList.contains('empty')) area.replaceChildren();
+    const row = node('div', undefined, `line voice-line ${speaker === 'participant' ? 'person' : ''}`);
     row.append(node('strong', speaker === 'gemini' ? 'Assistant' : speaker === 'participant' ? 'You' : 'System'), node('span', text));
     area.append(row);
     if (key) transcriptRows.set(key, row);
@@ -289,24 +287,36 @@ async function ensureVoice() {
   onProposal: (proposal) => {
     $('voice-proposal').textContent = proposal.summary || 'Please confirm the proposed answer.';
     $('voice-confirmation').hidden = false;
+    const selected = Array.isArray(proposal.value) ? proposal.value : [proposal.value];
+    for (const option of $('voice-answer-guide').querySelectorAll('[data-option-id]')) {
+      option.classList.toggle('selected', selected.includes(option.dataset.optionId));
+    }
   },
-  onClear: () => { $('voice-confirmation').hidden = true; },
+  onClear: () => {
+    $('voice-confirmation').hidden = true;
+    for (const option of $('voice-answer-guide').querySelectorAll('[data-option-id]')) option.classList.remove('selected');
+  },
   onStatus: (message) => { $('voice-status').textContent = message; },
   onTranscript: appendTranscript,
   onError: (message) => { appendTranscript('system', message); },
   onClose: () => {
-    if (state?.status === 'in_progress') { question(); fail('Voice disconnected. Your confirmed answers were saved; you can reconnect or continue on screen.'); }
+    if (state?.status === 'in_progress') { question(); fail('Voice disconnected. Your confirmed answers were saved. Continue on screen.'); }
   },
   });
   return voice;
 }
 $('start').addEventListener('click', () => begin(false));
 $('start-voice').addEventListener('click', () => begin(true));
-$('voice-toggle').addEventListener('click', () => begin(true));
-$('voice-stop').addEventListener('click', () => { voice.stop(); question(); });
 $('voice-confirm').addEventListener('click', () => { try { voice.send({ type: 'confirm' }); } catch (error) { fail(error.message); } });
 $('voice-cancel').addEventListener('click', () => { try { voice.send({ type: 'cancel' }); } catch (error) { fail(error.message); } });
-$('voice-mute').addEventListener('click', () => { $('voice-mute').textContent = voice.mute() ? 'Unmute microphone' : 'Mute microphone'; });
+$('voice-mute').addEventListener('click', () => { $('voice-mute').textContent = voice.mute() ? 'Turn microphone on' : 'Turn microphone off'; });
+$('voice-camera-toggle').addEventListener('click', async () => {
+  try {
+    const on = await voice.toggleCamera($('voice-preview'));
+    $('voice-camera-toggle').textContent = on ? 'Turn camera off' : 'Turn camera on';
+    $('voice-camera-placeholder').hidden = on;
+  } catch (error) { fail(`Camera unavailable: ${error.message}`); }
+});
 $('voice-text-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const text = $('voice-text').value.trim();
@@ -318,6 +328,5 @@ $('next').addEventListener('click', next);
 $('back').addEventListener('click', () => { if (index > 0) { index--; question(); } });
 $('review-back').addEventListener('click', () => { index = Math.max(0, visibleItems(state.answers).length - 1); question(); });
 $('finish').addEventListener('click', finish);
-$('print').addEventListener('click', () => window.print());
 window.addEventListener('beforeunload', () => voice?.stop());
 init().catch((error) => fail(error.message));

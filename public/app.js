@@ -43,7 +43,7 @@ function localizePage() {
     ui.questionCount.textContent = String(form.questions.length);
     const badge = ui.questionArea.querySelector('.question-number');
     if (badge) badge.textContent = name;
-    if (formId !== 'phq9') ui.footer.textContent = 'Review the completed report with a qualified clinician.';
+    if (formId !== 'phq9') ui.footer.textContent = 'Review your answers before generating the report.';
   }
   refreshRecent().catch(() => {});
 }

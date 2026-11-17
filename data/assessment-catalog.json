@@ -50,11 +50,10 @@
     "matchWhenAny": ["stress"],
     "matchWhenAll": ["depression", "anxiety"],
     "priority": 2,
-    "availability": "separate_prototype",
-    "languages": ["en", "hi", "mr"],
+    "availability": "available",
+    "languages": ["en"],
     "catalogDraftId": "depression-anxiety-stress-scales-short-form-dass-21--acf13d5bf87b",
     "source": "https://dass.psy.unsw.edu.au/DASSFAQ.htm",
-    "note": "DASS-21 is in a separate prototype and cannot be prescribed here. It is not a diagnostic instrument.",
     "reason": "Current stress or overlapping depression and anxiety concerns make this broader symptom measure relevant."
   }
 ]

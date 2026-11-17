@@ -1,0 +1,87 @@
+/* Shared assessment layout for scored, DASS-21, and catalogue forms. */
+[hidden] { display: none !important; }
+.workspace.draft-layout,
+.workspace.definition-layout { grid-template-columns: 296px minmax(0, 1fr) 300px; gap: 0; padding: 0; margin: 0; max-width: none; }
+.assessment-back { display: inline-flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 9px; text-decoration: none; }
+.mode-actions a.button { text-decoration: none; }
+.context-panel .context-summary { line-height: 1.6; }
+.context-panel .mode-actions { margin-bottom: 14px; }
+.context-panel .draft-source { margin-top: 7px; }
+.draft-context #draft-title,
+.definition-context #side-title { font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
+.definition-context #side-description { max-height: 8em; overflow: auto; }
+.draft-main,
+.definition-main { min-height: calc(100vh - 76px); }
+.draft-main .conversation-body,
+.definition-main .conversation-body { min-width: 0; overflow: auto; }
+.draft-main .draft-card,
+.definition-body .assessment-card { width: 100%; margin: 0; padding: 23px 25px; border: 1px solid #e1e9f3; border-radius: 14px; box-shadow: 0 3px 14px #17315b0a; }
+.draft-main .question-area h2,
+.definition-body .question-area h2 { font-size: clamp(20px, 2vw, 29px); line-height: 1.32; letter-spacing: -.035em; margin: 15px 0 9px; color: #172b45; }
+.draft-main .question-area p,
+.definition-body .question-area p { font-size: 13px; line-height: 1.6; color: #768398; margin: 0; }
+.draft-main .draft-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 21px; }
+.draft-main .draft-options:empty { display: none; }
+.draft-main .draft-option { min-height: 65px; margin: 0; padding: 12px 14px; border: 1px solid #e1e8f2; border-radius: 11px; color: #263445; background: #fff; font-size: 13px; line-height: 1.45; }
+.draft-main .draft-option.selected { border: 2px solid #0088ff; background: #eef5ff; }
+.draft-main .draft-confirmation { margin-top: 19px; padding: 17px; border: 1px solid #cfe1ff; background: #eff6ff; border-radius: 13px; }
+.draft-main .draft-confirmation .draft-actions { margin: 0; gap: 8px; }
+.draft-main .draft-confirmation p { margin: 0; }
+.draft-main .draft-transcript,
+.definition-main .voice-transcript { flex: 1; min-height: 120px; max-height: 460px; margin: 0; padding: 2px 4px 15px; overflow: auto; display: flex; flex-direction: column; gap: 12px; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.draft-main .draft-transcript > .empty,
+.definition-main .voice-transcript > .empty { margin: auto; text-align: center; max-width: 250px; }
+.draft-main .draft-transcript .draft-line,
+.definition-main .voice-transcript .voice-line { align-self: flex-start; max-width: 83%; margin: 0; padding: 11px 15px; border: 1px solid #e7eaf0; border-radius: 15px 15px 15px 4px; background: #fff; color: #3d4a5c; font-size: 13px; line-height: 1.55; box-shadow: 0 4px 12px #142a5108; overflow-wrap: anywhere; }
+.draft-main .draft-transcript .draft-line.person,
+.definition-main .voice-transcript .voice-line.person { align-self: flex-end; border-color: #d6e7ff; border-radius: 15px 15px 4px 15px; background: #eaf3ff; }
+.draft-main .draft-transcript .draft-line strong,
+.definition-main .voice-transcript .voice-line strong { display: block; margin: 0 0 3px; color: #0879df; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.draft-main .draft-text-form,
+.definition-main .voice-text-form { margin: 0; padding: 15px 25px; background: #fff; border-top: 1px solid #e7eaf0; }
+.draft-main .draft-text-form input,
+.definition-main .voice-text-form input { flex: 1; min-width: 0; border: 1px solid #dde3eb; border-radius: 12px; padding: 12px 15px; font-size: 13px; }
+.definition-main .voice-text-form input:disabled { background: #f8fafc; }
+.definition-body #input-area { display: block; margin-top: 21px; }
+.definition-body #input-area > div:has(> .option) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.definition-body #input-area .option { min-height: 65px; margin: 0; border: 1px solid #e1e8f2; border-radius: 11px; background: #fff; font-size: 13px; }
+.definition-body #input-area .option:has(input:checked) { border: 2px solid #0088ff; background: #eef5ff; }
+.definition-body .actions { margin-top: 20px; }
+.definition-body .actions button { border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 700; }
+.definition-body .voice-panel { padding: 0; margin-top: 0; background: transparent; border: 0; }
+.definition-body .voice-confirmation { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 19px; background: #eff6ff; border: 1px solid #cfe1ff; border-radius: 13px; padding: 17px; }
+.definition-body .voice-answer-guide { margin: 21px 0 0; }
+.definition-body .voice-reference-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.definition-body .voice-reference-option { display: flex; align-items: center; min-height: 65px; border-radius: 11px; background: #fff; border-color: #e1e8f2; color: #263445; font-size: 13px; }
+.definition-body .voice-reference-option.selected { background: #eef5ff; border: 2px solid #0088ff; }
+.draft-side .draft-camera { aspect-ratio: 16/10; min-height: 0; margin: 15px 0 12px; }
+.draft-side .draft-camera video { width: 100%; height: 100%; object-fit: cover; }
+.draft-side .draft-camera .camera-badge { color: #fff; }
+.definition-side .voice-session-box { aspect-ratio: 16/10; }
+.definition-body #open-report,
+.draft-main #draft-report-link { display: inline-flex; margin-top: 18px; text-decoration: none; }
+@media (max-width: 1180px) {
+  .workspace.draft-layout,.workspace.definition-layout { grid-template-columns: 252px minmax(0, 1fr); }
+  .draft-side,.definition-side { grid-column: 2; display: flex; flex-direction: row; }
+}
+@media (max-width: 750px) {
+  .workspace.draft-layout,.workspace.definition-layout { display: block; }
+  .draft-main,.definition-main { min-height: 630px; }
+  .draft-side,.definition-side { display: flex; }
+  .draft-main .draft-card,.definition-body .assessment-card { padding: 20px; }
+}
+@media (max-width: 620px) {
+  .app-shell,.workspace,.context-panel,.conversation-panel,.session-panel { min-width: 0; width: 100%; }
+  .app-header { padding: 0 14px; }
+  .app-header .brand { min-width: 0; }
+  .app-header .brand strong { font-size: 18px; }
+  .app-header .status { max-width: 38vw; }
+  .assessment-identity > div:last-child,.conversation-header > div:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+  .context-panel .mode-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .context-summary { overflow-wrap: anywhere; }
+  .draft-main .draft-options,.definition-body #input-area > div:has(> .option),.definition-body .voice-reference-options { grid-template-columns: 1fr; }
+  .draft-side,.definition-side { display: flex; flex-direction: column; }
+}
+@media print {
+  .draft-main .draft-transcript,.definition-main .voice-transcript,.draft-main .composer,.definition-main .composer,.draft-side,.definition-side { display: none !important; }
+}

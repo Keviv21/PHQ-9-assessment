@@ -65,7 +65,7 @@ function instruction(language, form) {
     'Call propose_answer with the current questionId, a JSON-encoded answerJson, and a short neutral summary. After the tool response, speak the summary and ask if it is correct. Only after explicit agreement call confirm_answer. If corrected, call cancel_answer and ask again.',
     'Wait for the application to supply the next item after confirmation. Never infer symptoms or answers from voice tone, appearance, silence, or emotion.',
     'Do not provide a diagnosis, treatment, clinical interpretation, or score. If the participant expresses immediate danger or intent, pause and encourage immediate local emergency help. The application does not notify a clinician.',
-    'At the end, ask the participant to review every answer on screen before generating the report. The imported questionnaire and raw calculations are source drafts awaiting clinical review.',
+    'At the end, ask the participant to review every answer on screen before generating the report.',
   ].join(' ');
   const isPhq9 = form.formId === 'phq9';
   const period = form.referencePeriod?.trim();
@@ -83,8 +83,8 @@ function instruction(language, form) {
     isPhq9 ? 'Question 9 asks about thoughts of death or self-harm. Ask it exactly and calmly. Do not skip, soften, or infer it from other symptoms.' : '',
     'If the participant describes immediate danger or current intent, pause the questionnaire, respond supportively, and encourage immediate local emergency help. Do not infer a score from that exchange.',
     `Do not provide a diagnosis, clinical interpretation, or treatment advice. After the ${form.questions.length} confirmed answers, ask the participant to review all selected options on screen.`,
-    form.draft ? 'This imported questionnaire is an unscored draft for internal review. Do not call it a validated assessment, produce a score, or promise a clinical report.' : 'The report is generated only after final review.',
-    isPhq9 ? 'A positive answer to PHQ-9 question 9 requires human follow-up regardless of the total score. Explain that this prototype does not notify anyone.' : '',
+    form.draft ? 'Do not state a score unless the application has calculated one. The report is generated only after final review.' : 'The report is generated only after final review.',
+    isPhq9 ? 'A positive answer to PHQ-9 question 9 requires human follow-up regardless of the total score. Explain that the app does not notify anyone.' : '',
   ].join(' ');
 }
 
@@ -290,7 +290,7 @@ export class GeminiBridge {
     }
     const cleanSummary = summary.trim();
     this.pending = { number: state.currentNumber, value, method, summary: cleanSummary };
-    this.send({ type: 'proposal', number: state.currentNumber, summary: cleanSummary });
+    this.send({ type: 'proposal', number: state.currentNumber, value, summary: cleanSummary });
     return { accepted: true, pendingConfirmation: true, summary: cleanSummary, instruction: 'Ask the participant to confirm the plain-language summary. Do not mention the number.' };
   }
 
@@ -324,7 +324,7 @@ export class GeminiBridge {
     if (!this.session) return;
     const text = result.reviewReady
       ? result.item9Positive
-        ? `All ${this.form.questions.length} answers have been collected. Ask the participant to review each selected option on screen. Because PHQ-9 item 9 was positive, ask them to contact a qualified clinician promptly. Explain that this prototype does not notify anyone. If they may not be able to stay safe, encourage immediate local emergency help. Do not interpret a score.`
+        ? `All ${this.form.questions.length} answers have been collected. Ask the participant to review each selected option on screen. Because PHQ-9 item 9 was positive, ask them to contact a qualified clinician promptly. Explain that the app does not notify anyone. If they may not be able to stay safe, encourage immediate local emergency help. Do not interpret a score.`
         : `All ${this.form.questions.length} answers have been collected. Ask the participant to review each selected option on screen. Do not interpret a score.`
       : `The participant confirmed your understanding. Introduce item ${result.nextQuestion.id} of ${this.form.questions.length} exactly: ${result.nextQuestion.text}. Internal response anchors: ${this.questionAnchors(result.nextQuestion.number)}. Invite a natural answer and clarify if needed.`;
     this.session.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });

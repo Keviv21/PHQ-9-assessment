@@ -4,6 +4,9 @@ export class DefinitionVoiceClient {
     this.socket = null;
     this.audioContext = null;
     this.microphone = null;
+    this.camera = null;
+    this.cameraTimer = null;
+    this.preview = null;
     this.captureNode = null;
     this.playbackSources = new Set();
     this.playbackTime = 0;
@@ -74,6 +77,38 @@ export class DefinitionVoiceClient {
     this.muted = !this.muted;
     return this.muted;
   }
+  async toggleCamera(preview) {
+    if (this.camera) { this.stopCamera(); return false; }
+    if (!this.active) throw new Error('Start a voice conversation first.');
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360, frameRate: 1 }, audio: false });
+    if (!this.active) { stream.getTracks().forEach((track) => track.stop()); throw new Error('Voice conversation ended.'); }
+    this.camera = stream;
+    this.preview = preview;
+    preview.srcObject = stream;
+    preview.style.display = 'block';
+    const canvas = document.createElement('canvas');
+    canvas.width = 640; canvas.height = 360;
+    this.cameraTimer = setInterval(() => {
+      if (!this.camera || this.socket?.readyState !== WebSocket.OPEN || preview.readyState < 2 || this.socket.bufferedAmount > 1_000_000) return;
+      canvas.getContext('2d').drawImage(preview, 0, 0, 640, 360);
+      canvas.toBlob(async (blob) => {
+        if (!blob || !this.camera || this.socket?.readyState !== WebSocket.OPEN) return;
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        if (bytes.length > 290_000) return;
+        const packet = new Uint8Array(bytes.length + 1);
+        packet[0] = 2; packet.set(bytes, 1); this.socket.send(packet);
+      }, 'image/jpeg', 0.55);
+    }, 1100);
+    return true;
+  }
+  stopCamera() {
+    clearInterval(this.cameraTimer);
+    this.cameraTimer = null;
+    this.camera?.getTracks().forEach((track) => track.stop());
+    this.camera = null;
+    if (this.preview) { this.preview.srcObject = null; this.preview.style.display = 'none'; }
+    this.preview = null;
+  }
 
   playPcm(base64) {
     if (!this.audioContext) return;
@@ -101,6 +136,7 @@ export class DefinitionVoiceClient {
   }
 
   stopMedia() {
+    this.stopCamera();
     this.microphone?.getTracks().forEach((track) => track.stop());
     this.microphone = null;
     this.captureNode?.disconnect();

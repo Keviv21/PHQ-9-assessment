@@ -1,6 +1,5 @@
 import { getCatalogEntry, retrieveAssessmentCandidates } from './assessment-catalog.js';
 
-// Prototype routing aid pending clinician review. Keep this independent of Gemini and patient identifiers.
 export const recommendationSources = Object.freeze({
   depression: getCatalogEntry('phq9').source,
   anxiety: getCatalogEntry('gad7').source,
@@ -81,7 +80,7 @@ export function recommendAssessments(input) {
   recommendations.sort((a, b) => a.priority - b.priority || a.title.localeCompare(b.title));
   return {
     status: 'suggestions',
-    message: 'Suggested for clinician review. These questionnaires screen or measure symptoms; they do not establish a diagnosis or assign a test automatically.',
+    message: 'Suggested assessments based on the current patient summary. Select a test to assign.',
     recommendations,
   };
 }

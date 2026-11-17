@@ -26,6 +26,7 @@ test('conversational mapping waits for confirmation and asks the next PHQ-9 item
     await bridge.handleToolCalls([{ id: 'one', name: 'propose_answer', args: {
       questionId: 'Q01', value: 1, summary: 'This happened on several days in the last two weeks.',
     } }]);
+    assert.equal(events.find((event) => event.type === 'browser' && event.value.type === 'proposal').value.value, 1);
     assert.equal(store.get(assessment.id).answers.length, 0);
     await bridge.handleToolCalls([{ id: 'two', name: 'confirm_answer', args: {} }]);
     assert.equal(store.get(assessment.id).answers[0].value, 1);
@@ -145,6 +146,7 @@ test('cleaned catalogue voice proposal saves only after confirmation and advance
     await assert.rejects(bridge.propose(first.id, '"invalid"', 'Invalid.'), /Invalid choice/);
     assert.deepEqual((await definitionStore.getSession(state.id)).answers, {});
     await bridge.propose(first.id, JSON.stringify(first.options[0].id), 'The first choice fits.');
+    assert.equal(events.find((event) => event.type === 'proposal').value, first.options[0].id);
     assert.deepEqual((await definitionStore.getSession(state.id)).answers, {});
     const result = await bridge.confirm();
     assert.equal((await definitionStore.getSession(state.id)).answers[first.id], first.options[0].id);

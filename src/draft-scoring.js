@@ -33,6 +33,5 @@ export function scoreImportedAssessment(formId, values) {
     rawSubscales,
     dass42EquivalentSubscales: Object.fromEntries(Object.entries(rawSubscales).map(([name, raw]) => [name, raw * 2])),
     severity,
-    interpretation: 'Symptom severity, not a diagnosis. Percentiles are not calculated.',
   };
 }

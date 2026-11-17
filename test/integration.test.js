@@ -102,7 +102,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal(demoSuggestion.recommendations[0].evidence.length, 2);
     const mixedSuggestion = await (await fetch(`${base}/api/demo-patients/demo-b/recommendations`)).json();
     assert.deepEqual(mixedSuggestion.recommendations.map((item) => item.id), ['gad7', 'dass21']);
-    assert.equal(mixedSuggestion.recommendations[1].availability, 'separate_prototype');
+    assert.equal(mixedSuggestion.recommendations[1].availability, 'available');
     assert.deepEqual(mixedSuggestion.prescriptionChoices.map((item) => item.id), ['gad7', 'phq9', 'pcl5']);
     assert.equal(mixedSuggestion.prescriptionChoices[2].availability, 'requires_trauma_review');
     assert.equal(mixedSuggestion.clarification.question.options.length, 2);

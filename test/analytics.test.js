@@ -55,8 +55,9 @@ test('combined analytics keeps all completed assessments and charts DASS-21 on s
   assert.equal(result.series.length, 5);
   assert.equal(result.series.find((item) => item.formId === 'dass21' && item.metricId === 'total').maxTotal, 63);
   assert.equal(result.series.find((item) => item.metricId === 'depression').points[0].score, 8);
+  assert.equal(result.activity[1].detailUrl, '/report.html?draftSessionId=dass');
   assert.equal(result.activity[2].score, null);
-  assert.equal(result.activity[2].detailUrl, '/draft-live.html?prescriptionId=brief-rx');
+  assert.equal(result.activity[2].detailUrl, '/report.html?draftSessionId=brief');
   const overview = buildOverview([
     { form_id: 'phq9', created_at: rows[0].completed_at, assessment_id: 'phq',
       assessment_status: 'completed', completed_at: rows[0].completed_at },
@@ -68,4 +69,12 @@ test('combined analytics keeps all completed assessments and charts DASS-21 on s
   assert.equal(overview.totals.completed, 3);
   assert.equal(overview.byForm.find((item) => item.formId === 'draft:brief').completed, 1);
   assert.equal(overview.months.find((item) => item.month === '2026-11').completed, 3);
+});
+
+test('completed catalogue analytics opens the shared report', () => {
+  const result = buildPatientAnalytics('demo-a', [{ id: 'definition-session', kind: 'definition',
+    prescription_id: 'definition-prescription', form_id: 'definition:sample', form_title: 'Sample assessment',
+    form_version: 'v1', language: 'en', mode: 'screen', completed_at: '2026-11-03T00:00:00.000Z',
+    scores: { metrics: [{ id: 'total', label: 'Total', value: 4, minimum: 0, maximum: 10 }] } }]);
+  assert.equal(result.activity[0].detailUrl, '/report.html?definitionSessionId=definition-session');
 });

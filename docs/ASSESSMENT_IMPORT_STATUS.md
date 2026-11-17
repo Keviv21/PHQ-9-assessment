@@ -1,5 +1,13 @@
 # Assessment import status
 
+## Current status: 16 November 2026 bundle
+
+The current `all-assessments-cleaned-20261116.json` import replaces the limitations described in the historical section below. It has **186 records**, **185 with a runnable question-and-answer structure**, and **183 with structured draft calculation rules**. SDQ has no recovered questionnaire and remains unavailable. LEC-5 and asQ are answer-only because the bundle provides no executable numeric composite for them. All 185 runnable forms have an on-screen and Gemini Live voice path; PHQ-9, GAD-7, PCL-5, and DASS-21 retain dedicated flows. A final answer review precedes the common report. The source marks all 186 forms as not approved for clinical scoring.
+
+Read [prototype architecture](PROTOTYPE_ARCHITECTURE.md) for the running workflows, [cleaned bundle status](CLEANED_BUNDLE_20261116.md) for import behavior, and the [gap audit](NOVOPSYCH_20261116_GAP_AUDIT.md) for the 186-record issue matrix. The **162 runnable / 24 catalogue-only** figures below apply only to the earlier November 13 export.
+
+## Historical snapshot: 13 November 2026 repaired export
+
 The 13 November 2026 repaired export contains 186 draft records. Prescribe Test can start a saved voice or on-screen review for 162 of them. DASS-21 now has an implemented score; the others use their dedicated scored flows (PHQ-9, GAD-7, PCL-5) or save answers without a score. Compared with the prior import, 53 additional records have usable question and response structures. For 16 of these, the export prints numeric choices but labels only the scale endpoints; those choices display the printed numbers and available endpoint words.
 
 The other 24 records remain catalogue-only. The number in the last column is the number of items without a complete choice structure. The source needs to provide the missing response sets or, for SDQ, its questions before these can run as the same questionnaire. We have not invented choices or scoring rules.
@@ -31,4 +39,4 @@ The other 24 records remain catalogue-only. The number in the last column is the
 | WHODAS 2.0 – Proxy | 39 | 3 |
 | Your Experience of Service (YES) | 28 | 2 |
 
-The repaired export marks no record as scoring enabled or ready for clinical use. It has structured draft rules for eight forms and no structured rules for the other 178. The app has independently implemented and tested scoring for PHQ-9, GAD-7, PCL-5, and DASS-21; the remaining forms save selected answers without a score. DASS-21 follows the [published NovoPsych raw-score guidance](https://novopsych.com/assessments/depression/depression-anxiety-stress-scales-short-form-dass-21/) for its total, subscales, and severity bands. Percentiles and change calculations are not included. Run `npm run audit:assessments -- <repaired-bundle.json>` to inspect scoring coverage before adding another rule.
+At that date, the repaired export marked no record as scoring enabled or ready for clinical use. It had structured draft rules for eight forms and no structured rules for the other 178. The app had independently implemented scoring for PHQ-9, GAD-7, PCL-5, and DASS-21; the remaining forms saved answers without a score. These figures are retained to explain the migration history and should not be used as the current availability count. Run `npm run audit:assessments -- <repaired-bundle.json>` only when auditing that older file.

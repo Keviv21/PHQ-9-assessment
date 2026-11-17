@@ -52,8 +52,7 @@ export function suggestForDemoPatient(id, focus = '') {
     evidence: current.filter((observation) => item.matchedConcerns.includes(concernForCode[observation.code]))
       .map(({ description, source }) => ({ description, source })),
   }));
-  const primary = recommendations.find((item) => item.availability === 'available') ||
-    recommendations.find((item) => item.availability === 'separate_prototype') || null;
+  const primary = recommendations.find((item) => item.availability === 'available') || null;
   const prescriptionChoices = result.status === 'suggestions' ? runnableFormIds.map((id) => {
     const entry = getCatalogEntry(id);
     const match = recommendations.find((item) => item.id === id);

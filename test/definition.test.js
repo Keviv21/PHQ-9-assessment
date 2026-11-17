@@ -80,6 +80,36 @@ test('BAM opens with choice and numeric questions and saves both response types'
   } finally { await store.close(); }
 });
 
+test('BAM numeric skip conditions and three composite scores work together', async () => {
+  const form = getDefinition('brief-addiction-monitor-bam--dce6e8665d04');
+  const question = (id) => form.questions.find((item) => item.id === id);
+  assert.equal(conditionState(question('Q5').displayIf, { Q4: 0 }, form.questions), false);
+  assert.equal(conditionState(question('Q5').displayIf, { Q4: 3 }, form.questions), true);
+  assert.equal(conditionState(question('Q7').displayIf, { Q6: 0 }, form.questions), false);
+  assert.equal(conditionState(question('Q7').displayIf, { Q6: 2 }, form.questions), true);
+  const voiceState = { status: 'in_progress', formSnapshot: form,
+    answers: { Q1: 'O3', Q2: 5, Q3: 2, Q4: 0 }, context: {} };
+  assert.equal(nextDefinitionItem(voiceState).item.id, 'Q6');
+  voiceState.answers.Q6 = 0;
+  assert.equal(nextDefinitionItem(voiceState).item.id, 'Q14');
+
+  const answers = {
+    Q1: 'O3', Q2: 5, Q3: 2, Q4: 0, Q6: 0, Q14: 'O2', Q15: 'O1', Q16: 4,
+    Q17: 3, Q18: 'O2', Q19: 6, Q20: 'O2', Q21: 'O4', Q22: 7, Q23: 'O5',
+  };
+  const store = openDefinitionStore({ path: ':memory:' });
+  try {
+    const prescription = await store.prescribe('demo-a', form.id);
+    const session = await store.start(prescription.id);
+    const completed = await store.save(session.id, answers, true);
+    assert.equal(completed.status, 'completed');
+    assert.deepEqual(Object.fromEntries(completed.scores.metrics.map(({ label, value }) => [label, value])), {
+      'Substance Use': 0, 'Risk Factors': 55, 'Protective Factors': 55,
+    });
+    assert.equal(completed.scores.status, 'source_draft_unapproved');
+  } finally { await store.close(); }
+});
+
 test('voice flow validates a proposed answer and skips a hidden branch after confirmation', async () => {
   const questions = [
     { id: 'Q1', text: 'Trigger?', responseType: 'choice', options: [
@@ -127,5 +157,5 @@ test('new browser flow scripts parse', () => {
     const result = spawnSync(process.execPath, ['--check', file], { cwd: new URL('..', import.meta.url), encoding: 'utf8' });
     assert.equal(result.status, 0, `${file}: ${result.stderr}`);
   }
-  assert.match(readFileSync(new URL('../public/definition.html', import.meta.url), 'utf8'), /report-answers/);
+  assert.match(readFileSync(new URL('../public/definition.html', import.meta.url), 'utf8'), /definition-inline-report/);
 });

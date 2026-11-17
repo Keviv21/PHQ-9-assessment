@@ -15,7 +15,7 @@ test('patient selection derives current concerns and a primary suggestion with e
   assert.equal(anxiety.primaryAssessmentId, 'gad7');
   assert.deepEqual(anxiety.context.concerns, ['anxiety', 'stress']);
   assert.deepEqual(anxiety.recommendations.map((item) => [item.id, item.availability]),
-    [['gad7', 'available'], ['dass21', 'separate_prototype']]);
+    [['gad7', 'available'], ['dass21', 'available']]);
   assert.deepEqual(anxiety.recommendations[0].evidence.map((item) => item.source), ['recent_clinician_summary.anxiety']);
   assert.deepEqual(anxiety.recommendations[1].evidence.map((item) => item.source),
     ['recent_clinician_summary.anxiety', 'recent_clinician_summary.stress']);

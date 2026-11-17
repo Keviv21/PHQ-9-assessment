@@ -1,3 +1,5 @@
+import { renderDraftReport } from './report-view.js';
+
 const $ = (id) => document.getElementById(id);
 const query = new URL(location.href).searchParams;
 let draftId = query.get('draftId') || '';
@@ -34,7 +36,7 @@ function transcript(speaker, text, messageId = null) {
     transcriptRows.get(key).lastChild.textContent = text;
   } else {
     if (area.firstElementChild?.classList.contains('draft-muted')) area.replaceChildren();
-    const row = element('div', undefined, `draft-line ${speaker}`);
+    const row = element('div', undefined, `line draft-line ${speaker === 'participant' ? 'person' : ''}`);
     row.append(element('strong', speaker === 'gemini' ? 'Assistant' : speaker === 'participant' ? 'You' : 'System'), element('span', text));
     area.append(row);
     if (key) transcriptRows.set(key, row);
@@ -134,6 +136,8 @@ function stopMedia() {
   $('draft-camera-toggle').textContent = 'Turn camera on';
   $('draft-camera-toggle').disabled = true;
   $('draft-mic').disabled = true;
+  $('draft-mic').textContent = 'Turn microphone off';
+  $('draft-session-mode').textContent = 'OFF';
   stopPlayback();
   audioContext?.close().catch(() => {});
   audioContext = null;
@@ -172,34 +176,17 @@ function renderComplete() {
   $('draft-review').hidden = true;
   $('draft-complete').hidden = false;
   $('draft-start').hidden = true;
-  const area = $('draft-result-items');
-  area.replaceChildren();
-  const scoreArea = $('draft-score');
-  scoreArea.replaceChildren();
-  scoreArea.hidden = !state.scores;
-  if (state.scores) {
-    scoreArea.append(element('h3', `DASS-21 total: ${state.scores.rawTotal} / 63 (${state.scores.severity.total})`));
-    for (const [name, raw] of Object.entries(state.scores.rawSubscales)) {
-      scoreArea.append(element('p', `${name[0].toUpperCase()}${name.slice(1)}: ${raw} / 21 (${state.scores.severity[name]})`));
-    }
-    scoreArea.append(element('p', state.scores.interpretation));
-  }
-  $('draft-complete-help').textContent = state.scores ?
-    'Final answers and the DASS-21 score are stored locally. Review with a clinician.' :
-    'Final answers are stored locally. This assessment has no verified scoring rule in the app.';
-  state.answers.forEach((answer, index) => {
-    const row = element('div', undefined, 'draft-review-row');
-    row.append(element('strong', `${index + 1}. ${form.questions[index].text}`), element('p', form.questions[index].options[answer.value]?.label || 'Unrecorded'));
-    area.append(row);
-  });
-  $('draft-saved-at').textContent = `Saved ${new Date(state.completedAt).toLocaleString()} · ${state.reviewChangeCount} final answer change(s)`;
-  setStatus(state.scores ? 'Completed answers and score saved locally.' : 'Completed answers saved locally. No score was calculated.');
+  renderDraftReport($('draft-inline-report'), state, form);
+  $('draft-report-link').hidden = false;
+  $('draft-report-link').href = `/report.html?draftSessionId=${encodeURIComponent(state.id)}`;
+  setStatus('Assessment completed.');
   stopMedia();
 }
 
 function renderState(nextState) {
   state = nextState;
   $('draft-mode').textContent = nextState.mode === 'live' ? 'VOICE' : 'ON SCREEN';
+  $('draft-session-mode').textContent = nextState.mode === 'live' ? 'VOICE' : 'ON SCREEN';
   $('draft-start').hidden = true;
   if (nextState.status === 'completed') return renderComplete();
   if (nextState.status === 'review') return renderReview();
@@ -209,14 +196,19 @@ function renderState(nextState) {
   $('draft-confirmation').hidden = true;
   const index = nextState.currentNumber - 1;
   const question = form.questions[index];
-  $('draft-progress').textContent = `Question ${index + 1} of ${form.questions.length}`;
+  $('draft-progress').textContent = `${index + 1} / ${form.questions.length}`;
   $('draft-progress-bar').style.width = `${Math.round((index / form.questions.length) * 100)}%`;
+  $('draft-question-number').textContent = `QUESTION ${index + 1}`;
   $('draft-question').textContent = question.text;
+  $('draft-question-help').hidden = true;
   const options = $('draft-options');
   options.replaceChildren();
   question.options.forEach((option, value) => {
-    const choice = element(nextState.mode === 'demo' ? 'button' : 'div', option.label,
-      `draft-option${nextState.mode === 'live' ? ' voice-option' : ''}`);
+    const choice = element(nextState.mode === 'demo' ? 'button' : 'div', undefined,
+      `option draft-option${nextState.mode === 'live' ? ' voice-option' : ''}`);
+    const label = element('span');
+    label.append(element('strong', option.label));
+    choice.append(element('span', String(value), 'number'), label);
     if (nextState.mode === 'demo') {
       choice.type = 'button';
       choice.addEventListener('click', () => send({ type: 'select', value }));
@@ -235,7 +227,10 @@ function connect() {
     const message = JSON.parse(event.data);
     if (message.type === 'state') renderState(message.assessment);
     else if (message.type === 'proposal') renderProposal(message);
-    else if (message.type === 'proposal_cleared') $('draft-confirmation').hidden = true;
+    else if (message.type === 'proposal_cleared') {
+      $('draft-confirmation').hidden = true;
+      for (const option of $('draft-options').children) option.classList.remove('selected');
+    }
     else if (message.type === 'audio') playPcm(message.data);
     else if (message.type === 'audio_interrupt') stopPlayback();
     else if (message.type === 'transcript') transcript(message.speaker, message.text, message.messageId);
@@ -305,9 +300,8 @@ $('draft-text-form').addEventListener('submit', (event) => {
   transcript('participant', text);
   $('draft-text').value = '';
 });
-$('draft-mic').addEventListener('click', () => { muted = !muted; $('draft-mic').textContent = muted ? 'Unmute microphone' : 'Mute microphone'; });
+$('draft-mic').addEventListener('click', () => { muted = !muted; $('draft-mic').textContent = muted ? 'Turn microphone on' : 'Turn microphone off'; });
 $('draft-camera-toggle').addEventListener('click', toggleCamera);
-$('draft-print').addEventListener('click', () => window.print());
 window.addEventListener('beforeunload', () => { socket?.close(); stopMedia(); });
 
 try {
@@ -332,10 +326,9 @@ try {
   if (!response.ok) throw new Error('Assessment not found.');
   form = await response.json();
   if (!form.previewAvailable) throw new Error('This assessment has incomplete answer options.');
-  $('draft-notice').textContent = form.scoringAvailable ?
-    'DASS-21 scores are calculated from confirmed answers. This conversational administration is a demo and does not provide a diagnosis.' :
-    'This imported definition needs scoring review. Responses are saved locally, but no score or diagnosis is generated.';
   $('draft-title').textContent = form.title;
+  $('draft-count').textContent = String(form.questions.length);
+  $('draft-progress').textContent = `0 / ${form.questions.length}`;
   document.title = `${form.title} | OpenMind`;
   $('draft-period').textContent = form.referencePeriod ? `Reference period: ${form.referencePeriod}` : `${form.extractedItemCount} questions`;
   $('draft-source').href = /^https:\/\//.test(form.sourceUrl) ? form.sourceUrl : '#';
