@@ -342,9 +342,14 @@ async function handleScoredConnection(socket, request) {
     return;
   }
   const assessment = requestedId ? await store.get(requestedId) : await store.startPrescription(prescriptionId, mode, language);
-  if (!assessment || assessment.formId !== formId || assessment.mode !== mode || assessment.language !== language || assessment.demoPatientId !== demoPatientId || assessment.status === 'completed' || activeAssessments.has(assessment.id)) {
+  if (!assessment || assessment.formId !== formId || assessment.mode !== mode || assessment.demoPatientId !== demoPatientId || assessment.status === 'completed' || activeAssessments.has(assessment.id)) {
     socket.close(1008, 'Assessment cannot be resumed.');
     return;
+  }
+  if (assessment.language !== language) {
+    store.updateLanguage?.(assessment.id, language);
+    assessment.language = language;
+    form = getAssessmentForm(formId, language);
   }
   activeAssessments.add(assessment.id);
   let pending = null;
@@ -420,9 +425,9 @@ async function handleScoredConnection(socket, request) {
           const nextForm = getAssessmentForm(formId, nextLang);
           form = nextForm;
           language = nextLang;
+          store.updateLanguage?.(assessment.id, nextLang);
           if (bridge) {
-            bridge.language = nextLang;
-            bridge.form = nextForm;
+            await bridge.setLanguage(nextLang, nextForm);
           }
           const currentState = await store.get(assessment.id);
           if (currentState) sendState(currentState);

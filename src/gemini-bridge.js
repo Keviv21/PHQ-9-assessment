@@ -125,7 +125,8 @@ export class GeminiBridge {
     this.connecting = true;
     try {
       const hadHandle = Boolean(this.resumptionHandle);
-      const session = await this.client.live.connect({
+      let session;
+      session = await this.client.live.connect({
         model: this.model,
         config: {
           responseModalities: [Modality.AUDIO],
@@ -140,7 +141,7 @@ export class GeminiBridge {
           onopen: () => this.send({ type: 'live_status', status: 'connected' }),
           onmessage: (message) => this.onModelMessage(message),
           onerror: (error) => this.send({ type: 'live_status', status: 'error', detail: error.message }),
-          onclose: () => this.onModelClose(session).catch((error) =>
+          onclose: () => this.onModelClose(session)?.catch?.((error) =>
             this.send({ type: 'live_status', status: 'error', detail: error.message })),
         },
       });
@@ -160,12 +161,33 @@ export class GeminiBridge {
   }
 
   async onModelClose(closedSession) {
-    if (this.session === closedSession) this.session = null;
+    if (this.session !== closedSession) return;
+    this.session = null;
     this.outputTranscriptId = null;
     this.outputTranscriptText = '';
     if (!this.stopped && (await this.store.get(this.assessmentId))?.status === 'in_progress') {
       this.send({ type: 'live_status', status: 'reconnecting' });
       this.scheduleReconnect();
+    }
+  }
+
+  async setLanguage(nextLanguage, nextForm) {
+    this.language = nextLanguage;
+    this.form = nextForm;
+    this.outputTranscriptId = null;
+    this.outputTranscriptText = '';
+    this.resumptionHandle = null;
+    this.cancel();
+    this.send({ type: 'audio_interrupt' });
+    const wasActive = Boolean(this.session || this.connecting);
+    if (this.session) {
+      const activeSession = this.session;
+      this.session = null;
+      try { activeSession.close?.(); } catch {}
+    }
+    this.connecting = false;
+    if (wasActive && !this.stopped) {
+      await this.connect(true);
     }
   }
 
@@ -182,9 +204,10 @@ export class GeminiBridge {
     if (!state || state.status !== 'in_progress' || !this.session) return;
     const question = this.questionAt(state.currentNumber);
     const anchors = this.questionAnchors(state.currentNumber);
+    const languageName = languages.find((item) => item.code === this.language)?.name || 'English';
     const text = state.currentNumber === 1
-      ? `Begin the conversational ${this.form.title || this.formId} assessment. Speak in the selected language. ${this.form.referencePeriod ? `Explain the reference period is ${this.form.referencePeriod.toLowerCase()}.` : ''} Check understanding before saving each response. Introduce item ${question.id} exactly: ${question.text}. Internal response anchors: ${anchors}. Invite a natural answer without listing choices.`
-      : `Continue at item ${question.id} of ${this.form.questions.length}. Introduce it exactly: ${question.text}. Internal response anchors: ${anchors}. Invite a natural answer without listing choices.`;
+      ? `Begin the conversational ${this.form.title || this.formId} assessment. Speak strictly in ${languageName}. ${this.form.referencePeriod ? `Explain the reference period is ${this.form.referencePeriod.toLowerCase()}.` : ''} Check understanding before saving each response. Introduce item ${question.id} exactly: ${question.text}. Internal response anchors: ${anchors}. Invite a natural answer without listing choices.`
+      : `The assessment language is now ${languageName}. Speak strictly in ${languageName}. Continue at item ${question.id} of ${this.form.questions.length}. Introduce it exactly: ${question.text}. Internal response anchors: ${anchors}. Invite a natural answer without listing choices.`;
     this.session.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true });
   }
 

@@ -9,13 +9,22 @@ A standalone OpenMind/Casebook-style demonstration of clinician-selected assessm
 3. The patient completes the assessment on screen or in a Gemini Live voice conversation. The voice flow proposes an answer and saves it only after confirmation. Questions and applicable options stay visible. A final review permits corrections before the report is created.
 4. PHQ-9, GAD-7, PCL-5, and DASS-21 have dedicated scoring flows. Other imported forms show source-draft raw calculations when their rules apply; LEC-5 and asQ save answers without a numeric composite. The prototype does not claim that imported calculations reproduce NovoPsych's clinical reports.
 5. Assignments, answers, results, and analytics persist in SQLite or an isolated PostgreSQL schema. Patient profiles and summaries remain in the JSON file, not in the database.
+6. Multi-language support: 43 languages are available in the clinic sidebar and assessment screens, defaulting to English (`en`). Core clinical instruments (PHQ-9, GAD-7, DASS-21) feature translations for English (`en`), Hindi (`hi`), Marathi (`mr`), and Spanish (`es`). The patient can change languages on the fly while an assessment is actively underway, immediately re-rendering the current item and options in real time.
 
 ## Start locally
 
-Requires Node.js **24 or newer**. From PowerShell:
+Requires Node.js **24 or newer**.
 
+**macOS / Linux:**
+```bash
+git checkout dev
+npm ci
+cp .env.example .env    # configure GEMINI_API_KEY if testing voice
+npm run dev
+```
+
+**Windows (PowerShell):**
 ```powershell
-cd D:\phq9-gemini-live-prototype
 npm ci
 Copy-Item .env.example .env.local  # fresh clone only; do not overwrite an existing file
 npm run dev

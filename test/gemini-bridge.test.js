@@ -53,6 +53,32 @@ test('Hindi conversation advances using the fixed Hindi question text', async ()
   } finally { store.close(); }
 });
 
+test('setLanguage switches bridge language and resets audio state', async () => {
+  const store = openStore(':memory:');
+  try {
+    const assessment = store.create('live', 'hi');
+    const events = [];
+    const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model', language: 'hi',
+      socket: { readyState: 1, send: (raw) => events.push(JSON.parse(raw)) }, store, assessmentId: assessment.id, onState: () => {} });
+    let closed = false;
+    let connected = false;
+    bridge.session = { close: () => { closed = true; } };
+    bridge.client = {
+      live: {
+        connect: async () => {
+          connected = true;
+          return { close: () => {} };
+        },
+      },
+    };
+    await bridge.setLanguage('en', getForm('en'));
+    assert.equal(bridge.language, 'en');
+    assert.equal(closed, true);
+    assert.equal(connected, true);
+    assert.ok(events.some((event) => event.type === 'audio_interrupt'));
+  } finally { store.close(); }
+});
+
 test('positive item 9 leads to final review and a human follow-up instruction', async () => {
   const store = openStore(':memory:');
   try {

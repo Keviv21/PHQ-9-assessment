@@ -360,7 +360,7 @@ async function prescribe() {
       `${suggestion.patient.label} can complete the assessment by voice conversation or on screen.` :
       `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
     const actions = el('div', undefined, 'prescribed-actions');
-    const selectedLang = $('prescribe-language')?.value || $('clinic-language')?.value || 'en';
+    const selectedLang = $('clinic-language')?.value || 'en';
     const url = new URL(`${record.kind === 'definition' ? '/definition.html' : record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}&language=${encodeURIComponent(selectedLang)}`, location.href);
     const open = el('a', 'Open patient assessment', 'button primary');
     open.href = url.href;
@@ -503,22 +503,10 @@ $('report-patient').addEventListener('change', () => {
 window.addEventListener('popstate', () => setView(new URL(location.href).searchParams.get('view'), false));
 
 let currentLanguage = 'en';
-try { currentLanguage = localStorage.getItem('clinic_language') || 'en'; } catch {}
 if ($('clinic-language')) {
-  $('clinic-language').value = currentLanguage;
-  if ($('prescribe-language')) {
-    $('prescribe-language').innerHTML = $('clinic-language').innerHTML;
-    $('prescribe-language').value = currentLanguage;
-  }
+  $('clinic-language').value = 'en';
   $('clinic-language').addEventListener('change', () => {
     currentLanguage = $('clinic-language').value;
-    try { localStorage.setItem('clinic_language', currentLanguage); } catch {}
-    if ($('prescribe-language')) $('prescribe-language').value = currentLanguage;
-  });
-  $('prescribe-language')?.addEventListener('change', () => {
-    currentLanguage = $('prescribe-language').value;
-    try { localStorage.setItem('clinic_language', currentLanguage); } catch {}
-    if ($('clinic-language')) $('clinic-language').value = currentLanguage;
   });
 }
 

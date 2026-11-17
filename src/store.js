@@ -150,6 +150,7 @@ export function openStore(path) {
   const countRevisions = db.prepare('SELECT COUNT(*) AS count FROM answer_revisions WHERE assessment_id = ?');
   const insertAnswer = db.prepare('INSERT INTO answers VALUES (?, ?, ?, ?, ?, ?)');
   const markReview = db.prepare("UPDATE assessments SET review_ready = 1 WHERE id = ? AND status = 'in_progress'");
+  const updateAssessmentLanguage = db.prepare('UPDATE assessments SET language = ? WHERE id = ?');
   const updateAnswer = db.prepare('UPDATE answers SET value = ? WHERE assessment_id = ? AND question_number = ?');
   const insertRevision = db.prepare('INSERT INTO answer_revisions (assessment_id, question_number, previous_value, final_value, changed_at) VALUES (?, ?, ?, ?, ?)');
   const completeAssessment = db.prepare("UPDATE assessments SET status = 'completed', completed_at = ?, scores_json = ? WHERE id = ? AND status = 'in_progress'");
@@ -165,6 +166,11 @@ export function openStore(path) {
   const listPrescriptions = db.prepare(`SELECT p.*, a.status AS assessment_status, a.mode AS assessment_mode, a.language AS assessment_language
     FROM prescriptions p LEFT JOIN assessments a ON a.id = p.assessment_id WHERE p.demo_patient_id = ? ORDER BY p.created_at DESC`);
   const linkPrescription = db.prepare('UPDATE prescriptions SET assessment_id = ? WHERE id = ? AND assessment_id IS NULL');
+
+  function updateLanguage(id, nextLanguage) {
+    updateAssessmentLanguage.run(nextLanguage, id);
+    return get(id);
+  }
 
   function get(id) {
     const row = selectAssessment.get(id);
@@ -294,7 +300,11 @@ export function openStore(path) {
       const prescription = getPrescription(id);
       if (!prescription) throw new Error('Prescription not found.');
       if (prescription.assessmentId) {
-        const previous = get(prescription.assessmentId);
+        let previous = get(prescription.assessmentId);
+        if (previous && previous.status === 'in_progress' && language && previous.language !== language) {
+          updateLanguage(previous.id, language);
+          previous = get(previous.id);
+        }
         db.exec('COMMIT');
         return previous;
       }
@@ -305,7 +315,7 @@ export function openStore(path) {
     } catch (error) { db.exec('ROLLBACK'); throw error; }
   }
 
-  return { create, get, record, finalize, results, patientResults, patientAnalytics,
+  return { create, get, updateLanguage, record, finalize, results, patientResults, patientAnalytics,
     analyticsOverview, prescribe, getPrescription, patientPrescriptions, startPrescription,
     close: () => db.close() };
 }

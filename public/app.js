@@ -449,6 +449,14 @@ ui.language.addEventListener('change', async () => {
     language = selected;
     localizePage();
 
+    stopPlayback();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    try {
+      const url = new URL(location.href);
+      url.searchParams.set('language', selected);
+      history.replaceState({}, '', url.href);
+    } catch {}
+
     if (socket?.readyState === WebSocket.OPEN) {
       send({ type: 'set_language', language: selected });
     }
@@ -491,7 +499,8 @@ try {
   const prescription = await prescriptionResponse.json();
   if (prescription.status === 'completed') throw new Error('This prescription is completed. Open its report from View test reports.');
   formId = prescription.formId;
-  const initialLang = prescription.language || new URLSearchParams(location.search).get('language') || 'en';
+  const urlLang = new URLSearchParams(location.search).get('language');
+  const initialLang = urlLang || prescription.language || 'en';
   language = initialLang;
   ui.language.value = language;
   form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
@@ -500,9 +509,11 @@ try {
   ui.patientContext.hidden = false;
   if (prescription.status === 'in_progress') {
     lockedMode = prescription.mode;
-    language = prescription.language;
-    form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
-    ui.language.value = language;
+    if (!urlLang && prescription.language) {
+      language = prescription.language;
+      form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
+      ui.language.value = language;
+    }
     ui.language.disabled = formId === 'pcl5';
   }
   localizePage();
