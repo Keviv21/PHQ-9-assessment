@@ -479,7 +479,10 @@ try {
   const prescription = await prescriptionResponse.json();
   if (prescription.status === 'completed') throw new Error('This prescription is completed. Open its report from View test reports.');
   formId = prescription.formId;
-  form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(prescription.language || 'en')}`).then((response) => response.json());
+  const initialLang = prescription.language || new URLSearchParams(location.search).get('language') || 'en';
+  language = initialLang;
+  ui.language.value = language;
+  form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
   demoPatientId = prescription.demoPatientId;
   demoPatientLabel = prescription.patient.label;
   ui.patientContext.hidden = false;
