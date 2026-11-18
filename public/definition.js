@@ -24,6 +24,8 @@ function show(name) {
   $('voice-camera-toggle').disabled = !isVoice;
   $('voice-camera-toggle').textContent = voice?.camera ? 'Turn camera off' : 'Turn camera on';
   $('voice-camera-placeholder').hidden = Boolean(voice?.camera);
+  $('definition-mode').disabled = name !== 'intro';
+  $('definition-language').disabled = name !== 'intro';
 }
 function fail(message) { $('error').textContent = message; $('error').hidden = false; }
 async function api(path, options) {
@@ -194,8 +196,15 @@ function report() {
   renderDefinitionReport($('definition-inline-report'), state);
   $('open-report').href = `/report.html?definitionSessionId=${encodeURIComponent(state.id)}`;
 }
+function updateSelectedModeLabel() {
+  $('start-selected').textContent = $('definition-mode').value === 'voice'
+    ? 'Start voice conversation'
+    : 'Complete on screen';
+}
 async function init() {
   if (!prescriptionId) throw new Error('Open this assessment from an assigned patient link.');
+  const requestedMode = new URL(location.href).searchParams.get('mode');
+  if (requestedMode === 'voice' || requestedMode === 'screen') $('definition-mode').value = requestedMode;
   const prescription = await api(`/api/definition-prescriptions/${prescriptionId}`);
   if (prescription.assessmentId) state = await api(`/api/definition-sessions/${prescription.assessmentId}`);
   const form = state?.formSnapshot || await api(`/api/definitions/${encodeURIComponent(prescription.formId)}`);
@@ -203,6 +212,7 @@ async function init() {
   $('side-description').textContent = form.description;
   $('side-count').textContent = String(form.questions.length);
   $('intro-count').textContent = `0 / ${form.questions.length}`;
+  updateSelectedModeLabel();
   $('side-patient').textContent = `Assigned to ${prescription.patient?.label || 'patient'}`;
   const keys = new Set(form.questions.map((item) => item.displayIf?.context_key).filter(Boolean));
   if (form.rules.some((rule) => (Array.isArray(rule.context_constraints) ? rule.context_constraints : [rule.context_constraints])
@@ -240,6 +250,9 @@ function initialContext() {
 }
 async function begin(useVoice) {
   try {
+    const url = new URL(location.href);
+    url.searchParams.set('mode', useVoice ? 'voice' : 'screen');
+    history.replaceState({}, '', url);
     if (useVoice) {
       await ensureVoice();
       await voice.prepareAudio();
@@ -305,8 +318,8 @@ async function ensureVoice() {
   });
   return voice;
 }
-$('start').addEventListener('click', () => begin(false));
-$('start-voice').addEventListener('click', () => begin(true));
+$('definition-mode').addEventListener('change', updateSelectedModeLabel);
+$('start-selected').addEventListener('click', () => begin($('definition-mode').value === 'voice'));
 $('voice-confirm').addEventListener('click', () => { try { voice.send({ type: 'confirm' }); } catch (error) { fail(error.message); } });
 $('voice-cancel').addEventListener('click', () => { try { voice.send({ type: 'cancel' }); } catch (error) { fail(error.message); } });
 $('voice-mute').addEventListener('click', () => { $('voice-mute').textContent = voice.mute() ? 'Turn microphone on' : 'Turn microphone off'; });

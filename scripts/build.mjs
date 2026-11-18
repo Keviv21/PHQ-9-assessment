@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateDeploymentEnvironment } from '../src/deployment.js';
@@ -46,5 +46,9 @@ const output = join(root, 'dist');
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 await cp(join(root, 'public'), output, { recursive: true });
+// Vercel resolves existing static files before fallback rewrites. Give both
+// public entry points real files so / cannot accidentally serve the assessment.
+await copyFile(join(root, 'public/index.html'), join(output, 'assessment.html'));
+await copyFile(join(root, 'public/clinic.html'), join(output, 'index.html'));
 console.log(`Build passed: ${sources.filter((path) => path.endsWith('.js')).length} JavaScript files checked; static assets copied to dist/.`);
 console.log('Vercel will bundle api/server.js, src/, and the included assessment JSON files as a Node.js function.');

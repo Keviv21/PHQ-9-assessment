@@ -5,6 +5,10 @@ not a Vite or Next.js app. `npm run build` checks JavaScript, assessment bundles
 and local asset references, then copies the frontend to `dist/`. Vercel bundles
 `api/server.js` separately using the Node.js runtime.
 
+The static build emits the clinic as `dist/index.html` and the patient screen as
+`dist/assessment.html`. These are real files because Vercel can serve an existing
+index file before applying a fallback rewrite.
+
 ## Project settings
 
 - Import this repository and select the `dev` branch. To serve `dev` as the

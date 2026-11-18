@@ -10,8 +10,6 @@
     }
   },
   "rewrites": [
-    { "source": "/", "destination": "/clinic.html" },
-    { "source": "/assessment.html", "destination": "/index.html" },
     { "source": "/api/:path*", "destination": "/api/server" },
     { "source": "/ws", "destination": "/api/server" },
     { "source": "/draft-ws", "destination": "/api/server" },
