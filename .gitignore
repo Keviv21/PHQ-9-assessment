@@ -1,6 +1,8 @@
 .env
 .env.local
 node_modules/
+dist/
+.vercel/
 data/*.sqlite*
 
 # Build and Release Folders

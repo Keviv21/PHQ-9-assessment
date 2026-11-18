@@ -155,10 +155,10 @@ function openPostgres(pool) {
     finally { client.release(); }
   }
   return {
-    async initialize() {
-      await pool.query(`CREATE TABLE IF NOT EXISTS ${sessionsTable} (
+    async initialize(client = pool) {
+      await client.query(`CREATE TABLE IF NOT EXISTS ${sessionsTable} (
         id UUID PRIMARY KEY, prescription_id UUID NOT NULL UNIQUE, state JSONB NOT NULL)`);
-      await pool.query(`CREATE TABLE IF NOT EXISTS ${prescriptionsTable} (
+      await client.query(`CREATE TABLE IF NOT EXISTS ${prescriptionsTable} (
         id UUID PRIMARY KEY, patient_id TEXT NOT NULL, form_id TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), session_id UUID UNIQUE REFERENCES ${sessionsTable}(id))`);
     },

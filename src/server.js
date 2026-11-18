@@ -17,6 +17,9 @@ import { getCatalogEntry } from './assessment-catalog.js';
 import { getDefinition, listDefinitions } from './definition-library.js';
 import { openDefinitionStore } from './definition-store.js';
 import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
+import { isAllowedWebSocketOrigin, validateDeploymentEnvironment } from './deployment.js';
+
+validateDeploymentEnvironment();
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
@@ -371,8 +374,7 @@ function matchOptionValue(text, form, currentNumber) {
 }
 
 async function handleScoredConnection(socket, request) {
-  const origin = request.headers.origin;
-  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+  if (!isAllowedWebSocketOrigin(request)) {
     socket.close(1008, 'Unexpected origin.');
     return;
   }
@@ -528,7 +530,7 @@ async function handleScoredConnection(socket, request) {
           const nextForm = getAssessmentForm(formId, nextLang);
           form = nextForm;
           language = nextLang;
-          store.updateLanguage?.(assessment.id, nextLang);
+          await store.updateLanguage(assessment.id, nextLang);
           if (bridge) {
             await bridge.setLanguage(nextLang, nextForm);
           }
@@ -576,8 +578,7 @@ definitionWss.on('connection', (socket, request) => {
   });
 });
 async function handleDefinitionConnection(socket, request) {
-  const origin = request.headers.origin;
-  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+  if (!isAllowedWebSocketOrigin(request)) {
     socket.close(1008, 'Unexpected origin.'); return;
   }
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
@@ -646,8 +647,7 @@ draftWss.on('connection', (socket, request) => {
   });
 });
 async function handleDraftConnection(socket, request) {
-  const origin = request.headers.origin;
-  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+  if (!isAllowedWebSocketOrigin(request)) {
     socket.close(1008, 'Unexpected origin.');
     return;
   }
@@ -770,13 +770,21 @@ async function handleDraftConnection(socket, request) {
   socket.on('close', () => { activeDraftSessions.delete(sessionId); bridge?.stop(); });
 }
 
-if (postgres) await postgres.initialize();
-await definitionStore.initialize();
-server.listen(port, '127.0.0.1', () => {
-  console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
-  console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
-  console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
-});
+if (postgres) await postgres.initialize((client) => definitionStore.initialize(client));
+else await definitionStore.initialize();
+
+export default server;
+
+// Imports by the Vercel adapter must not open a second listening socket.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  server.listen(port, process.env.HOST || '127.0.0.1', () => {
+    console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
+    console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
+    console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
+  });
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
 
 function shutdown() {
   for (const client of wss.clients) client.close();
@@ -791,5 +799,3 @@ function shutdown() {
     else { store.close(); draftStore.close(); }
   });
 }
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);

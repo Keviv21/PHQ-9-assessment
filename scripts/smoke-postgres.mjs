@@ -26,6 +26,14 @@ try {
 
   const scoredPrescription = await store.prescribe(patientId, 'phq9');
   let scored = await store.startPrescription(scoredPrescription.id, 'demo', 'en');
+  const originalId = scored.id;
+  scored = await store.updateLanguage(scored.id, 'hi');
+  assert.equal(scored.language, 'hi');
+  assert.equal((await store.get(scored.id)).language, 'hi');
+  scored = await store.startPrescription(scoredPrescription.id, 'demo', 'mr');
+  assert.equal(scored.id, originalId);
+  assert.equal(scored.language, 'mr');
+  await store.updateLanguage(scored.id, 'en');
   for (let number = 1; number <= 9; number++) {
     scored = await store.record(scored.id, number, 0, 'demo');
   }

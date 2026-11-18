@@ -38,7 +38,10 @@ async function prescribe(formId) {
 }
 
 async function finishOnScreen(url, count) {
-  socket = new WebSocket(url);
+  // Model the browser headers received behind Vercel's HTTPS proxy.
+  socket = new WebSocket(url, { headers: {
+    host: 'clinic.example.com', 'x-forwarded-host': 'clinic.example.com', origin: 'https://clinic.example.com',
+  } });
   const next = messages(socket);
   await new Promise((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
   let message = await next();

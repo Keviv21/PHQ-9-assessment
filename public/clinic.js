@@ -360,9 +360,7 @@ async function prescribe() {
       `${suggestion.patient.label} can complete the assessment by voice conversation or on screen.` :
       `The assessment is assigned to ${suggestion.patient.label}. Share the assessment link to begin.`));
     const actions = el('div', undefined, 'prescribed-actions');
-    const selectedLang = $('clinic-language')?.value;
-    const langParam = selectedLang && selectedLang !== 'en' ? `&language=${encodeURIComponent(selectedLang)}` : '';
-    const url = new URL(`${record.kind === 'definition' ? '/definition.html' : record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}${langParam}`, location.href);
+    const url = new URL(`${record.kind === 'definition' ? '/definition.html' : record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`, location.href);
     const open = el('a', 'Open patient assessment', 'button primary');
     open.href = url.href;
     const copy = el('button', 'Copy patient link', 'button outline');
@@ -429,9 +427,7 @@ async function loadReports(patientId) {
         record.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId : record.formId.toUpperCase();
       info.append(el('strong', `${title} · ${record.status === 'assigned' ? 'Assigned' : 'In progress'}`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
       const link = el('a', 'Open patient assessment');
-      const selectedLang = $('clinic-language')?.value;
-      const langParam = selectedLang && selectedLang !== 'en' ? `&language=${encodeURIComponent(selectedLang)}` : '';
-      link.href = `${record.kind === 'definition' ? '/definition.html' : record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}${langParam}`;
+      link.href = `${record.kind === 'definition' ? '/definition.html' : record.kind === 'draft' ? '/draft-live.html' : '/assessment.html'}?prescriptionId=${encodeURIComponent(record.id)}`;
       row.append(info, link); list.append(row);
     }
     if (list.children.length) area.append(list);
@@ -503,14 +499,6 @@ $('report-patient').addEventListener('change', () => {
   loadReports($('report-patient').value);
 });
 window.addEventListener('popstate', () => setView(new URL(location.href).searchParams.get('view'), false));
-
-let currentLanguage = 'en';
-if ($('clinic-language')) {
-  $('clinic-language').value = 'en';
-  $('clinic-language').addEventListener('change', () => {
-    currentLanguage = $('clinic-language').value;
-  });
-}
 
 try {
   const [response, catalogueResponse, definitionResponse] = await Promise.all([fetch('/api/demo-patients'), fetch('/api/assessment-library'), fetch('/api/definitions')]);

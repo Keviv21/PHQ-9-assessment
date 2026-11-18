@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env --env-file-if-exists=.env.local src/server.js",
@@ -27,7 +27,8 @@
     "demo:analytics": "node --env-file-if-exists=.env scripts/run-analytics-demo.mjs",
     "smoke:live": "node scripts/smoke-draft-live.mjs",
     "smoke:doctor": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-doctor-chat.mjs",
-    "smoke:definition-live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-definition-live.mjs"
+    "smoke:definition-live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-definition-live.mjs",
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",

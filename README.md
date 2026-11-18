@@ -9,11 +9,11 @@ A standalone OpenMind/Casebook-style demonstration of clinician-selected assessm
 3. The patient completes the assessment on screen or in a Gemini Live voice conversation. The voice flow proposes an answer and saves it only after confirmation. Questions and applicable options stay visible. A final review permits corrections before the report is created.
 4. PHQ-9, GAD-7, PCL-5, and DASS-21 have dedicated scoring flows. Other imported forms show source-draft raw calculations when their rules apply; LEC-5 and asQ save answers without a numeric composite. The prototype does not claim that imported calculations reproduce NovoPsych's clinical reports.
 5. Assignments, answers, results, and analytics persist in SQLite or an isolated PostgreSQL schema. Patient profiles and summaries remain in the JSON file, not in the database.
-6. Multi-language support: 43 languages are available in the clinic sidebar and assessment screens, defaulting to English (`en`). Core clinical instruments (PHQ-9, GAD-7, DASS-21) feature translations for English (`en`), Hindi (`hi`), Marathi (`mr`), and Spanish (`es`). The patient can change languages on the fly while an assessment is actively underway, immediately re-rendering the current item and options in real time.
+6. Multi-language support: 43 languages are available in the assessment screens, defaulting to English (`en`). Core clinical instruments (PHQ-9, GAD-7, DASS-21) feature translations for English (`en`), Hindi (`hi`), Marathi (`mr`), and Spanish (`es`). The patient can change languages on the fly while an assessment is actively underway, immediately re-rendering the current item and options in real time.
 
 ## Start locally
 
-Requires Node.js **24 or newer**.
+Use Node.js **24.x**, matching the Vercel deployment runtime.
 
 **macOS / Linux:**
 ```bash
@@ -55,6 +55,7 @@ Run `npm test` for the automated suite. For PostgreSQL, `npm run db:inspect` exa
 
 ## Documentation
 
+- [Vercel deployment](docs/VERCEL_DEPLOYMENT.md): project settings, required PostgreSQL configuration, build checks, and Preview validation.
 - [Architecture and workflow diagrams](docs/PROTOTYPE_ARCHITECTURE.md): components, recommendation, prescription, voice, scoring, persistence, and analytics.
 - [Workflow performance and token accounting](docs/WORKFLOW_AND_PERFORMANCE.md): code-derived media rates and measurements still needed.
 - [Cleaned bundle implementation](docs/CLEANED_BUNDLE_20261116.md): what the November 16 import supports.
