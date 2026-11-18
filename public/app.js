@@ -1,5 +1,20 @@
-import { copy, speechCodes } from './i18n.js';
+import { copy, speechCodes, formTranslations } from './i18n.js';
 import { renderReport } from './report-view.js';
+
+function applyFormTranslation(targetForm, targetLanguage) {
+  if (!targetForm) return targetForm;
+  if (!targetLanguage || targetLanguage === 'en') return targetForm;
+  const translation = formTranslations?.[targetForm.formId || formId]?.[targetLanguage];
+  if (translation) {
+    targetForm.language = targetLanguage;
+    if (translation.title) targetForm.title = translation.title;
+    if (translation.instructions) targetForm.instructions = translation.instructions;
+    if (translation.referencePeriod) targetForm.referencePeriod = translation.referencePeriod;
+    if (translation.options) targetForm.options = translation.options;
+    if (translation.questions) targetForm.questions = translation.questions;
+  }
+  return targetForm;
+}
 
 const $ = (id) => document.getElementById(id);
 const ui = {
@@ -9,48 +24,107 @@ const ui = {
   confirm: $('confirm-answer'), cancel: $('cancel-answer'), results: $('results'), mode: $('mode-label'),
   preview: $('preview'), cameraPlaceholder: $('camera-placeholder'), micToggle: $('mic-toggle'),
   cameraToggle: $('camera-toggle'), transcript: $('transcript'), liveLabel: $('live-label'), recent: $('recent-results'),
-  language: $('language'), selectedLanguage: $('selected-language'), textForm: $('text-form'),
+  language: $('language'), conversationMode: $('conversation-mode'), textForm: $('text-form'),
   textInput: $('text-input'), sendText: $('send-text'), patientContext: $('patient-context'),
   assessmentTitle: $('assessment-title'), assessmentAvatar: $('assessment-avatar'),
   assessmentPeriod: $('assessment-period'), assessmentIntro: $('assessment-intro'), questionCount: $('question-count'),
-  footer: document.querySelector('[data-i18n="footer"]'),
+  footer: $('footer-note') || document.querySelector('[data-i18n="footer"]'),
 };
 
 let form;
 let language = 'en';
+let conversationMode = 'voice';
 let formId = 'phq9';
 const prescriptionId = new URLSearchParams(location.search).get('prescriptionId');
 let demoPatientId = null;
 let demoPatientLabel = null;
 const t = (key) => copy[language]?.[key] || copy.en?.[key] || '';
 function localizePage() {
-  document.documentElement.lang = language;
-  for (const element of document.querySelectorAll('[data-i18n]')) {
-    const text = t(element.dataset.i18n);
-    if (text) element.textContent = text;
+  document.documentElement.lang = 'en';
+  if (!state) {
+    setStatus('Ready to begin');
+    if (ui.startLive) ui.startLive.textContent = conversationMode === 'text' ? 'Start text conversation' : 'Start voice conversation';
   }
-  if (!state) setStatus(t('ready'));
-  ui.cameraToggle.textContent = t(camera ? 'turnCameraOff' : 'turnCameraOn');
-  ui.micToggle.textContent = t(muted ? 'turnMicOn' : 'turnMicOff');
-  if (config) ui.keyNote.textContent = t(config.geminiConfigured ? 'keyDetected' : 'keyMissing');
-  if (ui.selectedLanguage && ui.language?.selectedOptions?.[0]) {
-    ui.selectedLanguage.textContent = ui.language.selectedOptions[0].textContent;
-  }
-  ui.textInput.placeholder = t('textPlaceholder') || 'You can type a response here during a Live session';
-  if (demoPatientLabel) ui.patientContext.textContent = `${t('selectedPatient')}: ${demoPatientLabel}`;
+  ui.cameraToggle.textContent = camera ? 'Turn camera off' : 'Turn camera on';
+  ui.micToggle.textContent = muted ? 'Turn microphone on' : 'Turn microphone off';
+  if (config) ui.keyNote.textContent = config.geminiConfigured
+    ? 'Voice assessment is ready.'
+    : 'Voice assessment is unavailable. You can complete the assessment on screen.';
+  ui.textInput.placeholder = conversationMode === 'text' ? 'Type your response here and press Enter...' : 'You can type a response here during a Live session';
+  if (ui.conversationMode) ui.conversationMode.value = conversationMode;
+  if (demoPatientLabel) ui.patientContext.textContent = `Selected patient: ${demoPatientLabel}`;
   if (form) {
     const name = formId.toUpperCase();
     document.title = `${name} Assessment | OpenMind`;
     ui.assessmentTitle.textContent = form.shortTitle || name;
     ui.assessmentAvatar.textContent = formId === 'phq9' ? 'PH' : formId === 'gad7' ? 'GA' : 'PC';
-    ui.assessmentPeriod.textContent = `ASSESSMENT · ${(form.referencePeriod || 'Past two weeks').toUpperCase()}`;
-    ui.assessmentIntro.textContent = form.instructions || form.intro || '';
+    const formInfoEn = {
+      phq9: { period: 'PAST TWO WEEKS', intro: 'Discuss nine symptoms from the past two weeks. Each answer is confirmed before it is saved.' },
+      gad7: { period: 'PAST TWO WEEKS', intro: 'Discuss seven anxiety symptoms from the past two weeks. Each answer is confirmed before it is saved.' },
+      pcl5: { period: 'PAST MONTH', intro: 'Discuss twenty PTSD symptoms from the past month. Each answer is confirmed before it is saved.' },
+    };
+    const info = formInfoEn[formId] || { period: 'PAST TWO WEEKS', intro: 'Discuss symptoms from the past two weeks. Each answer is confirmed before it is saved.' };
+    ui.assessmentPeriod.textContent = `ASSESSMENT · ${info.period}`;
+    ui.assessmentIntro.textContent = info.intro;
     ui.questionCount.textContent = String(form.questions.length);
     const badge = ui.questionArea.querySelector('.question-number');
-    if (badge) badge.textContent = name;
-    if (formId !== 'phq9') ui.footer.textContent = 'Review your answers before generating the report.';
+    if (badge && !state) badge.textContent = name;
+    if (ui.footer && formId !== 'phq9') ui.footer.textContent = 'Review your answers before generating the report.';
+  }
+  for (const line of ui.transcript.querySelectorAll('.line.person strong')) {
+    line.textContent = t('you');
   }
   refreshRecent().catch(() => {});
+}
+
+async function applyConversationMode() {
+  const isText = conversationMode === 'text';
+  if (ui.conversationMode) ui.conversationMode.value = conversationMode;
+  if (!state && ui.startLive) {
+    ui.startLive.textContent = isText ? 'Start text conversation' : 'Start voice conversation';
+  }
+  if (isText) {
+    stopPlayback();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+  if (mode === 'live' && socket?.readyState === WebSocket.OPEN) {
+    if (isText) {
+      stopPlayback();
+      muted = true;
+      ui.micToggle.textContent = 'Turn microphone on';
+      ui.mode.textContent = 'TEXT';
+      ui.liveLabel.textContent = 'TEXT';
+      ui.textInput.disabled = false;
+      ui.sendText.disabled = false;
+      ui.textInput.placeholder = 'Type your response here and press Enter...';
+      ui.textInput.focus();
+      appendTranscript('system', 'Switched to text conversation. You can type your responses below.');
+    } else {
+      muted = false;
+      ui.micToggle.textContent = 'Turn microphone off';
+      ui.mode.textContent = 'LIVE';
+      ui.liveLabel.textContent = 'CONNECTED';
+      if (!microphone) {
+        try {
+          await startMicrophone();
+        } catch (error) {
+          appendTranscript('system', `Microphone access failed: ${error.message}. Continuing in text conversation.`);
+          conversationMode = 'text';
+          if (ui.conversationMode) ui.conversationMode.value = 'text';
+          return;
+        }
+      }
+      if (audioContext?.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+      }
+      ui.textInput.placeholder = 'You can type a response here during a Live session';
+      appendTranscript('system', 'Switched to voice conversation. Speak into your microphone.');
+    }
+  } else {
+    ui.textInput.placeholder = isText
+      ? 'Text mode selected. Start conversation to begin typing.'
+      : 'You can type a response here during a Live session';
+  }
 }
 let config;
 let socket;
@@ -84,7 +158,7 @@ function appendTranscript(speaker, text, messageId = null) {
   const line = document.createElement('div');
   line.className = `line ${speaker === 'participant' ? 'person' : ''}`;
   const name = document.createElement('strong');
-  name.textContent = speaker === 'participant' ? t('you') : speaker === 'gemini' ? 'Gemini' : t('system');
+  name.textContent = speaker === 'participant' ? t('you') : speaker === 'gemini' ? 'Gemini' : 'System';
   const body = document.createElement('span');
   body.textContent = text;
   line.append(name, body);
@@ -104,7 +178,10 @@ function appendTranscript(speaker, text, messageId = null) {
 function renderState(next) {
   state = next;
   pending = null;
+  applyFormTranslation(form, language);
   ui.confirmation.classList.add('hidden');
+  ui.confirmation.hidden = true;
+  ui.confirmation.style.display = 'none';
   if (next.status === 'review') {
     renderReview(next);
     return;
@@ -112,12 +189,12 @@ function renderState(next) {
   const completed = next.status === 'completed';
   const total = form.questions.length;
   const questionNumber = completed ? total : next.currentNumber;
-  ui.progressLabel.textContent = `${completed ? total : questionNumber - 1} / ${total} ${t('answered')}`;
+  ui.progressLabel.textContent = `${completed ? total : questionNumber - 1} / ${total} answered`;
   ui.progressBar.style.width = `${(completed ? total : questionNumber - 1) / total * 100}%`;
   ui.questionArea.replaceChildren();
   const badge = document.createElement('span');
   badge.className = 'question-number';
-  badge.textContent = completed ? t('complete') : `${t('question')} ${String(questionNumber).padStart(2, '0')}`;
+  badge.textContent = completed ? 'COMPLETE' : `QUESTION ${String(questionNumber).padStart(2, '0')}`;
   const heading = document.createElement('h2');
   heading.textContent = completed ? t('assessmentComplete') : form.questions[questionNumber - 1].text;
   const helper = document.createElement('p');
@@ -139,41 +216,48 @@ function renderState(next) {
       socket?.close();
     }
     refreshRecent();
-    setStatus(t('savedLocally'));
+    setStatus('All answers saved locally.');
     return;
   }
   for (const option of form.options) {
-    const choice = document.createElement(mode === 'demo' ? 'button' : 'div');
-    if (mode === 'demo') choice.type = 'button';
-    choice.className = `option${mode === 'live' ? ' voice-choice' : ''}`;
+    const choice = document.createElement('button');
+    choice.type = 'button';
+    choice.className = 'option';
     choice.innerHTML = '<span class="number"></span><span><strong></strong><small></small></span>';
     choice.querySelector('.number').textContent = String(option.value);
     choice.querySelector('strong').textContent = option.label;
     choice.querySelector('small').textContent = option.description;
-    if (mode === 'demo') choice.addEventListener('click', () => send({ type: 'select', value: option.value }));
+    choice.addEventListener('click', () => {
+      if (socket?.readyState === WebSocket.OPEN) {
+        send({ type: 'select', value: option.value });
+        appendTranscript('participant', option.label);
+      }
+    });
     ui.options.append(choice);
   }
   if (mode === 'demo' && 'speechSynthesis' in window) {
     speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(`${t('question')} ${questionNumber}. ${heading.textContent}`);
-    utterance.lang = speechCodes[language];
-    utterance.rate = 0.95;
-    speechSynthesis.speak(utterance);
+    if (conversationMode !== 'text') {
+      const utterance = new SpeechSynthesisUtterance(`Question ${questionNumber}. ${heading.textContent}`);
+      utterance.lang = speechCodes[language];
+      utterance.rate = 0.95;
+      speechSynthesis.speak(utterance);
+    }
   }
 }
 
 function renderReview(next) {
   reviewValues = next.answers.map((answer) => answer.value);
-  ui.progressLabel.textContent = `${form.questions.length} / ${form.questions.length} ${t('answered')}`;
+  ui.progressLabel.textContent = `${form.questions.length} / ${form.questions.length} answered`;
   ui.progressBar.style.width = '100%';
   ui.questionArea.replaceChildren();
   const badge = document.createElement('span');
   badge.className = 'question-number';
-  badge.textContent = t('finalReview');
+  badge.textContent = 'FINAL REVIEW';
   const heading = document.createElement('h2');
-  heading.textContent = formId === 'phq9' ? t('reviewTitle') : `Review your ${form.questions.length} answers`;
+  heading.textContent = formId === 'phq9' ? 'Review your nine answers' : `Review your ${form.questions.length} answers`;
   const helper = document.createElement('p');
-  helper.textContent = formId === 'phq9' ? t('reviewIntro') : 'Check each answer and make any final changes before generating the report.';
+  helper.textContent = 'Check each answer and make any final changes before generating the report.';
   ui.questionArea.append(badge, heading, helper);
   ui.options.replaceChildren();
   ui.results.classList.remove('hidden');
@@ -186,7 +270,7 @@ function renderReview(next) {
   const notice = document.createElement('p');
   notice.className = 'phq-report-alert';
   notice.setAttribute('role', 'alert');
-  notice.textContent = t('followUpNotice');
+  notice.textContent = 'Item 9 was answered positively. Please contact a qualified clinician promptly for follow-up. This assessment does not send an alert. If you may not be able to stay safe, seek immediate local emergency help.';
   notice.hidden = formId !== 'phq9' || reviewValues[8] === 0;
   ui.results.append(notice);
 
@@ -224,10 +308,10 @@ function renderReview(next) {
   finalizeButton = document.createElement('button');
   finalizeButton.type = 'button';
   finalizeButton.className = 'button primary review-finalize';
-  finalizeButton.textContent = t('finalizeReport');
+  finalizeButton.textContent = 'Confirm answers and generate report';
   finalizeButton.addEventListener('click', () => {
     if (socket?.readyState !== WebSocket.OPEN) {
-      appendTranscript('system', t('connectionLost'));
+      appendTranscript('system', 'Connection lost. Restart the assessment to review answers.');
       return;
     }
     finalizeButton.disabled = true;
@@ -237,8 +321,14 @@ function renderReview(next) {
 }
 
 function renderProposal(message) {
+  if (mode === 'live') {
+    if (socket?.readyState === WebSocket.OPEN) {
+      send({ type: 'confirm' });
+    }
+    return;
+  }
   pending = message;
-  ui.pendingLabel.textContent = mode === 'live' ? message.summary : `${message.value} — ${message.label}`;
+  ui.pendingLabel.textContent = `${message.value} — ${message.label}`;
   ui.confirmation.classList.remove('hidden');
   [...ui.options.children].forEach((button, index) => button.classList.toggle('selected', index === message.value));
 }
@@ -250,7 +340,7 @@ function stopPlayback() {
 }
 
 function playPcm(base64) {
-  if (!audioContext) return;
+  if (!audioContext || conversationMode === 'text') return;
   const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
   const sampleCount = Math.floor(bytes.byteLength / 2);
   if (!sampleCount) return;
@@ -297,7 +387,7 @@ async function toggleCamera() {
     ui.preview.srcObject = null;
     ui.preview.style.display = 'none';
     ui.cameraPlaceholder.style.display = '';
-    ui.cameraToggle.textContent = t('turnCameraOn');
+    ui.cameraToggle.textContent = 'Turn camera on';
     return;
   }
   try {
@@ -305,7 +395,7 @@ async function toggleCamera() {
     ui.preview.srcObject = camera;
     ui.preview.style.display = 'block';
     ui.cameraPlaceholder.style.display = 'none';
-    ui.cameraToggle.textContent = t('turnCameraOff');
+    ui.cameraToggle.textContent = 'Turn camera off';
     const canvas = document.createElement('canvas');
     canvas.width = 640; canvas.height = 360;
     cameraTimer = setInterval(() => {
@@ -319,7 +409,7 @@ async function toggleCamera() {
         socket.send(packet);
       }, 'image/jpeg', 0.55);
     }, 1100);
-  } catch (error) { appendTranscript('system', `${t('cameraUnavailable')}: ${error.message}`); }
+  } catch (error) { appendTranscript('system', `Camera unavailable: ${error.message}`); }
 }
 
 function stopInputMedia() {
@@ -333,7 +423,7 @@ function stopInputMedia() {
   ui.preview.srcObject = null;
   ui.preview.style.display = 'none';
   ui.cameraPlaceholder.style.display = '';
-  ui.cameraToggle.textContent = t('turnCameraOn');
+  ui.cameraToggle.textContent = 'Turn camera on';
   ui.cameraToggle.disabled = true;
   ui.micToggle.disabled = true;
 }
@@ -353,6 +443,14 @@ async function start(nextMode) {
   pending = null;
   state = null;
   mode = nextMode;
+  if (nextMode === 'demo') {
+    document.body.classList.add('demo-mode');
+  } else {
+    document.body.classList.remove('demo-mode');
+  }
+  ui.confirmation.classList.add('hidden');
+  ui.confirmation.hidden = true;
+  ui.confirmation.style.display = nextMode === 'demo' ? '' : 'none';
   ui.language.disabled = formId === 'pcl5';
   ui.mode.textContent = nextMode.toUpperCase();
   ui.liveLabel.textContent = nextMode === 'live' ? 'CONNECTING' : 'DEMO';
@@ -361,25 +459,35 @@ async function start(nextMode) {
   ui.textInput.value = '';
   ui.transcript.replaceChildren();
   transcriptRows.clear();
-  const emptyTranscript = document.createElement('p'); emptyTranscript.className = 'empty'; emptyTranscript.textContent = t('conversationEmpty'); ui.transcript.append(emptyTranscript);
+  const emptyTranscript = document.createElement('p'); emptyTranscript.className = 'empty'; emptyTranscript.textContent = 'The conversation will appear here.'; ui.transcript.append(emptyTranscript);
   ui.startLive.disabled = true;
   ui.startDemo.disabled = true;
-  setStatus(t('connecting'));
+  setStatus('Connecting…');
   if (nextMode === 'live') {
-    try { await startMicrophone(); }
-    catch (error) {
-      appendTranscript('system', `${t('microphoneFailed')}: ${error.message}`);
-      setStatus(t('microphoneUnavailable'));
-      ui.startLive.disabled = false; ui.startDemo.disabled = false;
-      ui.language.disabled = false;
-      stopMedia();
-      return;
+    if (conversationMode === 'voice') {
+      try { await startMicrophone(); }
+      catch (error) {
+        appendTranscript('system', `Microphone access failed: ${error.message}`);
+        setStatus('Microphone unavailable');
+        ui.startLive.disabled = false; ui.startDemo.disabled = false;
+        ui.language.disabled = false;
+        stopMedia();
+        return;
+      }
+    } else {
+      try {
+        await startMicrophone();
+        muted = true;
+        ui.micToggle.textContent = 'Turn microphone on';
+      } catch {
+        muted = true;
+      }
     }
   }
   const prescriptionQuery = `&prescriptionId=${encodeURIComponent(prescriptionId)}`;
   const connection = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws?mode=${nextMode}&language=${language}${prescriptionQuery}`);
   socket = connection;
-  connection.onopen = () => setStatus(nextMode === 'demo' ? t('demoInProgress') : t('connecting'));
+  connection.onopen = () => setStatus(nextMode === 'demo' ? 'Form test in progress' : 'Connecting…');
   connection.onmessage = (event) => {
     const message = JSON.parse(event.data);
     if (message.type === 'state') {
@@ -388,18 +496,31 @@ async function start(nextMode) {
     }
     else if (message.type === 'proposal') renderProposal(message);
     else if (message.type === 'proposal_cleared') { pending = null; ui.confirmation.classList.add('hidden'); [...ui.options.children].forEach((button) => button.classList.remove('selected')); }
-    else if (message.type === 'audio') playPcm(message.data);
+    else if (message.type === 'audio') {
+      if (conversationMode !== 'text') playPcm(message.data);
+    }
     else if (message.type === 'audio_interrupt') stopPlayback();
     else if (message.type === 'transcript') appendTranscript(message.speaker, message.text, message.messageId);
     else if (message.type === 'live_status') {
-      ui.liveLabel.textContent = message.status.toUpperCase();
-      if (message.status === 'connected') { setStatus(t('connected')); ui.textInput.disabled = false; ui.sendText.disabled = false; }
+      ui.liveLabel.textContent = conversationMode === 'text' ? 'TEXT' : message.status.toUpperCase();
+      if (message.status === 'connected') {
+        setStatus('CONNECTED');
+        ui.textInput.disabled = false;
+        ui.sendText.disabled = false;
+        if (conversationMode === 'text') {
+          ui.mode.textContent = 'TEXT';
+          muted = true;
+          ui.micToggle.textContent = 'Turn microphone on';
+          ui.textInput.placeholder = 'Type your response here and press Enter...';
+          setTimeout(() => ui.textInput.focus(), 80);
+        }
+      }
       else { ui.textInput.disabled = true; ui.sendText.disabled = true; }
       if (message.detail) appendTranscript('system', message.detail);
     }
     else if (message.type === 'error') { appendTranscript('system', message.message); if (state?.status === 'review' && finalizeButton) finalizeButton.disabled = false; }
   };
-  connection.onerror = () => appendTranscript('system', t('connectionError'));
+  connection.onerror = () => appendTranscript('system', 'Connection error. Check the server terminal.');
   connection.onclose = () => {
     if (socket !== connection) return;
     ui.startLive.disabled = !config.geminiConfigured || (lockedMode && lockedMode !== 'live') || state?.status === 'completed';
@@ -407,7 +528,7 @@ async function start(nextMode) {
     ui.language.disabled = formId === 'pcl5';
     ui.textInput.disabled = true;
     ui.sendText.disabled = true;
-    if (state?.status !== 'completed') { setStatus(t('disconnected')); stopMedia(); }
+    if (state?.status !== 'completed') { setStatus('Disconnected'); stopMedia(); }
   };
 }
 
@@ -416,15 +537,15 @@ async function refreshRecent() {
   const response = await fetch(`/api/demo-patients/${encodeURIComponent(demoPatientId)}/reports`);
   const results = await response.json();
   ui.recent.replaceChildren();
-  if (!results.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = t('resultsEmpty'); ui.recent.append(empty); return; }
+  if (!results.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'No completed assessments yet.'; ui.recent.append(empty); return; }
   for (const item of results.slice(0, 5)) {
     const row = document.createElement('a'); row.className = 'recent-item';
     row.href = `/report.html?id=${encodeURIComponent(item.id)}`;
-    row.setAttribute('aria-label', `${t('openReport')} ${new Date(item.completedAt).toLocaleString(item.language === 'hi' ? 'hi-IN' : 'en-IN')}`);
-    const kind = item.collectionMethod === 'conversational_inference' ? t('conversation') : item.mode === 'live' ? t('previousLive') : t('formTest');
-    const patientName = item.demoPatientId ? ` · ${t('selectedPatient')} ${item.demoPatientId.slice(-1).toUpperCase()}` : '';
-    const title = document.createElement('strong'); title.textContent = `${item.formId.toUpperCase()} · ${kind}${patientName} · ${item.language?.toUpperCase() || 'EN'} · ${item.scores.rawTotal} / ${item.scores.maxTotal || 27}${item.scores.requiresHumanFollowUp ? ` · ${t('followUpNeeded')}` : ''}`;
-    const date = document.createElement('span'); date.textContent = new Date(item.completedAt).toLocaleString(item.language === 'hi' ? 'hi-IN' : 'en-IN');
+    row.setAttribute('aria-label', `Open PHQ-9 report completed ${new Date(item.completedAt).toLocaleString('en-IN')}`);
+    const kind = item.collectionMethod === 'conversational_inference' ? 'Conversation' : item.mode === 'live' ? 'Live' : 'Form test';
+    const patientName = item.demoPatientId ? ` · Selected patient ${item.demoPatientId.slice(-1).toUpperCase()}` : '';
+    const title = document.createElement('strong'); title.textContent = `${item.formId.toUpperCase()} · ${kind}${patientName} · ${item.language?.toUpperCase() || 'EN'} · ${item.scores.rawTotal} / ${item.scores.maxTotal || 27}${item.scores.requiresHumanFollowUp ? ' · Follow-up needed' : ''}`;
+    const date = document.createElement('span'); date.textContent = new Date(item.completedAt).toLocaleString('en-IN');
     row.append(title, date); ui.recent.append(row);
   }
 }
@@ -443,11 +564,41 @@ ui.language.addEventListener('change', async () => {
   const selected = ui.language.value;
   ui.language.disabled = true;
   try {
-    const response = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(selected)}`);
-    if (!response.ok) throw new Error(t('formLoadFailed'));
-    form = await response.json();
     language = selected;
+    applyFormTranslation(form, selected);
     localizePage();
+
+    if (state) {
+      renderState(state);
+      if (pending) {
+        ui.pendingLabel.textContent = mode === 'live' ? pending.summary : `${pending.value} — ${form.options[pending.value]?.label || ''}`;
+      }
+    } else {
+      ui.questionArea.replaceChildren();
+      const badge = document.createElement('span');
+      badge.className = 'question-number';
+      badge.textContent = formId.toUpperCase();
+      const heading = document.createElement('h2');
+      heading.textContent = 'Choose a mode to begin';
+      const info = document.createElement('p');
+      info.textContent = 'Gemini Live uses your microphone and, if enabled, camera frames for conversational context. The camera does not determine scores.';
+      ui.questionArea.append(badge, heading, info);
+      ui.options.replaceChildren();
+      ui.confirmation.classList.add('hidden');
+      ui.results.classList.add('hidden');
+      ui.progressLabel.textContent = `0 / ${form.questions.length}`;
+      ui.progressBar.style.width = '0%';
+    }
+
+    try {
+      const response = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(selected)}`);
+      if (response.ok) {
+        const fetched = await response.json();
+        form = fetched;
+        applyFormTranslation(form, selected);
+        if (state) renderState(state);
+      }
+    } catch {}
 
     stopPlayback();
     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -460,25 +611,6 @@ ui.language.addEventListener('change', async () => {
     if (socket?.readyState === WebSocket.OPEN) {
       send({ type: 'set_language', language: selected });
     }
-
-    if (state) {
-      renderState(state);
-      if (pending) {
-        ui.pendingLabel.textContent = mode === 'live' ? pending.summary : `${pending.value} — ${form.options[pending.value]?.label || ''}`;
-      }
-    } else {
-      ui.questionArea.replaceChildren();
-      const heading = document.createElement('h2'); heading.dataset.i18n = 'chooseMode';
-      heading.textContent = t('chooseMode');
-      const info = document.createElement('p'); info.dataset.i18n = 'cameraInfo';
-      info.textContent = t('cameraInfo');
-      ui.questionArea.append(heading, info);
-      ui.options.replaceChildren();
-      ui.confirmation.classList.add('hidden');
-      ui.results.classList.add('hidden');
-      ui.progressLabel.textContent = `0 / ${form.questions.length}`;
-      ui.progressBar.style.width = '0%';
-    }
   } catch (error) { ui.language.value = language; appendTranscript('system', error.message); }
   finally { ui.language.disabled = formId === 'pcl5'; }
 });
@@ -487,8 +619,14 @@ ui.cancel.addEventListener('click', () => send({ type: 'cancel' }));
 ui.cameraToggle.addEventListener('click', toggleCamera);
 ui.micToggle.addEventListener('click', () => {
   muted = !muted;
-  ui.micToggle.textContent = t(muted ? 'turnMicOn' : 'turnMicOff');
+  ui.micToggle.textContent = muted ? 'Turn microphone on' : 'Turn microphone off';
 });
+if (ui.conversationMode) {
+  ui.conversationMode.addEventListener('change', () => {
+    conversationMode = ui.conversationMode.value;
+    applyConversationMode();
+  });
+}
 window.addEventListener('beforeunload', stopMedia);
 
 try {
@@ -499,21 +637,29 @@ try {
   const prescription = await prescriptionResponse.json();
   if (prescription.status === 'completed') throw new Error('This prescription is completed. Open its report from View test reports.');
   formId = prescription.formId;
-  const urlLang = new URLSearchParams(location.search).get('language');
-  const initialLang = urlLang || prescription.language || 'en';
+  // Default language is English. Only resume an active in-progress assessment if it already confirmed a language.
+  let initialLang = 'en';
+  if (prescription.status === 'in_progress') {
+    const urlLang = new URLSearchParams(location.search).get('language');
+    if (urlLang) initialLang = urlLang;
+    else if (prescription.language) initialLang = prescription.language;
+  }
   language = initialLang;
   ui.language.value = language;
+  try {
+    const url = new URL(location.href);
+    if (prescription.status !== 'in_progress' && url.searchParams.has('language')) {
+      url.searchParams.delete('language');
+      history.replaceState({}, '', url.href);
+    }
+  } catch {}
   form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
+  applyFormTranslation(form, language);
   demoPatientId = prescription.demoPatientId;
   demoPatientLabel = prescription.patient.label;
   ui.patientContext.hidden = false;
   if (prescription.status === 'in_progress') {
     lockedMode = prescription.mode;
-    if (!urlLang && prescription.language) {
-      language = prescription.language;
-      form = await fetch(`/api/form?formId=${encodeURIComponent(formId)}&language=${encodeURIComponent(language)}`).then((response) => response.json());
-      ui.language.value = language;
-    }
     ui.language.disabled = formId === 'pcl5';
   }
   localizePage();
@@ -522,11 +668,11 @@ try {
   ui.startLive.disabled = !config.geminiConfigured || (prescription.status === 'in_progress' && prescription.mode !== 'live');
   ui.startDemo.disabled = prescription.status === 'in_progress' && prescription.mode !== 'demo';
   ui.keyNote.textContent = config.geminiConfigured
-    ? t('keyDetected')
-    : t('keyMissing');
+    ? 'Voice assessment is ready.'
+    : 'Voice assessment is unavailable. You can complete the assessment on screen.';
   await refreshRecent();
 } catch (error) {
   setStatus(error.message);
-  ui.keyNote.textContent = `${t('couldNotLoad')}: ${error.message}`;
+  ui.keyNote.textContent = `Could not load the form: ${error.message}`;
   ui.startLive.disabled = true; ui.startDemo.disabled = true;
 }

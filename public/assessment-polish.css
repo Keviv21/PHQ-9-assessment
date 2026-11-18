@@ -39,3 +39,29 @@ body { background: #fff; color: var(--openmind-ink); }
 .review-choice:has(input:checked) { border-color: var(--openmind-blue); }
 @media (max-width: 1180px) { .workspace { grid-template-columns: 252px minmax(0, 1fr); } }
 @media (max-width: 750px) { .app-header { min-height: 66px; } .workspace { display: block; } .context-panel { border-right: 0; } .page-label,.header-divider { display: none; } }
+
+/* Inline mode picker and language picker inside the assessment card */
+.assessment-topline { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.topline-right { display: inline-flex; align-items: center; gap: 14px; margin-left: auto; flex-wrap: wrap; }
+.inline-mode-picker,
+.inline-language-picker { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #5c708a; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.inline-mode-picker select,
+.inline-language-picker select { border: 1px solid var(--openmind-border, #dce3ec); border-radius: 8px; background: #fff; padding: 4px 8px; color: #172b45; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; min-width: 120px; transition: border-color .15s, box-shadow .15s; }
+.inline-mode-picker select { min-width: 145px; }
+.inline-mode-picker select:focus,
+.inline-language-picker select:focus { border-color: var(--openmind-blue, #0088ff); box-shadow: 0 0 0 3px #0088ff1c; }
+.inline-mode-picker select:disabled,
+.inline-language-picker select:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .assessment-topline { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .topline-right { width: 100%; justify-content: space-between; margin-left: 0; }
+}
+
+/* In voice / live mode, suppress the confirmation prompt */
+#confirmation {
+  display: none !important;
+}
+
+body.demo-mode #confirmation {
+  display: flex !important;
+}

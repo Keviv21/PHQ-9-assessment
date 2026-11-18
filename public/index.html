@@ -18,77 +18,88 @@
 
     <div class="workspace">
       <aside class="context-panel" aria-label="Assessment setup">
-        <div class="breadcrumb"><a href="/">Patient Assessments</a> <span aria-hidden="true">/</span> <strong data-i18n="assessments">Assessments</strong></div>
-        <div class="assessment-identity"><div id="assessment-avatar" class="assessment-avatar">PH</div><div><h1 id="assessment-title">PHQ-9</h1><p id="assessment-period" data-i18n="assessmentPeriod">ASSESSMENT · PAST TWO WEEKS</p></div></div>
-        <p id="assessment-intro" class="context-summary" data-i18n="intro">Discuss nine symptoms from the past two weeks. Each answer is confirmed before it is saved.</p>
-        <div class="context-meta"><div><span data-i18n="statementCount">Questions</span><strong id="question-count">9</strong></div><div><span data-i18n="languageLabel">Assessment language</span><strong id="selected-language">English</strong></div></div>
-        <label class="language-picker" for="language"><span data-i18n="languageLabel">Assessment language</span><select id="language">
-          <option value="en" selected>English</option>
-          <option value="hi">हिन्दी</option>
-          <option value="mr">मराठी (Marathi)</option>
-          <option value="es">Español (Spanish)</option>
-          <option value="bn">বাংলা (Bengali)</option>
-          <option value="te">తెలుగు (Telugu)</option>
-          <option value="ta">தமிழ் (Tamil)</option>
-          <option value="gu">ગુજરાતી (Gujarati)</option>
-          <option value="kn">ಕನ್ನಡ (Kannada)</option>
-          <option value="ml">മലയാളം (Malayalam)</option>
-          <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
-          <option value="or">ଓଡ଼ିଆ (Odia)</option>
-          <option value="ur">اردو (Urdu)</option>
-          <option value="as">অসমীয়া (Assamese)</option>
-          <option value="ar">العربية (Arabic)</option>
-          <option value="zh">简体中文 (Chinese Simplified)</option>
-          <option value="zh-TW">繁體中文 (Chinese Traditional)</option>
-          <option value="cs">Čeština (Czech)</option>
-          <option value="da">Dansk (Danish)</option>
-          <option value="nl">Nederlands (Dutch)</option>
-          <option value="fil">Filipino (Tagalog)</option>
-          <option value="fi">Suomi (Finnish)</option>
-          <option value="fr">Français (French)</option>
-          <option value="de">Deutsch (German)</option>
-          <option value="el">Ελληνικά (Greek)</option>
-          <option value="he">עברית (Hebrew)</option>
-          <option value="hu">Magyar (Hungarian)</option>
-          <option value="id">Bahasa Indonesia (Indonesian)</option>
-          <option value="it">Italiano (Italian)</option>
-          <option value="ja">日本語 (Japanese)</option>
-          <option value="ko">한국어 (Korean)</option>
-          <option value="ms">Bahasa Melayu (Malay)</option>
-          <option value="no">Norsk (Norwegian)</option>
-          <option value="fa">فارسی (Persian)</option>
-          <option value="pl">Polski (Polish)</option>
-          <option value="pt">Português (Portuguese)</option>
-          <option value="ro">Română (Romanian)</option>
-          <option value="ru">Русский (Russian)</option>
-          <option value="sv">Svenska (Swedish)</option>
-          <option value="th">ไทย (Thai)</option>
-          <option value="tr">Türkçe (Turkish)</option>
-          <option value="uk">Українська (Ukrainian)</option>
-          <option value="vi">Tiếng Việt (Vietnamese)</option>
-        </select></label>
-        <div class="mode-actions"><a href="/" class="button secondary" style="text-align:center" data-i18n="suggestAssessment">Back to assessments</a><button id="start-live" class="button primary" data-i18n="startLive">Start voice conversation</button><button id="start-demo" class="button secondary" data-i18n="startDemo">Complete on screen</button></div>
+        <div class="breadcrumb"><a href="/">Patient Assessments</a> <span aria-hidden="true">/</span> <strong>Assessments</strong></div>
+        <div class="assessment-identity"><div id="assessment-avatar" class="assessment-avatar">PH</div><div><h1 id="assessment-title">PHQ-9</h1><p id="assessment-period">ASSESSMENT · PAST TWO WEEKS</p></div></div>
+        <p id="assessment-intro" class="context-summary">Discuss nine symptoms from the past two weeks. Each answer is confirmed before it is saved.</p>
+        <div class="context-meta"><div><span>Questions</span><strong id="question-count">9</strong></div></div>
+        <div class="mode-actions"><a href="/" class="button secondary" style="text-align:center">Back to assessments</a><button id="start-live" class="button primary">Start voice conversation</button><button id="start-demo" class="button secondary">Complete on screen</button></div>
         <p id="patient-context" class="support-note" hidden></p>
         <p id="key-note" class="support-note"></p>
         <div class="side-divider"></div>
-        <section class="recent-section"><h2 data-i18n="savedResults">SAVED RESULTS</h2><div id="recent-results" class="recent-results"><p class="empty" data-i18n="resultsEmpty">No completed assessments yet.</p></div></section>
+        <section class="recent-section"><h2>SAVED RESULTS</h2><div id="recent-results" class="recent-results"><p class="empty">No completed assessments yet.</p></div></section>
       </aside>
 
       <main class="conversation-panel">
-        <div class="conversation-header"><div class="assistant-avatar" aria-hidden="true"><span></span></div><div><h2 data-i18n="conversation">Assessment conversation</h2><p data-i18n="conversationIntro">Share your experience in your own words. The assistant will check its understanding.</p></div><span id="live-label" class="live-badge">OFF</span></div>
+        <div class="conversation-header"><div class="assistant-avatar" aria-hidden="true"><span></span></div><div><h2>Assessment conversation</h2><p>Share your experience in your own words. The assistant will check its understanding.</p></div><span id="live-label" class="live-badge">OFF</span></div>
         <div class="conversation-body">
-          <section class="assessment-card" aria-label="Current question"><div class="assessment-topline"><span data-i18n="currentStatement">CURRENT QUESTION</span><span id="progress-label">0 / 9</span></div><div class="progress-track"><div id="progress-bar"></div></div>
-            <div id="question-area" class="question-area"><span class="question-number">PHQ-9</span><h2 data-i18n="chooseMode">Choose a mode to begin</h2><p data-i18n="cameraInfo">Gemini Live uses your microphone and, if enabled, camera frames for conversational context. The camera does not determine scores.</p></div>
+          <section class="assessment-card" aria-label="Current question">
+            <div class="assessment-topline">
+              <span class="topline-label">CURRENT QUESTION</span>
+              <div class="topline-right">
+                <label class="inline-mode-picker" for="conversation-mode"><span>Mode:</span><select id="conversation-mode">
+                  <option value="voice" selected>Voice conversation</option>
+                  <option value="text">Text conversation</option>
+                </select></label>
+                <span id="progress-label">0 / 9</span>
+                <label class="inline-language-picker" for="language"><span>Language:</span><select id="language">
+                <option value="en" selected>English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="mr">मराठी (Marathi)</option>
+                <option value="es">Español (Spanish)</option>
+                <option value="bn">বাংলা (Bengali)</option>
+                <option value="te">తెలుగు (Telugu)</option>
+                <option value="ta">தமிழ் (Tamil)</option>
+                <option value="gu">ગુજરાતી (Gujarati)</option>
+                <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                <option value="ml">മലയാളം (Malayalam)</option>
+                <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                <option value="ur">اردو (Urdu)</option>
+                <option value="as">অসমীয়া (Assamese)</option>
+                <option value="ar">العربية (Arabic)</option>
+                <option value="zh">简体中文 (Chinese Simplified)</option>
+                <option value="zh-TW">繁體中文 (Chinese Traditional)</option>
+                <option value="cs">Čeština (Czech)</option>
+                <option value="da">Dansk (Danish)</option>
+                <option value="nl">Nederlands (Dutch)</option>
+                <option value="fil">Filipino (Tagalog)</option>
+                <option value="fi">Suomi (Finnish)</option>
+                <option value="fr">Français (French)</option>
+                <option value="de">Deutsch (German)</option>
+                <option value="el">Ελληνικά (Greek)</option>
+                <option value="he">עברית (Hebrew)</option>
+                <option value="hu">Magyar (Hungarian)</option>
+                <option value="id">Bahasa Indonesia (Indonesian)</option>
+                <option value="it">Italiano (Italian)</option>
+                <option value="ja">日本語 (Japanese)</option>
+                <option value="ko">한국어 (Korean)</option>
+                <option value="ms">Bahasa Melayu (Malay)</option>
+                <option value="no">Norsk (Norwegian)</option>
+                <option value="fa">فارسی (Persian)</option>
+                <option value="pl">Polski (Polish)</option>
+                <option value="pt">Português (Portuguese)</option>
+                <option value="ro">Română (Romanian)</option>
+                <option value="ru">Русский (Russian)</option>
+                <option value="sv">Svenska (Swedish)</option>
+                <option value="th">ไทย (Thai)</option>
+                <option value="tr">Türkçe (Turkish)</option>
+                <option value="uk">Українська (Ukrainian)</option>
+                <option value="vi">Tiếng Việt (Vietnamese)</option>
+              </select></label>
+              </div>
+            </div>
+            <div class="progress-track"><div id="progress-bar"></div></div>
+            <div id="question-area" class="question-area"><span class="question-number">PHQ-9</span><h2>Choose a mode to begin</h2><p>Gemini Live uses your microphone and, if enabled, camera frames for conversational context. The camera does not determine scores.</p></div>
             <div id="answer-options" class="answer-options" aria-label="Form test response choices"></div>
-            <div id="confirmation" class="confirmation hidden" role="status"><div><span class="eyebrow" data-i18n="confirmResponse">IS THIS WHAT YOU MEANT?</span><strong id="pending-label"></strong></div><div class="confirm-actions"><button id="cancel-answer" class="button secondary" data-i18n="change">Let me clarify</button><button id="confirm-answer" class="button primary" data-i18n="confirmAnswer">Yes, that's right</button></div></div>
+            <div id="confirmation" class="confirmation hidden" role="status" hidden style="display:none"><div><span class="eyebrow">IS THIS WHAT YOU MEANT?</span><strong id="pending-label"></strong></div><div class="confirm-actions"><button id="cancel-answer" class="button secondary">Let me clarify</button><button id="confirm-answer" class="button primary">Yes, that's right</button></div></div>
             <div id="results" class="results hidden"></div>
           </section>
-          <section id="transcript" class="transcript" aria-label="Conversation" aria-live="polite"><p class="empty" data-i18n="conversationEmpty">The conversation will appear here.</p></section>
+          <section id="transcript" class="transcript" aria-label="Conversation" aria-live="polite"><p class="empty">The conversation will appear here.</p></section>
         </div>
-        <form id="text-form" class="composer"><input id="text-input" type="text" maxlength="1000" autocomplete="off" disabled aria-label="Type a response" placeholder="You can type a response here during a Live session"><button id="send-text" class="button primary" type="submit" disabled data-i18n="sendText">Send</button></form>
+        <form id="text-form" class="composer"><input id="text-input" type="text" maxlength="1000" autocomplete="off" disabled aria-label="Type a response" placeholder="You can type a response here during a Live session"><button id="send-text" class="button primary" type="submit" disabled>Send</button></form>
       </main>
 
-      <aside class="session-panel" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2 data-i18n="liveSession">LIVE SESSION</h2><span id="mode-label">OFF</span></div><div class="camera-box"><video id="preview" autoplay muted playsinline></video><div id="camera-placeholder" data-i18n="cameraOff">Camera is off</div><span class="camera-badge" data-i18n="localPreview">CAMERA PREVIEW</span></div><div class="media-actions"><button id="mic-toggle" class="button secondary" disabled>Turn microphone off</button><button id="camera-toggle" class="button secondary" disabled>Turn camera on</button></div><p class="support-note" data-i18n="privacy">Confirmed answers and scores are saved for this assessment. Audio and camera frames are used only during a live conversation.</p></section><section class="session-card guide"><h2 data-i18n="guideTitle">How this works</h2><ol><li data-i18n="guideOne">Describe your experience in your own words.</li><li data-i18n="guideTwo">Gemini may ask a short follow-up.</li><li data-i18n="guideThree">Confirm the summary before it is saved.</li></ol><p data-i18n="footer">Review your answers before generating the report.</p></section></aside>
+      <aside class="session-panel" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2>LIVE SESSION</h2><span id="mode-label">OFF</span></div><div class="camera-box"><video id="preview" autoplay muted playsinline></video><div id="camera-placeholder">Camera is off</div><span class="camera-badge">CAMERA PREVIEW</span></div><div class="media-actions"><button id="mic-toggle" class="button secondary" disabled>Turn microphone off</button><button id="camera-toggle" class="button secondary" disabled>Turn camera on</button></div><p class="support-note">Confirmed answers and scores are saved for this assessment. Audio and camera frames are used only during a live conversation.</p></section><section class="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>Gemini may ask a short follow-up.</li><li>Confirm the summary before it is saved.</li></ol><p id="footer-note">Review your answers before generating the report.</p></section></aside>
     </div>
   </div>
   <script type="module" src="/app.js"></script>

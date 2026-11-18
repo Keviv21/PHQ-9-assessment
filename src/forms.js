@@ -37,6 +37,7 @@ export function getAssessmentForm(formId, language = 'en') {
       title: translation.title || enForm.title,
       shortTitle: translation.shortTitle || enForm.shortTitle,
       referencePeriod: translation.referencePeriod || enForm.referencePeriod,
+      instructions: translation.instructions || enForm.instructions,
       intro: translation.intro || enForm.intro,
       options: translation.options || enForm.options,
       questions: translation.questions || enForm.questions,

@@ -300,6 +300,76 @@ wss.on('connection', (socket, request) => {
     socket.close(1011, 'Database request failed.');
   });
 });
+function matchOptionValue(text, form, currentNumber) {
+  if (typeof text !== 'string') return null;
+  const clean = text.trim().toLowerCase().replace(/[.,!?;:]+$/, '');
+  if (!clean) return null;
+  const questions = form?.questions || [];
+  const currentQuestion = questions[currentNumber - 1];
+  const options = currentQuestion?.options || form?.options || [];
+  if (!options.length) return null;
+
+  const numMatch = clean.match(/^(?:option\s+|choice\s+|#)?([0-9]+)$/);
+  if (numMatch) {
+    const val = parseInt(numMatch[1], 10);
+    const found = options.find((opt) => opt.value === val);
+    if (found !== undefined) return found.value;
+  }
+
+  const wordNums = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5 };
+  if (wordNums[clean] !== undefined) {
+    const found = options.find((opt) => opt.value === wordNums[clean]);
+    if (found !== undefined) return found.value;
+  }
+
+  for (const opt of options) {
+    const label = (opt.label || '').toLowerCase().trim();
+    const desc = (opt.description || '').toLowerCase().trim();
+    if (clean === label || clean === desc) return opt.value;
+  }
+
+  for (const opt of options) {
+    const label = (opt.label || '').toLowerCase().trim();
+    if (label && (clean.includes(label) || label.includes(clean))) return opt.value;
+  }
+
+  if (/(ಖಂಡಿತವಾಗಿಯೂ ಇಲ್ಲ|ಸ್ವಲ್ಪವೂ ಇಲ್ಲ|ಒಂದು ದಿನವೂ ಇಲ್ಲ|ಇಲ್ಲವೇ ಇಲ್ಲ|बिल्कुल नहीं|एक भी दिन नहीं|अजिबात नाही)/u.test(clean)) {
+    const opt0 = options.find((opt) => opt.value === 0);
+    if (opt0 !== undefined) return 0;
+  }
+  if (/(ಕೆಲವು ದಿನ|ಕೆಲ ದಿನ|कई दिन|कुछ दिन|काही दिवस)/u.test(clean)) {
+    const opt1 = options.find((opt) => opt.value === 1);
+    if (opt1 !== undefined) return 1;
+  }
+  if (/(ಅರ್ಧಕ್ಕಿಂತ ಹೆಚ್ಚು|ಹೆಚ್ಚಿನ ದಿನ|आधे से अधिक|आधे से ज्यादा|निम्म्याहून अधिक)/u.test(clean)) {
+    const opt2 = options.find((opt) => opt.value === 2);
+    if (opt2 !== undefined) return 2;
+  }
+  if (/(ಬಹುತೇಕ ಪ್ರತಿದಿನ|ಪ್ರತಿದಿನ|ಎಲ್ಲಾ ದಿನ|लगभग हर दिन|हर दिन|रोज|जवळपास दररोज)/u.test(clean)) {
+    const opt3 = options.find((opt) => opt.value === 3);
+    if (opt3 !== undefined) return 3;
+  }
+
+  if (/^(never|none|not at all|not once|no days|hardly ever)\b/i.test(clean)) {
+    const opt0 = options.find((opt) => opt.value === 0);
+    if (opt0 !== undefined) return 0;
+  }
+  if (/^(several|few days|a few days|some days|several days)\b/i.test(clean)) {
+    const opt1 = options.find((opt) => opt.value === 1);
+    if (opt1 !== undefined) return 1;
+  }
+  if (/^(more than half|half the days|most days|over half)\b/i.test(clean)) {
+    const opt2 = options.find((opt) => opt.value === 2);
+    if (opt2 !== undefined) return 2;
+  }
+  if (/^(nearly every day|almost every day|every day|everyday|always|daily|all the time)\b/i.test(clean)) {
+    const opt3 = options.find((opt) => opt.value === 3);
+    if (opt3 !== undefined) return 3;
+  }
+
+  return null;
+}
+
 async function handleScoredConnection(socket, request) {
   const origin = request.headers.origin;
   if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
@@ -393,18 +463,51 @@ async function handleScoredConnection(socket, request) {
 
       const message = JSON.parse(payload.toString('utf8'));
       if (message.type === 'select') {
-        if (bridge) throw new Error('Answer in your own words in Live mode.');
-        else {
-          const state = await store.get(assessment.id);
-          if (state.status !== 'in_progress') throw new Error('Assessment is completed.');
-          if (!Number.isInteger(message.value) || message.value < 0 || message.value >= form.options.length) throw new Error(`Choose a value from 0 to ${form.options.length - 1}.`);
+        const state = await store.get(assessment.id);
+        if (state.status !== 'in_progress') throw new Error('Assessment is completed.');
+        const options = form.options || form.questions[state.currentNumber - 1]?.options || [];
+        if (!Number.isInteger(message.value) || message.value < 0 || message.value >= options.length) {
+          throw new Error(`Choose a value from 0 to ${options.length - 1}.`);
+        }
+        if (bridge) {
+          const opt = options.find((o) => o.value === message.value) || options[message.value];
+          const summary = opt?.label || String(message.value);
+          bridge.pending = { number: state.currentNumber, value: message.value, method: 'screen', summary };
+          const result = await bridge.confirm();
+          if (!result.accepted) throw new Error(result.error);
+          bridge.afterConfirmation(result);
+        } else {
           pending = { number: state.currentNumber, value: message.value };
-          send({ type: 'proposal', number: pending.number, value: pending.value, label: form.options[pending.value].label });
+          send({ type: 'proposal', number: pending.number, value: pending.value, label: options[pending.value].label });
         }
       } else if (message.type === 'say') {
-        if (!bridge) throw new Error('Text conversation requires Live mode.');
-        if ((await store.get(assessment.id))?.status !== 'in_progress') throw new Error('Review the answers on screen.');
-        bridge.sendText(message.text);
+        const state = await store.get(assessment.id);
+        if (!state || state.status !== 'in_progress') throw new Error('Review the answers on screen.');
+        const text = message.text?.trim() || '';
+        if (bridge?.pending && /^(yes|yeah|yep|correct|right|confirm|that's right|thats right|haan|ha|sahi)\b/i.test(text)) {
+          const result = await bridge.confirm();
+          if (!result.accepted) throw new Error(result.error);
+          bridge.afterConfirmation(result);
+        } else {
+          const matchedValue = matchOptionValue(text, form, state.currentNumber);
+          if (matchedValue !== null) {
+            const options = form.options || form.questions[state.currentNumber - 1]?.options || [];
+            const opt = options.find((o) => o.value === matchedValue) || options[matchedValue];
+            const summary = opt?.label || text;
+            if (bridge) {
+              bridge.pending = { number: state.currentNumber, value: matchedValue, method: 'screen', summary };
+              const result = await bridge.confirm();
+              if (!result.accepted) throw new Error(result.error);
+              bridge.afterConfirmation(result);
+            } else {
+              const nextState = await store.record(assessment.id, state.currentNumber, matchedValue, 'screen', summary);
+              sendState(nextState);
+            }
+          } else {
+            if (!bridge) throw new Error('Text conversation requires Live mode.');
+            bridge.sendText(text);
+          }
+        }
       } else if (message.type === 'confirm') {
         if (bridge) {
           const result = await bridge.confirm();
@@ -599,17 +702,49 @@ async function handleDraftConnection(socket, request) {
       }
       const message = JSON.parse(payload.toString('utf8'));
       if (message.type === 'select') {
-        if (draft.mode !== 'demo') throw new Error('Describe your answer during the live conversation.');
         const state = await draftStore.get(sessionId);
         if (state.status !== 'in_progress') throw new Error('Review the answers on screen.');
         const options = form.questions[state.currentNumber - 1].options;
         if (!Number.isInteger(message.value) || message.value < 0 || message.value >= options.length) throw new RangeError('Choose an available option.');
-        pending = { number: state.currentNumber, value: message.value };
-        send({ type: 'proposal', number: pending.number, value: pending.value, label: options[pending.value].label });
+        if (bridge) {
+          const opt = options[message.value];
+          const summary = opt?.label || String(message.value);
+          bridge.pending = { number: state.currentNumber, value: message.value, method: 'screen', summary };
+          const result = await bridge.confirm();
+          if (!result.accepted) throw new Error(result.error);
+          bridge.afterConfirmation(result);
+        } else {
+          pending = { number: state.currentNumber, value: message.value };
+          send({ type: 'proposal', number: pending.number, value: pending.value, label: options[pending.value].label });
+        }
       } else if (message.type === 'say') {
-        if (!bridge) throw new Error('Text conversation requires Gemini Live.');
-        if ((await draftStore.get(sessionId))?.status !== 'in_progress') throw new Error('Review the answers on screen.');
-        bridge.sendText(message.text);
+        const state = await draftStore.get(sessionId);
+        if (!state || state.status !== 'in_progress') throw new Error('Review the answers on screen.');
+        const text = message.text?.trim() || '';
+        if (bridge?.pending && /^(yes|yeah|yep|correct|right|confirm|that's right|thats right|haan|ha|sahi)\b/i.test(text)) {
+          const result = await bridge.confirm();
+          if (!result.accepted) throw new Error(result.error);
+          bridge.afterConfirmation(result);
+        } else {
+          const matchedValue = matchOptionValue(text, form, state.currentNumber);
+          if (matchedValue !== null) {
+            const options = form.questions[state.currentNumber - 1].options;
+            const opt = options[matchedValue];
+            const summary = opt?.label || text;
+            if (bridge) {
+              bridge.pending = { number: state.currentNumber, value: matchedValue, method: 'screen', summary };
+              const result = await bridge.confirm();
+              if (!result.accepted) throw new Error(result.error);
+              bridge.afterConfirmation(result);
+            } else {
+              const nextState = await draftStore.record(sessionId, state.currentNumber, matchedValue, 'screen');
+              sendState(nextState);
+            }
+          } else {
+            if (!bridge) throw new Error('Text conversation requires Gemini Live.');
+            bridge.sendText(text);
+          }
+        }
       } else if (message.type === 'confirm') {
         if (bridge) {
           const result = await bridge.confirm();

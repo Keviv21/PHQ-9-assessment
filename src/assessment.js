@@ -72,6 +72,7 @@ export function getForm(language = 'en') {
       title: translation.title || form.title,
       shortTitle: translation.shortTitle || form.shortTitle,
       referencePeriod: translation.referencePeriod || form.referencePeriod,
+      instructions: translation.instructions || form.instructions,
       intro: translation.intro || form.intro,
       options: translation.options || form.options,
       questions: translation.questions || form.questions,

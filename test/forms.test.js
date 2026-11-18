@@ -64,4 +64,34 @@ test('multi-language forms resolve translations for PHQ-9 and GAD-7 across suppo
   const gad7Es = getAssessmentForm('gad7', 'es');
   assert.equal(gad7Es.language, 'es');
   assert.equal(gad7Es.questions.length, 7);
+
+  const phq9Kn = getAssessmentForm('phq9', 'kn');
+  assert.equal(phq9Kn.language, 'kn');
+  assert.equal(phq9Kn.questions.length, 9);
+  assert.match(phq9Kn.questions[0].text, /ಕೆಲಸಗಳನ್ನು ಮಾಡಲು ಕಡಿಮೆ ಆಸಕ್ತಿ/);
+  assert.equal(phq9Kn.options[0].label, 'ಖಂಡಿತವಾಗಿಯೂ ಇಲ್ಲ');
+  assert.match(phq9Kn.instructions, /ಕಳೆದ 2 ವಾರಗಳಲ್ಲಿ/);
+
+  const gad7Kn = getAssessmentForm('gad7', 'kn');
+  assert.equal(gad7Kn.language, 'kn');
+  assert.equal(gad7Kn.questions.length, 7);
+  assert.match(gad7Kn.questions[0].text, /ಹೆದರಿಕೆ, ಆತಂಕ/);
+  assert.equal(gad7Kn.options[0].label, 'ಖಂಡಿತವಾಗಿಯೂ ಇಲ್ಲ');
+
+  const phq9Te = getAssessmentForm('phq9', 'te');
+  assert.equal(phq9Te.language, 'te');
+  assert.match(phq9Te.questions[6].text, /వార్తాపత్రిక చదవడం/);
+  assert.equal(phq9Te.options[0].label, 'అస్సలు లేదు');
+
+  const phq9El = getAssessmentForm('phq9', 'el');
+  assert.equal(phq9El.language, 'el');
+  assert.match(phq9El.questions[6].text, /Δυσκολία συγκέντρωσης/);
+
+  const phq9No = getAssessmentForm('phq9', 'no');
+  assert.equal(phq9No.language, 'no');
+  assert.match(phq9No.questions[6].text, /Problemer med å konsentrere deg/);
+
+  const phq9It = getAssessmentForm('phq9', 'it');
+  assert.equal(phq9It.language, 'it');
+  assert.match(phq9It.questions[6].text, /Difficoltà a concentrarsi/);
 });

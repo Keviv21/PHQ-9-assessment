@@ -18,6 +18,7 @@ test('conversational mapping waits for confirmation and asks the next PHQ-9 item
       apiKey: 'test-only', model: 'test-model',
       socket: { readyState: 1, send: (raw) => events.push({ type: 'browser', value: JSON.parse(raw) }) },
       store, assessmentId: assessment.id, onState: (state) => events.push({ type: 'state', value: state }),
+      requireConfirmation: true,
     });
     bridge.session = {
       sendToolResponse: (value) => events.push({ type: 'tool_response', value }),
@@ -167,7 +168,8 @@ test('cleaned catalogue voice proposal saves only after confirmation and advance
       socket: { readyState: 1, send: (raw) => events.push(JSON.parse(raw)) },
       store: createDefinitionVoiceStore(definitionStore), assessmentId: state.id,
       formId: form.id, formOverride: { definition: true, formId: form.id, title: form.title, questions: form.questions },
-      onState: (updated) => events.push({ type: 'state', assessment: updated }) });
+      onState: (updated) => events.push({ type: 'state', assessment: updated }),
+      requireConfirmation: true });
     const first = form.questions[0];
     await assert.rejects(bridge.propose(first.id, '"invalid"', 'Invalid.'), /Invalid choice/);
     assert.deepEqual((await definitionStore.getSession(state.id)).answers, {});
@@ -179,4 +181,59 @@ test('cleaned catalogue voice proposal saves only after confirmation and advance
     assert.equal(result.nextQuestion.id, form.questions[1].id);
     assert.ok(events.some((event) => event.type === 'proposal'));
   } finally { await definitionStore.close(); }
+});
+
+test('screen answer recorded via pending immediately advances to next question and notifies model', async () => {
+  const store = openStore(':memory:');
+  try {
+    const assessment = store.create('live');
+    const prompts = [];
+    const states = [];
+    const bridge = new GeminiBridge({
+      apiKey: 'test-only', model: 'test-model',
+      socket: { readyState: 1, send: () => {} },
+      store, assessmentId: assessment.id,
+      onState: (state) => states.push(state),
+    });
+    bridge.session = {
+      sendClientContent: (val) => prompts.push(val),
+    };
+    bridge.pending = { number: 1, value: 0, method: 'screen', summary: 'Not at all' };
+    const result = await bridge.confirm();
+    assert.equal(result.accepted, true);
+    assert.equal(result.savedQuestion, 1);
+    assert.equal(result.nextQuestion.number, 2);
+    bridge.afterConfirmation(result);
+    assert.equal(store.get(assessment.id).answers[0].value, 0);
+    assert.equal(store.get(assessment.id).currentNumber, 2);
+    assert.match(prompts[0].turns[0].parts[0].text, /item Q02 of 9/);
+  } finally { store.close(); }
+});
+
+test('voice mode with requireConfirmation=false saves proposed answer immediately and advances without confirmation prompt', async () => {
+  const store = openStore(':memory:');
+  try {
+    const assessment = store.create('live');
+    const events = [];
+    const prompts = [];
+    const bridge = new GeminiBridge({
+      apiKey: 'test-only', model: 'test-model',
+      socket: { readyState: 1, send: (raw) => events.push(JSON.parse(raw)) },
+      store, assessmentId: assessment.id,
+      onState: (state) => events.push({ type: 'state', value: state }),
+      requireConfirmation: false,
+    });
+    bridge.session = {
+      sendToolResponse: () => {},
+      sendClientContent: (val) => prompts.push(val),
+    };
+    await bridge.handleToolCalls([{ id: 'v1', name: 'propose_answer', args: {
+      questionId: 'Q01', value: 1, summary: 'This occurred on several days.',
+    } }]);
+    assert.equal(events.some((e) => e.type === 'proposal'), false);
+    assert.equal(store.get(assessment.id).answers[0].value, 1);
+    assert.equal(store.get(assessment.id).currentNumber, 2);
+    assert.equal(prompts.length, 1);
+    assert.match(prompts[0].turns[0].parts[0].text, /item Q02 of 9/);
+  } finally { store.close(); }
 });
