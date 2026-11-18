@@ -1,5 +1,6 @@
 // Public URLs are allowlisted. Old page links remain compatible after file moves.
 export const STATIC_ASSETS = Object.freeze({
+  "/workspace/patient-records.js": "workspace/patient-records.js",
   "/": "workspace/index.html",
   "/app.js": "legacy/app.js",
   "/assessment-library.css": "workspace/library.css",
@@ -77,6 +78,7 @@ export const STATIC_ASSETS = Object.freeze({
   "/workspace.css": "shared/workspace.css",
   "/workspace/analytics-charts.js": "workspace/analytics-charts.js",
   "/workspace/analytics.css": "workspace/analytics.css",
+  "/workspace/analytics-overview.js": "workspace/analytics-overview.js",
   "/workspace/analytics.js": "workspace/analytics.js",
   "/workspace/app.js": "workspace/app.js",
   "/workspace/index.html": "workspace/index.html",

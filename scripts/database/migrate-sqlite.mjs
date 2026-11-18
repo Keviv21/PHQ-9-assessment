@@ -71,6 +71,7 @@ export async function migrateSqlite(database, source, backupPath) {
       }
       for (const name of [
         "workspace_patients",
+        "workspace_patient_records",
         "workspace_prescriptions",
         "workspace_sessions",
         "workspace_recommendations",
@@ -187,7 +188,7 @@ if (
 ) {
   let database;
   try {
-    database = await openPostgres(process.env.DATABASE_URL);
+    database = await openPostgres(process.env.DATABASE_URL, { includeAuxiliary: true });
     const source = process.argv[2] || "data/prototype.sqlite";
     const backupPath =
       process.argv[3] || `local-data/backups/prototype-${Date.now()}.sqlite`;

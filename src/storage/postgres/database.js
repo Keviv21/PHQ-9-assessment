@@ -5,6 +5,7 @@ export const DEFAULT_SCHEMA = "assessments";
 // Logical keys also identify the original SQLite tables for import compatibility.
 export const TABLE_NAMES = Object.freeze({
   workspace_patients: "patients",
+  workspace_patient_records: "patient_records",
   workspace_prescriptions: "assessment_prescriptions",
   workspace_sessions: "assessment_sessions",
   workspace_recommendations: "assessment_recommendations",
@@ -21,7 +22,7 @@ export function schemaName(value = DEFAULT_SCHEMA) {
 }
 export async function openPostgres(
   url,
-  { schema = process.env.DATABASE_SCHEMA || DEFAULT_SCHEMA } = {},
+  { schema = process.env.DATABASE_SCHEMA || DEFAULT_SCHEMA, includeAuxiliary = false } = {},
 ) {
   if (!url || !/^postgres(?:ql)?:\/\//.test(url))
     throw new Error("Set DATABASE_URL to the PostgreSQL connection URL.");
@@ -70,6 +71,7 @@ export async function openPostgres(
       await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
       // Upgrade an existing app schema without duplicating or losing its records.
       for (const [oldName, newName] of Object.entries(TABLE_NAMES)) {
+        if (!includeAuxiliary && !["workspace_patients", "workspace_patient_records", "workspace_prescriptions", "workspace_sessions"].includes(oldName)) continue;
         const { rows: [existing] } = await client.query(
           "SELECT to_regclass($1) AS old_table, to_regclass($2) AS new_table",
           [`"${schema}"."${oldName}"`, table(oldName)],
@@ -81,18 +83,22 @@ export async function openPostgres(
       }
       await client.query(`
         CREATE TABLE IF NOT EXISTS ${table("workspace_patients")}(id TEXT PRIMARY KEY,data JSONB NOT NULL);
+        CREATE TABLE IF NOT EXISTS ${table("workspace_patient_records")}(id TEXT PRIMARY KEY,patient_id TEXT NOT NULL REFERENCES ${table("workspace_patients")}(id),version INTEGER NOT NULL CHECK(version > 0),created_at TEXT NOT NULL,content_hash TEXT,data JSONB NOT NULL,UNIQUE(patient_id,version),UNIQUE(patient_id,content_hash));
         CREATE TABLE IF NOT EXISTS ${table("workspace_prescriptions")}(id TEXT PRIMARY KEY,patient_id TEXT NOT NULL REFERENCES ${table("workspace_patients")}(id),assessment_id TEXT NOT NULL,created_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS ${table("workspace_sessions")}(id TEXT PRIMARY KEY,prescription_id TEXT NOT NULL UNIQUE REFERENCES ${table("workspace_prescriptions")}(id),data JSONB NOT NULL);
+        CREATE INDEX IF NOT EXISTS assessment_prescriptions_patient ON ${table("workspace_prescriptions")}(patient_id);
+      `);
+      if (includeAuxiliary) await client.query(`
         CREATE TABLE IF NOT EXISTS ${table("workspace_recommendations")}(patient_id TEXT PRIMARY KEY REFERENCES ${table("workspace_patients")}(id),context_hash TEXT NOT NULL,data JSONB NOT NULL);
         CREATE TABLE IF NOT EXISTS ${table("workspace_translations")}(hash TEXT NOT NULL,language TEXT NOT NULL,data JSONB NOT NULL,PRIMARY KEY(hash,language));
         CREATE TABLE IF NOT EXISTS ${table("legacy_sessions")}(id TEXT PRIMARY KEY,data JSONB NOT NULL);
         CREATE TABLE IF NOT EXISTS ${table("legacy_prescriptions")}(id TEXT PRIMARY KEY,data JSONB NOT NULL);
         CREATE TABLE IF NOT EXISTS ${table("draft_sessions")}(id TEXT PRIMARY KEY,data JSONB NOT NULL);
         CREATE TABLE IF NOT EXISTS ${table("sqlite_imports")}(source_hash TEXT PRIMARY KEY,imported_at TIMESTAMPTZ NOT NULL DEFAULT now(),counts JSONB NOT NULL);
-        CREATE INDEX IF NOT EXISTS assessment_prescriptions_patient ON ${table("workspace_prescriptions")}(patient_id);
       `);
     });
     return {
+      persistentCaches: includeAuxiliary,
       pool,
       table,
       transaction,

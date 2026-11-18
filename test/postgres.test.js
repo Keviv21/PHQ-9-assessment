@@ -22,7 +22,7 @@ test("Named tables preserve existing schemas and database copies reject conflict
   const url = process.env.TEST_DATABASE_URL;
   const sourceSchema = "copy_source_" + randomUUID().replaceAll("-", "");
   const targetSchema = "copy_target_" + randomUUID().replaceAll("-", "");
-  let source = await openPostgres(url, { schema: sourceSchema });
+  let source = await openPostgres(url, { schema: sourceSchema, includeAuxiliary: true });
   let target;
   try {
     const store = await openPostgresWorkspace(source, { seed: false });
@@ -35,11 +35,11 @@ test("Named tables preserve existing schemas and database copies reject conflict
     const counts = await copyPostgresDatabase(url, sourceSchema, url, targetSchema);
     assert.equal(counts.patients, 1);
     assert.equal(counts.assessment_sessions, 1);
-    target = await openPostgres(url, { schema: targetSchema });
+    target = await openPostgres(url, { schema: targetSchema, includeAuxiliary: true });
     const copied = await openPostgresWorkspace(target, { seed: false });
     assert.deepEqual(await copied.get(session.id), session);
     assert.deepEqual(await copyPostgresDatabase(url, sourceSchema, url, targetSchema), counts);
-    const reopened = await openPostgres(url, { schema: sourceSchema });
+    const reopened = await openPostgres(url, { schema: sourceSchema, includeAuxiliary: true });
     await source.close(); source = reopened;
     assert.deepEqual(await (await openPostgresWorkspace(source, { seed: false })).get(session.id), session);
     const oldTables = await source.pool.query("SELECT tablename FROM pg_tables WHERE schemaname=$1 AND tablename LIKE 'workspace_%'", [sourceSchema]);
@@ -62,7 +62,7 @@ test(
   { skip: !process.env.TEST_DATABASE_URL },
   async () => {
     const schema = "chandrika_test_" + randomUUID().replaceAll("-", "");
-    const db = await openPostgres(process.env.TEST_DATABASE_URL, { schema });
+    const db = await openPostgres(process.env.TEST_DATABASE_URL, { schema, includeAuxiliary: true });
     const dir = mkdtempSync(join(tmpdir(), "assessment-pg-test-"));
     let server, api;
     try {
@@ -199,6 +199,14 @@ test(
         await fetch(base + `/patients/${p.id}/analytics`)
       ).json();
       assert.equal(completed.completed, 2);
+      const pending = await store.prescribe(p.id, "GAD7");
+      const prescriptions = await (await fetch(base + `/patients/${p.id}/prescriptions`)).json();
+      assert.equal(prescriptions.filter(r => r.status === "completed").length, 2);
+      assert.equal(prescriptions.find(r => r.id === pending.id).status, "assigned");
+      assert.ok(prescriptions.every(r => !("answers" in r)));
+      const overview = await (await fetch(base + "/analytics/overview")).json();
+      assert.equal(overview.totals.completed, 2);
+      assert.equal(overview.totals.notStarted, 1);
       // Failed migrations roll back earlier inserts and never overwrite conflicts.
       const conflict = join(dir, "conflict.sqlite"),
         conflictStore = openWorkspaceStore(conflict, { seed: false });

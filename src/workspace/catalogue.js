@@ -18,6 +18,7 @@ export function catalogue() {
       runnable: d.runnable,
       reason: d.availabilityReason,
       scoringEnabled: d.scoring.enabled,
+      draftScoringAvailable: d.reporting?.mode === "numeric_scores" && d.scoring.rules?.length > 0,
       version: d.version,
       metadata,
     }))

@@ -63,7 +63,7 @@ test("Workspace imports NeuroTwin first, keeps four samples and saves added pati
     rmSync(dir, { recursive: true });
   }
 });
-test("The final catalogue is fully listed; patient sessions freeze definitions, reject stale writes and retain unscored results", () => {
+test("The final catalogue is fully listed; patient sessions freeze definitions, reject stale writes and retain labelled draft results", () => {
   const entries = catalogue();
   assert.equal(entries.length, 186);
   assert.equal(entries.filter((a) => a.runnable).length, 181);
@@ -108,7 +108,8 @@ test("The final catalogue is fully listed; patient sessions freeze definitions, 
   assert.equal(s.score, null);
   assert.equal(s.status, "completed");
   assert.equal(store.analytics(patient.id).completed, 1);
-  assert.equal(store.analytics(patient.id).groups[0].scored, false);
+  assert.equal(store.analytics(patient.id).groups[0].scored, true);
+  assert.equal(store.analytics(patient.id).groups[0].draftScores, true);
   store.close();
   store = openWorkspaceStore(db, { seed: false });
   assert.deepEqual(store.get(id), s);

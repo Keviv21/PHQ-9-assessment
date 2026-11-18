@@ -81,11 +81,6 @@
               <use href="#icon-sliders"></use></svg
             ><span class="nav-label">MindScribe</span>
           </div>
-          <div class="nav-row section" title="Patient Assessments & Tests">
-            <svg class="nav-icon" aria-hidden="true">
-              <use href="#icon-clipboard"></use></svg
-            ><span class="nav-label">Assessments</span>
-          </div>
           <div class="nav-row subsection">Patient care</div>
           <button
             id="nav-prescribe"
@@ -185,6 +180,7 @@
                     autocomplete="off"
                   />
                 </div>
+                <button id="import-patient" class="button outline" type="button">Import patient JSON</button>
                 <button id="add-patient" class="button primary" type="button">
                   ＋ Add patient
                 </button>
@@ -343,14 +339,16 @@
             <div class="page-heading">
               <div>
                 <p class="eyebrow">PATIENT ASSESSMENTS &amp; TESTS</p>
-                <h1>Patient analytics</h1>
+                <h1>Assessment Analytics</h1>
                 <p>
-                  Compare completed visits and review each patient's saved
-                  assessments.
+                  Track assessment activity and review patient progress.
+                  Score trends are shown separately for each assessment.
                 </p>
               </div>
             </div>
+            <div id="analytics-overview"></div>
             <section class="panel pa-page">
+              <h2>Patient progress</h2>
               <div class="pa-toolbar">
                 <label
                   >Patient<select id="analytics-patient" class="patient-picker">
@@ -437,6 +435,38 @@
         </main>
       </div>
     </div>
+    <dialog id="patient-records-dialog" aria-labelledby="patient-records-title">
+      <div class="records-dialog-body">
+        <div class="panel-heading"><div><h2 id="patient-records-title">Record history</h2><p id="patient-records-name"></p></div><form method="dialog"><button class="button outline">Close</button></form></div>
+        <div id="patient-records-content"></div>
+      </div>
+    </dialog>
+    <dialog id="patient-import-dialog" aria-labelledby="patient-import-title">
+      <form id="patient-import-form" class="patient-form">
+        <div class="panel-heading"><h2 id="patient-import-title">Import patient JSON</h2><button id="close-patient-import" type="button" class="button outline">Close</button></div>
+        <p>Import a Digital Twin report. Preview the patient details before saving. The complete report and earlier records are preserved.</p>
+        <label>JSON report (up to 2 MB)<input id="patient-import-file" type="file" accept=".json,application/json" required /></label>
+        <button id="preview-patient-import" class="button outline" type="button">Preview import</button>
+        <div id="patient-import-preview" hidden>
+          <div id="patient-import-details"></div>
+          <label>Save to<select id="patient-import-target"></select></label>
+          <p id="patient-import-target-info"></p>
+          <p>For an existing patient, this updates the current name, age, gender and summary. Earlier versions remain in Record history.</p>
+        </div>
+        <p id="patient-import-error" role="alert"></p>
+        <button id="save-patient-import" class="button primary" type="submit" disabled>Confirm import</button>
+      </form>
+    </dialog>
+    <dialog id="patient-note-dialog" aria-labelledby="patient-note-title">
+      <form id="patient-note-form" class="patient-form">
+        <div class="panel-heading"><h2 id="patient-note-title">Add clinical history</h2><button id="close-patient-note" type="button" class="button outline">Close</button></div>
+        <p id="patient-note-name"></p>
+        <label>History note<textarea id="patient-note-summary" required maxlength="24000" rows="8"></textarea></label>
+        <p>This creates a dated entry. Existing history remains available in Record history.</p>
+        <p id="patient-note-error" role="alert"></p>
+        <button class="button primary" type="submit">Save history entry</button>
+      </form>
+    </dialog>
     <dialog id="patient-dialog" aria-labelledby="add-patient-title">
       <form id="add-patient-form" class="patient-form">
         <div class="panel-heading">

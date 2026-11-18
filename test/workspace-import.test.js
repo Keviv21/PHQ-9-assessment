@@ -73,3 +73,18 @@ test("Repaired CSI-16 keeps numeric intermediate anchors and remains unscored", 
     ["INTERESTING", "4", "3", "2", "1", "BORING"],
   );
 });
+
+
+test("Technical verification is preserved without enabling clinical scoring", () => {
+  const raw = source();
+  raw.verification = {
+    status: "technical_checks_passed",
+    clinical_approval: { approved: false },
+    rules: [{ rule_id: "total", technical_status: "passed", clinical_approved: false }],
+  };
+  const result = normalizeAssessment(raw).definition;
+  assert.deepEqual(result.verification, raw.verification);
+  assert.equal(result.scoring.enabled, false);
+  assert.equal(result.review.readyForClinicalUse, false);
+  assert.equal(normalizeAssessment(source()).definition.verification, null);
+});

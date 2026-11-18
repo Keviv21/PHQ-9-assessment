@@ -1,3 +1,5 @@
+import { savedSessionMetrics } from "./session-results.js";
+import { compatibilityKey } from "./report-calculation.js";
 import {
   answerError,
   answerType,
@@ -5,7 +7,6 @@ import {
   isSkipped,
   responseLabel,
 } from "../../public/shared/answers.js";
-import { createHash } from "node:crypto";
 import { presentation } from "./presentation.js";
 // Adapted from sagar: group repeat visits by instrument, version and language.
 // Snapshot hashes also keep changed questionnaires and score scales separate.
@@ -20,20 +21,13 @@ export function groupPatientAssessments(states) {
     const d = s.definition,
       rendered = presentation(d, s.language),
       scoring = d.scoring;
-    const scored =
+    const savedMetrics = savedSessionMetrics(s);
+    const scored = Boolean(savedMetrics?.length) ||
       scoring?.enabled === true &&
       Number.isFinite(scoring.min) &&
       Number.isFinite(scoring.max) &&
       scoring.max > scoring.min;
-    const fingerprint = createHash("sha256")
-      .update(JSON.stringify([d.questions, d.scoring, d.localized || null]))
-      .digest("hex");
-    const key = JSON.stringify([
-      s.assessmentId,
-      d.version,
-      s.language,
-      fingerprint,
-    ]);
+    const key = compatibilityKey(s) + (savedMetrics?.length ? "|saved-metrics" : "|legacy");
     if (!groups.has(key))
       groups.set(key, {
         key,
@@ -43,7 +37,8 @@ export function groupPatientAssessments(states) {
         formVersion: d.version,
         language: s.language,
         scored,
-        metrics: scored
+        draftScores: savedMetrics?.some(m => m.status === "draft_unvalidated") || false,
+        metrics: savedMetrics?.length ? savedMetrics.map(m => ({ name: m.label, min: m.min, max: m.max })) : scored
           ? [{ name: "Total score", min: scoring.min, max: scoring.max }]
           : [],
         results: [],
@@ -57,6 +52,7 @@ export function groupPatientAssessments(states) {
         : null;
     const elapsed =
       (Date.parse(s.completedAt) - Date.parse(s.startedAt)) / 1000;
+    if (savedMetrics?.some(m => m.status === "draft_unvalidated")) groups.get(key).draftScores = true;
     groups.get(key).results.push({
       id: s.id,
       prescriptionId: s.prescriptionId,
@@ -67,7 +63,7 @@ export function groupPatientAssessments(states) {
           ? "explicit_choice"
           : "conversational_inference",
       sessionMode: s.sessionMode,
-      values: scored ? [score] : [],
+      values: savedMetrics?.length ? savedMetrics.map(m => m.value) : scored ? [score] : [],
       score,
       max: scored ? scoring.max : null,
       severity: score !== null ? s.severity : null,

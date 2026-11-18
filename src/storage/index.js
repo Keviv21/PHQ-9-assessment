@@ -1,6 +1,5 @@
 import { openPostgres, DEFAULT_SCHEMA } from "./postgres/database.js";
 import { openPostgresWorkspace } from "./postgres/workspace-store.js";
-import { openPostgresLegacy } from "./postgres/legacy-store.js";
 
 export async function openApplicationStorage(env = process.env) {
   if (env.DATABASE_URL?.trim()) {
@@ -11,8 +10,7 @@ export async function openApplicationStorage(env = process.env) {
       return {
         kind: "postgresql",
         description: database.description,
-        store: openPostgresLegacy(database),
-        draftStore: openPostgresLegacy(database, { draft: true }),
+        legacyEnabled: false,
         workspaceStore: await openPostgresWorkspace(database),
         close: () => database.close(),
       };
@@ -34,6 +32,7 @@ export async function openApplicationStorage(env = process.env) {
       workspaceStore = openWorkspaceStore(env.DB_PATH);
     return {
       kind: "sqlite",
+      legacyEnabled: true,
       description: env.DB_PATH,
       store,
       draftStore,

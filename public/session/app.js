@@ -167,12 +167,12 @@ function render() {
     stopCamera();
     $("session-setup").hidden = true;
     $("completed-report").replaceChildren(
-      el(
-        "p",
-        state.score == null
-          ? "Responses saved without a score; the source disables scoring."
-          : `Score: ${state.score} / ${d.scoring.max}`,
-      ),
+      ...(state.calculatedResults?.metrics?.length
+        ? [el("p", state.calculatedResults.label), ...state.calculatedResults.metrics.map(m =>
+          el("p", `${m.label}: ${m.value === null ? `Unavailable — ${m.reason}` : `${m.value} (range ${m.min}–${m.max})`}`))]
+        : [el("p", state.score == null
+          ? "Responses saved. No numeric result is available for this assessment."
+          : `Score: ${state.score} / ${d.scoring.max}`)]),
       reportLinks(state.id),
     );
     return;

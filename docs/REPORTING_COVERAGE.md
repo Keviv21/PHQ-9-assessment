@@ -1,0 +1,51 @@
+# Reporting coverage and outstanding work
+
+All 186 imported records await independent clinical validation. These 45 have explicit remaining work in the local JSON. This document does not claim other records are clinically complete.
+
+| Assessment | Explicit remaining work |
+| --- | --- |
+| Multilevel Assessment of Psychopathology (MAPsy) | Normative conversions and clinical publication require separate source-specific review.; MAPsy other spectra, clusters, facets and disorder-scale mappings have not been recovered as a verified executable key. Only Harmful Substance Use raw arithmetic is implemented; this is partial coverage. |
+| CRAFFT Substance Use Assessment (CRAFFT 2.1+N) | Normative conversions and clinical publication require separate source-specific review.; Source screening classifications and clinical response protocols require review. |
+| Brief Addiction Monitor – Continuous (BAM) | No overall total or percentile norms are defined by this source.; Source clinical review remains pending. |
+| Manic and Depression Symptoms Paired Screening (PMQ-9 and PHQ-9) | Normative conversions and clinical publication require separate source-specific review.; Separate PMQ-9 and PHQ-9 recall periods remain in source instructions; conversational administration requires preserving both. |
+| Leadership Scale for Sports (LSS-15) | Normative conversions and clinical publication require separate source-specific review. |
+| General Behaviour Inventory (GBI) | Normative conversions and clinical publication require separate source-specific review.; GBI percentage category boundaries are printed as integer ranges. Rounding between those ranges needs source clarification before encoding category assignment. |
+| Clinical Outcomes in Routine Evaluation (CORE-OM) | Normative conversions and clinical publication require separate source-specific review. |
+| Childhood Autism Spectrum Test (CAST) | Normative conversions and clinical publication require separate source-specific review. |
+| NovoPsych Five Factor Personality Scale – 30 item version (NFFPS-30) | Normative conversions and clinical publication require separate source-specific review.; Age/gender percentile lookups, factor/facet descriptors and AB5C pattern logic are not implemented. |
+| International Personality Item Pool – NEO – 120 item version (IPIP-NEO-120) | Normative conversions and clinical publication require separate source-specific review.; Age/gender percentile lookups and derived personality descriptors are not implemented. |
+| Equanimity Scale – 16 (ES-16) | Normative conversions and clinical publication require separate source-specific review. |
+| Experience in Close Relationship Scale – Short Form (ECR-S) | Normative conversions and clinical publication require separate source-specific review.; Source conflict: web text gives subscale range 6–36, while six PDF items each have printed values 1–7 (range 6–42). Raw rules use PDF values; normative interpretation is withheld pending reconciliation.; Attachment-pattern logic depends on reconciled subscale ranges and percentile conversion. |
+| Ask Suicide-Screening Questionnaire (asQ) | No numeric total or percentile is defined for asQ.; Clinical handling of screening states requires an approved clinical workflow; the evaluator returns source-derived states only. |
+| Strengths and Difficulties Questionnaire (SDQ) | No authorized, variant-specific SDQ questionnaire is available in the selected source; its PDF is a version-selection guide. Questions, response sets, administration and executable scoring remain blocked. |
+| Work and Social Adjustment Scale (WSAS) | Normative conversions and clinical publication require separate source-specific review. |
+| Penn Alcohol Craving Scale (PACS) | Normative conversions and clinical publication require separate source-specific review.; Source-described change comparison and interpretation are retained as prose; not executable. |
+| Attachment Style Questionnaire – Short Form (ASQ-SF) | Normative conversions and clinical publication require separate source-specific review.; Attachment pattern classification depends on missing percentile conversion and combination rules. |
+| Pain Self-Efficacy Questionnaire (PSEQ) | Normative conversions and clinical publication require separate source-specific review. |
+| Autism Treatment Evaluation Checklist (ATEC) | Normative conversions and clinical publication require separate source-specific review. |
+| State Difficulties in Emotion Regulation Scale (S-DERS) | Normative conversions and clinical publication require separate source-specific review. |
+| Protective Factors of Resilience Scale (PFRS) | Normative conversions and clinical publication require separate source-specific review. |
+| Young Person’s CORE (YP-CORE) | Normative conversions and clinical publication require separate source-specific review.; Age-specific thresholds and item-4 review protocol are not implemented. |
+| Athletic Coping Skills Inventory (ACSI-28) | Normative conversions and clinical publication require separate source-specific review. |
+| Benevolent Childhood Experiences (BCEs) scale | Normative conversions and clinical publication require separate source-specific review. |
+| Repetitive Behaviours Questionnaire–3 (RBQ-3) | Normative conversions and clinical publication require separate source-specific review.; Self-report and informant normative reference distributions must remain distinct. |
+| Binge-Eating Scale (BES) | Normative conversions and clinical publication require separate source-specific review. |
+| Anxiety, Depression, and Mood Scale (ADAMS) | Normative conversions and clinical publication require separate source-specific review. |
+| Weiss Symptom Record II (WSR-II) | Normative conversions and clinical publication require separate source-specific review.; NA responses withhold the affected domain; source-specific NA denominator handling needs verification. |
+| Oldenburg Burnout Inventory (OLBI) | Normative conversions and clinical publication require separate source-specific review.; Normative conversion and longitudinal change interpretation are not implemented. |
+| World Health Organisation Disability Assessment Schedule – Children and Youth version (WHODAS-Child) | Normative conversions and clinical publication require separate source-specific review.; Overall 0–100 conversion withheld: source calls it domain-weighted without specifying how domain weights are combined. Domain percent-of-maximum and overall item mean are provided.; Within-domain response variability interpretation is not automated. |
+| Problem Gambling Severity Index (PGSI) | Normative conversions and clinical publication require separate source-specific review. |
+| Session Reactions Scale – 3 – Brief (SRS-3-B) | Normative conversions and clinical publication require separate source-specific review.; Within-subscale variability interpretation is not automated. |
+| Your Experience of Service (YES) | YES partial-response and NA denominator rules are not implemented. Current conservative evaluation withholds affected means; it must not treat NA as zero.; Current YES rules express means on 1–5. The official standardized experience/outcome percentages and their reporting contract are not implemented. |
+| Personal Wellbeing Index – Adult (PWI-A) | Normative conversions and clinical publication require separate source-specific review.; The source notes that published norms use seven core domains; comparisons when optional Q9 is included require that distinction. |
+| Ritvo Autism Asperger Diagnostic Scale – Revised (RAADS-R) | Normative conversions and clinical publication require separate source-specific review. |
+| World Health Organisation Disability Assessment Schedule 2.0 – Interview (WHODAS-interview) | Normative conversions and clinical publication require separate source-specific review.; WHO IRT conversion weights and missing-item/prorating algorithms are not implemented. These rules provide the explicitly described item means, not the complex IRT score. |
+| World Health Organisation Disability Assessment Schedule 2.0 – Proxy (WHODAS-proxy) | Normative conversions and clinical publication require separate source-specific review.; WHO IRT conversion weights and missing-item/prorating algorithms are not implemented. These rules provide the explicitly described item means, not the complex IRT score. |
+| The World Health Organisation Disability Assessment Schedule (WHODAS 2.0) – Self-Report Version | Normative conversions and clinical publication require separate source-specific review.; WHO IRT conversion weights and missing-item/prorating algorithms are not implemented. These rules provide the explicitly described item means, not the complex IRT score. |
+| Self-Compassion Scale – Short Form (SCS-SF) | Normative conversions and clinical publication require separate source-specific review. |
+| Opioid Risk Tool (ORT) | Normative conversions and clinical publication require separate source-specific review. |
+| Revised Child Anxiety and Depression Scale – Child (RCADS-Child) | Normative conversions and clinical publication require separate source-specific review.; Australian child age-band percentile conversion is not implemented; duplicate catalogue record retained with its own ID. |
+| Revised Child Anxiety and Depression Scale – Child (RCADS-Child) | Normative conversions and clinical publication require separate source-specific review.; Australian child age-band percentile conversion is not implemented; duplicate catalogue record retained with its own ID. |
+| Revised Child Anxiety and Depression Scale – Parent (RCADS-Parent) | Normative conversions and clinical publication require separate source-specific review.; Parent-report normative conversion must use its own respondent reference tables. |
+| Scale of Positive and Negative Experience (SPANE) | Normative conversions and clinical publication require separate source-specific review. |
+| Spence Children’s Anxiety Scale – Child (SCAS-Child) | Normative conversions and clinical publication require separate source-specific review.; Age/gender percentile conversion is not implemented; fillers and written responses are excluded from the anxiety total. |

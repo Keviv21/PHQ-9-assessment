@@ -94,7 +94,16 @@ export function normalizeAssessment(raw) {
     questions: [...questions].sort(
       (a, b) => order.indexOf(a.id) - order.indexOf(b.id),
     ),
+    questionnaire: raw.questionnaire || null,
+    administration: raw.administration || null,
+    reporting: raw.reporting || null,
+    verification: raw.verification || null,
+    rights: raw.rights || null,
+    references: raw.references || [],
+    sourceSchemaVersion: raw.schema_version || null,
+    sourceStatus: raw.status || null,
     scoring: {
+      ...raw.scoring,
       enabled: false,
       method: null,
       reason:
@@ -105,6 +114,7 @@ export function normalizeAssessment(raw) {
     runnable: warnings.length === 0,
     availabilityReason: warnings.join(" "),
     review: {
+      ...raw.review,
       status:
         raw.review?.questionnaire_status ||
         raw.review?.status ||
@@ -124,6 +134,7 @@ export function normalizeAssessment(raw) {
     },
   };
   if (
+    !raw.reporting &&
     raw.scoring?.method === "sum" &&
     raw.scoring.enabled !== false &&
     questions.every((q) => q.options.every((o) => Number.isInteger(o.score)))
@@ -150,7 +161,7 @@ export function normalizeAssessment(raw) {
   return {
     definition,
     sourceHash: createHash("sha256")
-      .update(JSON.stringify({ importerVersion: 3, raw }))
+      .update(JSON.stringify({ importerVersion: 5, raw }))
       .digest("hex"),
   };
 }

@@ -69,9 +69,21 @@ Private NeuroTwin data is read from `local-data/neurotwin-patient.json`, or the 
 
 The app uses **`pod_assessment_platform.assessments`**. See [architecture and table ownership](docs/ARCHITECTURE.md). `sagar prototype` is a separate database; the app does not need it. Keep credentials in the ignored `.env` and backups under ignored `local-data/backups/`.
 
-Doctor conversations and their resulting suggestions are temporary. History-based suggestions and validated translations are cached. Sessions retain typed answers, brief response summaries, corrections, definition snapshots and final results. Full chat transcripts, audio and video are not stored. Known identifiers are removed before recommendation requests, but the remaining clinical information is still sensitive.
+Doctor conversations and their resulting suggestions are temporary. History-based suggestions and validated translations are cached only in server memory and regenerated after a restart. Sessions retain typed answers, brief response summaries, corrections, definition snapshots and final results. Full chat transcripts, audio and video are not stored. Known identifiers are removed before recommendation requests, but the remaining clinical information is still sensitive.
+
+Normal PostgreSQL startup uses `patients`, `patient_records`, `assessment_prescriptions` and `assessment_sessions`. Older assessment pages/APIs are retired in PostgreSQL mode (HTTP 410); SQLite keeps compatibility for offline tests. Legacy copy/migration tools explicitly create compatibility tables and should not be run against the cleaned application database.
 
 Before importing an old SQLite installation, stop its app server and run `npm run db:migrate`. The migration tool creates a backup, preserves IDs and verifies conflicts before committing. For isolated offline tests, unset `DATABASE_URL` and set an explicit `DB_PATH`; normal app use remains PostgreSQL.
+
+## Adding patient information
+
+Use **Add patient** for manual demographics and initial history, or **Import patient JSON** for a Digital Twin report. The import preview lists extracted demographics, report sections and a patient-ID match. Choose a new patient or an existing patient and confirm. Existing external IDs cannot create a duplicate patient. An unchanged report imported again is a no-op.
+
+On a patient, **Add clinical history** creates a dated entry. **Record history** shows earlier summaries, the demographics recorded at each version, and complete saved JSON with a download action. Imports preserve the entire input object, including root metadata and every clinical section. `patients.data.historySummary` is a current excerpt limited to 24,000 characters; full reports and previous notes remain in `patient_records`. Importing a new report updates current demographics and summary, with earlier values preserved. Existing assessments and their answers are unchanged.
+
+Existing patients receive one baseline history entry on startup; this captures the previously stored profile, not missing original data. History writes are transactional and require the version shown in the preview. The app does not infer an authenticated author: records explicitly say they were recorded by the local app. Login and access controls remain separate work.
+
+Run `npm run db:backup` before bulk changes. It writes and verifies a consistent JSON snapshot of all four core tables in ignored `local-data/backups/` with owner-only permissions. An optional destination can be passed after `--`. This is an on-demand backup, not a scheduled or off-site backup. Keep it private. To recover, restore the schema from the matching application version into a separate database, load patients before patient records/prescriptions and prescriptions before sessions, then verify row counts and full JSON before switching the application connection.
 
 ## Workflow diagrams
 
@@ -96,3 +108,7 @@ PostgreSQL-specific tests also run when `TEST_DATABASE_URL` points to a disposab
 The browser flow supports English, Spanish, Hindi, Marathi, Tamil, Telugu, Kannada, Malayalam and Bengali. Questions, full option labels and session controls use the selected language. Local language checks reject common drift but are not clinical translation validation. Clinicians review recommendations and questionnaire suitability; this prototype does not establish diagnoses and does not yet provide production authentication or patient authorization.
 
 See [cleanup notes](docs/CLEANUP.md) for moved files, removed obsolete assets, preserved routes and private recovery data.
+
+## Local JSON reports
+
+Patient analytics now includes a selected-visit report preview and a downloadable PDF, generated from saved JSON definitions and patient answers. See [report setup, use and limitations](docs/JSON_REPORTING.md) and [the 44 explicit source-coverage gaps](docs/REPORTING_COVERAGE.md). All 186 definitions remain clinically unvalidated; normal reports keep draft scoring disabled.

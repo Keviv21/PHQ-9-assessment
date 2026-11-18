@@ -7,6 +7,7 @@ import {
 } from "../../public/shared/answers.js";
 import { presentation } from "./presentation.js";
 import { randomUUID } from "node:crypto";
+import { calculateSessionResults } from "./session-results.js";
 import { scoreDefinition } from "./definition.js";
 import { HttpError } from "./errors.js";
 import { LANGUAGES } from "./languages.js";
@@ -150,6 +151,7 @@ export function finalizeState(state, revision) {
     status: "completed",
     completedAt: new Date().toISOString(),
   });
+  if (s.definition.reporting) s.calculatedResults = calculateSessionResults(s);
   s.revision++;
   return s;
 }

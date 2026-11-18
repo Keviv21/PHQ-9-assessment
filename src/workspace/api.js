@@ -1,3 +1,4 @@
+import { reportPdf } from "./report-pdf.js";
 import { WebSocketServer } from "ws";
 import { catalogue } from "./catalogue.js";
 import { LANGUAGES } from "./languages.js";
@@ -28,17 +29,19 @@ export function createWorkspaceApi(
     });
     res.end(JSON.stringify(data));
   };
-  async function body(req) {
+  async function body(req, maxBytes = 220000) {
     if (!req.headers["content-type"]?.startsWith("application/json"))
       throw new HttpError(415, "Send JSON.");
-    let data = "";
+    const chunks = [];
+    let bytes = 0;
     for await (const chunk of req) {
-      data += chunk;
-      if (data.length > 220000)
+      bytes += Buffer.byteLength(chunk);
+      chunks.push(Buffer.from(chunk));
+      if (bytes > maxBytes)
         throw new HttpError(413, "Request is too large.");
     }
     try {
-      return JSON.parse(data);
+      return JSON.parse(Buffer.concat(chunks).toString("utf8"));
     } catch {
       throw new HttpError(400, "Invalid JSON.");
     }
@@ -73,8 +76,22 @@ export function createWorkspaceApi(
         if (!data) throw new HttpError(404, "Assessment not found.");
       } else if (p[0] === "patients" && p.length === 1 && req.method === "GET")
         data = (await store.listPatients());
+      else if (p[0] === "analytics" && p[1] === "overview" && p.length === 2 && req.method === "GET")
+        data = await store.analyticsOverview();
+      else if (p[0] === "patients" && p[2] === "prescriptions" && p.length === 3 && req.method === "GET")
+        data = await store.patientPrescriptions(p[1]);
       else if (p[0] === "patients" && p.length === 1 && req.method === "POST")
         data = (await store.createPatient(await body(req)));
+      else if (p[0] === "patient-imports" && p.length === 2 && p[1] === "preview" && req.method === "POST")
+        data = await store.previewPatientImport(await body(req, 2200000));
+      else if (p[0] === "patient-imports" && p.length === 1 && req.method === "POST")
+        data = await store.importPatient(await body(req, 2200000));
+      else if (p[0] === "patients" && p.length === 3 && p[2] === "records" && req.method === "GET")
+        data = await store.patientRecords(p[1]);
+      else if (p[0] === "patients" && p.length === 4 && p[2] === "records" && req.method === "GET")
+        data = await store.patientRecord(p[1], p[3]);
+      else if (p[0] === "patients" && p.length === 3 && p[2] === "records" && req.method === "POST")
+        data = await store.addPatientNote(p[1], await body(req));
       else if (p[0] === "patients" && p.length === 2 && req.method === "GET")
         data = (await store.patient(p[1]));
       else if (
@@ -183,7 +200,13 @@ export function createWorkspaceApi(
         req.method === "GET"
       ) {
         const s = (await store.get(p[1]));
-        const report = assessmentReport(s, (await store.patient(s.patientId)));
+        const report = assessmentReport(s, await store.patient(s.patientId), await store.sessions(s.patientId));
+        if (url.searchParams.get("format") === "json") { reply(res, 200, report); return true; }
+        if (url.searchParams.get("format") === "pdf") {
+          const pdf = await reportPdf(report);
+          res.writeHead(200, { "content-type": "application/pdf", "cache-control": "no-store", "content-disposition": `attachment; filename="assessment-${s.id}.pdf"` });
+          res.end(pdf); return true;
+        }
         res.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
           "cache-control": "no-store",

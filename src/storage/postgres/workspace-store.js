@@ -1,3 +1,6 @@
+import { postgresPatientRecords } from "./patient-records.js";
+import { createMemoryCache } from "../memory-cache.js";
+import { prescriptionSummary, buildOverview } from "../../workspace/analytics-overview.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -23,6 +26,8 @@ export async function openPostgresWorkspace(
   } = {},
 ) {
   const { pool, table, transaction } = database;
+  const recommendations = createMemoryCache();
+  const translations = createMemoryCache();
   const patients = table("workspace_patients"),
     prescriptions = table("workspace_prescriptions"),
     sessionsTable = table("workspace_sessions");
@@ -83,6 +88,8 @@ export async function openPostgresWorkspace(
         true,
       );
   }
+  const recordStore = postgresPatientRecords(database);
+  await recordStore.backfill();
   async function listPatients() {
     const { rows } = await pool.query(`SELECT data FROM ${patients}`);
     return rows
@@ -202,6 +209,28 @@ export async function openPostgresWorkspace(
         ),
       );
   }
+  async function prescriptionRows(patientId) {
+    const { rows } = await pool.query(`SELECT p.id, p.assessment_id, p.created_at, s.id AS session_id,
+        s.data #> '{status}' AS status,
+        s.data #> '{definition,title}' AS title,
+        s.data #> '{startedAt}' AS started_at,
+        s.data #> '{completedAt}' AS completed_at,
+        s.data #> '{language}' AS language,
+        s.data #> '{score}' AS score,
+        s.data #> '{calculatedResults,metrics}' AS result_metrics,
+        s.data #> '{definition,scoring,enabled}' AS scoring_enabled,
+        s.data #> '{definition,scoring,min}' AS score_min,
+        s.data #> '{definition,scoring,max}' AS score_max
+      FROM ${prescriptions} p LEFT JOIN ${sessionsTable} s ON s.prescription_id=p.id
+      ${patientId === undefined ? "" : "WHERE p.patient_id=$1"}
+      ORDER BY p.created_at DESC, p.id`, patientId === undefined ? [] : [patientId]);
+    return rows.map(prescriptionSummary);
+  }
+  async function patientPrescriptions(patientId) {
+    await patient(patientId);
+    return prescriptionRows(patientId);
+  }
+  async function analyticsOverview() { return buildOverview(await prescriptionRows()); }
   async function analytics(patientId) {
     const p = await patient(patientId),
       states = await sessions(patientId);
@@ -225,7 +254,12 @@ export async function openPostgresWorkspace(
   return {
     patient,
     listPatients,
-    createPatient: (input) => putPatient(createPatientRecord(input)),
+    createPatient: recordStore.createPatient,
+    previewPatientImport: recordStore.previewPatientImport,
+    importPatient: recordStore.importPatient,
+    addPatientNote: recordStore.addPatientNote,
+    patientRecords: recordStore.patientRecords,
+    patientRecord: recordStore.patientRecord,
     prescribe,
     prescription,
     createSession,
@@ -236,7 +270,10 @@ export async function openPostgresWorkspace(
     preferences: (id, input, localized) => change(id, (s) => preferencesState(s, input, localized)),
     sessions,
     analytics,
+    patientPrescriptions,
+    analyticsOverview,
     async recommendation(id, hash) {
+      if (!database.persistentCaches) return recommendations.get([id, hash]);
       const r = await pool.query(
         `SELECT data FROM ${table("workspace_recommendations")} WHERE patient_id=$1 AND context_hash=$2`,
         [id, hash],
@@ -244,12 +281,14 @@ export async function openPostgresWorkspace(
       return r.rows[0]?.data || null;
     },
     async saveRecommendation(id, hash, data) {
+      if (!database.persistentCaches) return recommendations.set([id, hash], data);
       await pool.query(
         `INSERT INTO ${table("workspace_recommendations")} VALUES($1,$2,$3) ON CONFLICT(patient_id) DO UPDATE SET context_hash=EXCLUDED.context_hash,data=EXCLUDED.data`,
         [id, hash, JSON.stringify(data)],
       );
     },
     async translation(hash, language) {
+      if (!database.persistentCaches) return translations.get([hash, language]);
       const r = await pool.query(
         `SELECT data FROM ${table("workspace_translations")} WHERE hash=$1 AND language=$2`,
         [hash, language],
@@ -257,6 +296,7 @@ export async function openPostgresWorkspace(
       return r.rows[0]?.data || null;
     },
     async saveTranslation(hash, language, data) {
+      if (!database.persistentCaches) return translations.set([hash, language], data);
       await pool.query(
         `INSERT INTO ${table("workspace_translations")} VALUES($1,$2,$3) ON CONFLICT(hash,language) DO UPDATE SET data=EXCLUDED.data`,
         [hash, language, JSON.stringify(data)],

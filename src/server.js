@@ -43,6 +43,10 @@ const server = http.createServer((request, response) => {
 async function handleRequest(request, response) {
   if (request.url.startsWith('/api/workspace/') && await workspace.handle(request, response)) return;
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+  if (!storage.legacyEnabled && (
+    (url.pathname.startsWith('/api/') && url.pathname !== '/api/health') ||
+    STATIC_ASSETS[url.pathname]?.startsWith('legacy/')
+  )) return json(response, 410, {error: 'This older assessment workflow has been retired. Open the current workspace at /.'});
   if (url.pathname === '/api/draft-sessions' && request.method === 'POST') {
     if (!request.headers['content-type']?.startsWith('application/json')) return json(response, 415, { error: 'Send JSON.' });
     let body = '';
@@ -322,6 +326,7 @@ server.on('upgrade', (request, socket, head) => {
   let pathname;
   try { pathname = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`).pathname; }
   catch { socket.destroy(); return; }
+  if (!storage.legacyEnabled && pathname !== '/workspace-ws') { socket.destroy(); return; }
   const target = pathname === '/workspace-ws' ? workspace.wss : pathname === '/ws' ? wss : pathname === '/draft-ws' ? draftWss : null;
   if (!target) { socket.destroy(); return; }
   target.handleUpgrade(request, socket, head, (client) => target.emit('connection', client, request));

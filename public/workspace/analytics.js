@@ -1,3 +1,4 @@
+import { renderPatientActivity } from "./analytics-overview.js";
 import { createDistributionChartSvg, createResponseChartSvg, responseCounts, trendData } from "./analytics-charts.js";
 import { el as node, api, reportLinks, date } from "../shared/api.js";
 const colors = ["#245bd5", "#9844a8", "#087b70"];
@@ -13,6 +14,7 @@ export function createPatientAnalytics(root) {
   root.classList.add("pa-dashboard");
   root.innerHTML = `<dl class="pa-overview" data-part="overview"></dl>
  <div class="pa-refresh"><p data-part="status" role="status" class="pa-status"></p><button type="button" class="button outline" data-part="retry">Refresh history</button></div>
+ <section data-part="activity" class="wa-activity" hidden></section>
  <div data-part="content" hidden>
   <div class="pa-toolbar"><label>Assessment<select data-part="assessment"></select></label><p class="pa-completed" data-part="completed"></p></div>
   <dl class="pa-scores" data-part="scores"></dl>
@@ -64,7 +66,7 @@ export function createPatientAnalytics(root) {
                 : `${value - prior > 0 ? "+" : "−"}${Math.abs(value - prior)} points from previous visit`;
         }
       }
-      return card(metric.name, scoreText(value, metric.max), detail, i);
+      return card(metric.name, scoreText(value, metric.max), group.draftScores ? `Draft score — not clinically validated. ${detail}` : detail, i);
     });
     if (!cards.length)
       cards.push(
@@ -138,93 +140,14 @@ export function createPatientAnalytics(root) {
     if (!r) return;
     const detail = find("details");
     detail.replaceChildren();
-    const meta = node("dl", undefined, "pa-visit-meta");
-    for (const [label, value] of [
-      ["Completed", date(r.completedAt)],
-      ["Response mode", modes[r.sessionMode] || "Not recorded"],
-      ["Language", group.language.toUpperCase()],
-      ["Elapsed time", duration(r.elapsedSeconds)],
-      ["Questionnaire version", group.version],
-      ["Result", group.scored ? scoreText(r.score, r.max) : "Responses only"],
-    ]) {
-      const item = node("div");
-      item.append(node("dt", label), node("dd", value));
-      meta.append(item);
-    }
-    detail.append(meta);
-    if (r.severity)
-      detail.append(node("p", `Recorded descriptor: ${r.severity}`));
-    detail.append(reportLinks(r.id));
-    const charts = node("div", undefined, "pa-visit-charts");
-    if (group.scored) {
-      group.metrics.forEach((metric, i) => {
-        const chart = createDistributionChartSvg({
-          title: metric.name, axisLabel: "Recorded score within the source-defined range",
-          min: metric.min, max: metric.max, patientScore: r.values[i],
-          patientScoreLabel: `${metric.name}: ${r.values[i]} / ${metric.max}`,
-        });
-        if (chart) {
-          const section = node("section", undefined, "pa-chart");
-          section.append(chart);
-          charts.append(section);
-        }
-      });
-    }
-    const bars = responseCounts(r.responses);
-    const distribution = node("section", undefined, "pa-chart");
-    distribution.append(node("h3", "Response distribution"), node("p",
-      "Counts of saved choice responses. Written feedback and skipped questions are excluded. These counts are not clinical scores or population percentiles.", "pa-note"));
-    const chart = createResponseChartSvg(bars);
-    if (chart) {
-      const scroll = node("div", undefined, "pa-svg-scroll");
-      scroll.append(chart);
-      distribution.append(scroll);
-      const table = node("table", undefined, "pa-response-counts");
-      table.setAttribute("aria-label", "Response distribution values");
-      const head = node("thead"), row = node("tr");
-      row.append(node("th", "Full response label"), node("th", "Count"));
-      head.append(row);
-      const body = node("tbody");
-      bars.forEach(({ label, count }) => {
-        const row = node("tr");
-        row.append(node("td", label), node("td", String(count)));
-        body.append(row);
-      });
-      table.append(head, body);
-      distribution.append(table);
-    } else distribution.append(node("p", "This visit has no choice responses to chart. Written and numeric responses are listed below."));
-    charts.append(distribution);
-    detail.append(charts);
-    const answers = node("details");
-    answers.open = true;
-    answers.append(node("summary", "Saved answers"));
-    const list = node("ol", undefined, "pa-responses");
-    for (const a of r.responses) {
-      const li = node("li");
-      li.append(node("strong", a.question), node("p", a.response));
-      if (a.summary) li.append(node("small", `Response summary: ${a.summary}`));
-      list.append(li);
-    }
-    answers.append(list);
-    detail.append(answers);
-    if (r.answerRevisions?.length) {
-      const revisions = node("details");
-      revisions.append(
-        node("summary", `Answer corrections (${r.answerRevisions.length})`),
-      );
-      const list = node("ul");
-      r.answerRevisions.forEach((a) =>
-        list.append(
-          node(
-            "li",
-            `${a.questionId}: ${a.previousLabel} → ${a.responseLabel} · ${date(a.at)}`,
-          ),
-        ),
-      );
-      revisions.append(list);
-      detail.append(revisions);
-    }
+    const frame = node("iframe");
+    frame.title = `Assessment report for visit completed ${date(r.completedAt)}`;
+    frame.src = `/api/workspace/sessions/${encodeURIComponent(r.id)}/report`;
+    frame.className = "pa-report-preview";
+    frame.setAttribute("sandbox", "allow-same-origin allow-modals allow-downloads allow-scripts");
+    detail.append(reportLinks(r.id), frame);
   }
+
   function drawTrend(group) {
     const width = plot.clientWidth;
     const height = plot.clientHeight;
@@ -334,7 +257,7 @@ export function createPatientAnalytics(root) {
     plot.setAttribute("aria-label", group.scored
       ? "Recorded scores by visit. Exact values are in Assessment history."
       : "Number of answered questions by visit. Exact counts are in Assessment history.");
-    find("note").textContent = !group.scored
+    find("note").textContent = group.draftScores ? "Draft score — not clinically validated. Numeric changes do not establish clinical improvement." : !group.scored
       ? "Answered questions per completed visit. This shows response completion, not symptom severity."
       : !scored ? "No recorded scores available for these visits."
       : group.results.length === 1
@@ -393,6 +316,7 @@ export function createPatientAnalytics(root) {
           ),
         }))
         .filter((g) => g.results.length);
+      renderPatientActivity(find("activity"), groups);
       overview(
         data,
         groups.reduce((n, g) => n + g.results.length, 0),
@@ -423,6 +347,7 @@ export function createPatientAnalytics(root) {
     } catch (e) {
       if (!controller.signal.aborted && current === revision) {
         content.hidden = true;
+        find("activity").hidden = true;
         status.textContent =
           "Could not load assessment history. Use Refresh history to try again.";
       }
@@ -461,6 +386,8 @@ export function createPatientAnalytics(root) {
       completion = sessionId;
       if (changed) {
         groups = [];
+        find("activity").replaceChildren();
+        find("activity").hidden = true;
         assessment.replaceChildren();
         find("visit").replaceChildren();
         content.hidden = true;

@@ -1,3 +1,5 @@
+import { setupPatientRecords } from "./patient-records.js";
+import { createAnalyticsOverview } from "./analytics-overview.js";
 import { createPatientAnalytics } from "./analytics.js";
 import { $, el, api, date, reportLinks } from "../shared/api.js";
 let patients = [],
@@ -14,14 +16,15 @@ let patients = [],
   config;
 const patientPageSize = 5;
 const sidebar = $("sidebar-toggle");
-sidebar.onclick = () => {
-  const collapsed = document
-    .querySelector(".clinic-app")
-    .classList.toggle("sidebar-collapsed");
+function setSidebarCollapsed(collapsed) {
+  document.querySelector(".clinic-app").classList.toggle("sidebar-collapsed", collapsed);
   sidebar.setAttribute("aria-expanded", String(!collapsed));
   sidebar.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
   sidebar.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
-};
+}
+sidebar.onclick = () => setSidebarCollapsed(
+  !document.querySelector(".clinic-app").classList.contains("sidebar-collapsed"),
+);
 function error(area, message) {
   area.replaceChildren(el("p", message, "notice alert"));
 }
@@ -58,8 +61,13 @@ function clearConsultation() {
   updateDiscussionControls();
 }
 function view(name, patientId = selectedPatientId) {
+  const currentView = new URL(location.href).searchParams.get("view");
+  if (arguments.length < 2 && ["reports", "analytics"].includes(name) && currentView === "reports") patientId = $("report-patient").value;
+  if (arguments.length < 2 && ["reports", "analytics"].includes(name) && currentView === "analytics") patientId = $("analytics-patient").value;
   clearConsultation();
+  reportRequest?.abort();
   pageAnalytics.hide();
+  analyticsOverview.hide();
   if (analyticsDialog.open) analyticsDialog.close();
   for (const id of ["prescribe", "reports", "analytics", "library"]) {
     $(`${id}-view`).hidden = id !== name;
@@ -71,6 +79,7 @@ function view(name, patientId = selectedPatientId) {
   const url = new URL(location.href);
   url.searchParams.set("view", name);
   if (patientId) url.searchParams.set("patient", patientId);
+  else url.searchParams.delete("patient");
   history.replaceState({}, "", url);
   if (name === "reports") {
     $("report-patient").value = patientId;
@@ -78,6 +87,7 @@ function view(name, patientId = selectedPatientId) {
   }
   if (name === "analytics") {
     $("analytics-patient").value = patientId;
+    analyticsOverview.show();
     loadAnalytics();
   }
 }
@@ -239,7 +249,7 @@ function selectAssessment(id, from = "manual") {
       el("h3", a.title),
       el(
         "p",
-        `${a.questionCount} questions · ${a.scoringEnabled ? "Scoring available" : "Responses only · no validated score"}`,
+        `${a.questionCount} questions · ${a.scoringEnabled ? "Scoring available" : a.draftScoringAvailable ? "Draft scores available · not clinically validated" : "Responses only · no validated score"}`,
         "tag",
       ),
     );
@@ -482,6 +492,7 @@ async function openPatient(requestSuggestions = true) {
       full.append(pre);
       box.append(full);
     }
+    patientRecords.render(box, p);
     $("refresh-suggestions").disabled = !config.geminiConfigured;
     updateDiscussionControls();
     if (pendingLibrarySelection) {
@@ -527,43 +538,49 @@ async function prescribe() {
     if (token === version) $("prescribe-button").disabled = false;
   }
 }
+let reportRequest;
 async function loadReports() {
-  const id = $("report-patient").value,
-    area = $("report-content");
-  if (!id) {
-    area.replaceChildren(el("p", "Choose a patient to view reports."));
-    return;
-  }
+  reportRequest?.abort();
+  const controller = new AbortController();
+  reportRequest = controller;
+  const id = $("report-patient").value, area = $("report-content");
+  if (!id) { area.replaceChildren(el("p", "Choose a patient to view reports.", "empty-state")); return; }
   area.replaceChildren(el("p", "Loading reports…"));
   try {
-    const sessions = await api(`patients/${id}/sessions`);
-    if ($("report-patient").value !== id) return;
-    area.replaceChildren();
-    for (const s of sessions) {
-      const card = el("article", undefined, "panel");
-      card.append(
-        el("h3", s.definition.title),
-        el(
-          "p",
-          `${s.status === "completed" ? "Completed" : "In progress"} · ${date(s.completedAt || s.startedAt)} · ${s.language}`,
-        ),
-      );
-      if (s.status === "completed") card.append(reportLinks(s.id));
-      else {
-        const link = el("a", "Resume assessment", "button outline");
-        link.href = `/workspace-session.html?prescriptionId=${s.prescriptionId}`;
-        card.append(link);
-      }
-      area.append(card);
+    const prescriptions = await api(`patients/${encodeURIComponent(id)}/prescriptions`, { signal: controller.signal });
+    if (reportRequest !== controller) return;
+    const completed = prescriptions.filter(p => p.status === "completed").length;
+    area.replaceChildren(el("h2", `${completed} assessment ${completed === 1 ? "report" : "reports"}`, "wa-report-heading"));
+    if (!prescriptions.length) {
+      area.append(el("p", "No prescribed tests or completed reports for this patient yet.", "empty-state")); return;
     }
-    if (!sessions.length)
-      area.append(
-        el("p", "No saved assessments for this patient yet.", "empty-state"),
-      );
+    const list = el("div", undefined, "wa-report-list");
+    for (const rx of prescriptions) {
+      const row = el("article", undefined, "wa-report-row"), detail = el("div", undefined, "wa-report-detail");
+      const label = { completed: "Completed", "in-progress": "In progress", assigned: "Awaiting start" }[rx.status];
+      detail.append(el("span", label, `wa-status wa-status-${rx.status}`), el("h3", rx.title));
+      for (const m of rx.metrics || []) detail.append(el("p", `${m.label}: ${m.value} (range ${m.min}–${m.max})${m.status === "draft_unvalidated" ? " · Draft score — not clinically validated" : ""}`));
+      if (rx.score !== null) detail.append(el("p", `Score: ${rx.score} / ${rx.max}`));
+      detail.append(el("p", `Prescribed ${date(rx.createdAt)}${rx.completedAt ? ` · Completed ${date(rx.completedAt)}` : ""}`, "wa-caption"));
+      row.append(detail);
+      if (rx.status === "completed") row.append(reportLinks(rx.sessionId));
+      else {
+        const link = el("a", rx.status === "assigned" ? "Start assessment" : "Resume assessment", "button outline");
+        link.href = `/workspace-session.html?prescriptionId=${encodeURIComponent(rx.id)}`;
+        row.append(link);
+      }
+      list.append(row);
+    }
+    area.append(list);
   } catch (e) {
-    error(area, e.message);
+    if (!controller.signal.aborted && reportRequest === controller) {
+      error(area, "Could not load reports. Please try again.");
+      const retry = el("button", "Retry reports", "button outline");
+      retry.type = "button"; retry.onclick = loadReports; area.append(retry);
+    }
   }
 }
+const analyticsOverview = createAnalyticsOverview($("analytics-overview"));
 const pageAnalytics = createPatientAnalytics($("analytics-dashboard"));
 const dialogAnalytics = createPatientAnalytics($("analytics-dialog-dashboard"));
 const analyticsDialog = $("patient-analytics-dialog");
@@ -575,6 +592,8 @@ function loadAnalytics() {
 }
 analyticsDialog.addEventListener("close", () => dialogAnalytics.hide());
 addEventListener("pagehide", () => {
+  analyticsOverview.hide();
+  reportRequest?.abort();
   pageAnalytics.destroy();
   dialogAnalytics.destroy();
 });
@@ -584,7 +603,11 @@ $("patient-search").oninput = () => changePatientPage(0);
 $("patient-previous").onclick = () => changePatientPage(patientPage - 1);
 $("patient-next").onclick = () => changePatientPage(patientPage + 1);
 $("patient-page").onchange = (event) => changePatientPage(Number(event.target.value));
-$("next-step").onclick = () => openPatient();
+$("next-step").onclick = () => {
+  if (!selectedPatientId) return;
+  setSidebarCollapsed(true);
+  openPatient();
+};
 $("back-step").onclick = backToPatients;
 $("workspace-back").onclick = backToPatients;
 $("assessment-dropdown").addEventListener("toggle", () => {
@@ -639,8 +662,14 @@ $("patient-analytics").onclick = () => {
   dialogAnalytics.show(patient.id);
 };
 $("patient-reports").onclick = () => view("reports");
-$("report-patient").onchange = loadReports;
-$("analytics-patient").onchange = loadAnalytics;
+function rememberPatient(id) {
+  const url = new URL(location.href);
+  if (id) url.searchParams.set("patient", id); else url.searchParams.delete("patient");
+  url.searchParams.delete("session");
+  history.replaceState({}, "", url);
+}
+$("report-patient").onchange = () => { rememberPatient($("report-patient").value); loadReports(); };
+$("analytics-patient").onchange = () => { rememberPatient($("analytics-patient").value); loadAnalytics(); };
 $("analytics-range").onchange = loadAnalytics;
 $("add-patient").onclick = () => {
   $("patient-form-error").textContent = "";
@@ -668,6 +697,17 @@ $("add-patient-form").onsubmit = async (e) => {
     button.disabled = false;
   }
 };
+const patientRecords = setupPatientRecords({
+  onSaved: async (saved) => {
+    selectedPatientId = saved.id;
+    rememberPatient(saved.id);
+    await loadPatients();
+    showSelectedPatientPage();
+    $("next-step").disabled = false;
+    view("prescribe");
+    await openPatient(false);
+  },
+});
 try {
   config = await api("catalogue");
   catalogue = config.catalogue;
@@ -690,6 +730,7 @@ try {
     ["reports", "analytics", "library"].includes(q.get("view"))
       ? q.get("view")
       : "prescribe",
+    selectedPatientId,
   );
 } catch (e) {
   error($("patient-list"), e.message);

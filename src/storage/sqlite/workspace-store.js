@@ -1,3 +1,4 @@
+import { sqlitePatientRecords } from "./patient-records.js";
 import { createPatientRecord, answerState, finalizeState, preferencesState } from "../../workspace/state.js";
 import {
   answerError,
@@ -9,6 +10,7 @@ import {
 import { presentation } from "../../workspace/presentation.js";
 import { groupPatientAssessments } from "../../workspace/patient-analytics.js";
 import { DatabaseSync } from "node:sqlite";
+import { prescriptionSummary, buildOverview } from "../../workspace/analytics-overview.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -91,7 +93,9 @@ export function openWorkspaceStore(
           createdAt: new Date().toISOString(),
         });
   }
-  function createPatient(input) { return putPatient(createPatientRecord(input)); }
+  const recordStore = sqlitePatientRecords(db);
+  recordStore.backfill();
+  const createPatient = recordStore.createPatient;
   const listPatients = () =>
     db
       .prepare("SELECT data FROM workspace_patients")
@@ -210,6 +214,27 @@ export function openWorkspaceStore(
         ),
       );
   }
+  function prescriptionRows(patientId) {
+    return db.prepare(`SELECT p.id, p.assessment_id, p.created_at, s.id AS session_id,
+        json_extract(s.data, '$.status') AS status,
+        json_extract(s.data, '$.definition.title') AS title,
+        json_extract(s.data, '$.startedAt') AS started_at,
+        json_extract(s.data, '$.completedAt') AS completed_at,
+        json_extract(s.data, '$.language') AS language,
+        json_extract(s.data, '$.score') AS score,
+        json_extract(s.data, '$.calculatedResults.metrics') AS result_metrics,
+        json_extract(s.data, '$.definition.scoring.enabled') AS scoring_enabled,
+        json_extract(s.data, '$.definition.scoring.min') AS score_min,
+        json_extract(s.data, '$.definition.scoring.max') AS score_max
+      FROM workspace_prescriptions p LEFT JOIN workspace_sessions s ON s.prescription_id=p.id
+      ${patientId === undefined ? "" : "WHERE p.patient_id=?"}
+      ORDER BY p.created_at DESC, p.id`).all(...(patientId === undefined ? [] : [patientId])).map(prescriptionSummary);
+  }
+  function patientPrescriptions(patientId) {
+    patient(patientId);
+    return prescriptionRows(patientId);
+  }
+  function analyticsOverview() { return buildOverview(prescriptionRows()); }
   function analytics(patientId) {
     const p = patient(patientId),
       states = sessions(patientId);
@@ -235,6 +260,11 @@ export function openWorkspaceStore(
     patient,
     listPatients,
     createPatient,
+    previewPatientImport: recordStore.previewPatientImport,
+    importPatient: recordStore.importPatient,
+    addPatientNote: recordStore.addPatientNote,
+    patientRecords: recordStore.patientRecords,
+    patientRecord: recordStore.patientRecord,
     prescribe,
     prescription,
     createSession,
@@ -244,6 +274,8 @@ export function openWorkspaceStore(
     preferences: (id, input, localized) => update(preferencesState(get(id), input, localized)),
     sessions,
     analytics,
+    patientPrescriptions,
+    analyticsOverview,
     recommendation: (id, hash) => {
       const r = db
         .prepare(

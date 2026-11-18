@@ -10,7 +10,7 @@ export async function copyPostgresDatabase(sourceUrl, sourceSchema, targetUrl, t
   if (from.hostname === to.hostname && from.pathname === to.pathname && sourceSchema === targetSchema)
     throw new Error("Source and target must be separate.");
   if (from.hostname.endsWith(".neon.tech")) from.searchParams.set("sslmode", "verify-full");
-  const target = await openPostgres(targetUrl, { schema: targetSchema });
+  const target = await openPostgres(targetUrl, { schema: targetSchema, includeAuxiliary: true });
   const source = new pg.Client({ connectionString: from.href, connectionTimeoutMillis: 15000 });
   try {
     await source.connect();

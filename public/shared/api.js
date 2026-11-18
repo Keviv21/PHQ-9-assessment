@@ -19,7 +19,7 @@ export function reportLinks(id) {
   const box = el("div", undefined, "report-actions");
   for (const [title, suffix] of [
     ["View / print report", ""],
-    ["Download report", "?download=1"],
+    ["Download PDF", "?format=pdf"],
   ]) {
     const a = el("a", title, "button outline");
     a.href = `/api/workspace/sessions/${encodeURIComponent(id)}/report${suffix}`;
