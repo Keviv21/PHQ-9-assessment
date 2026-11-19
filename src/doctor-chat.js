@@ -1,11 +1,14 @@
 import { GoogleGenAI } from '@google/genai';
 import { listDefinitions } from './definition-library.js';
 import { getCatalogEntry } from './assessment-catalog.js';
+import { getAssessmentForm } from './forms.js';
+import { getDraftAssessment } from './draft-library.js';
 
 const stopWords = new Set(['about', 'after', 'again', 'also', 'and', 'are', 'been', 'does', 'from', 'have', 'into', 'more', 'patient', 'some', 'that', 'their', 'them', 'there', 'these', 'this', 'with', 'would']);
 const scoredIds = ['phq9', 'gad7', 'pcl5'];
 const retainedLegacyIds = new Set(['phq9', 'gad7', 'pcl5', 'dass21'].map((id) => getCatalogEntry(id).catalogDraftId));
-const definitions = listDefinitions().filter((item) => item.available && !retainedLegacyIds.has(item.id));
+const allDefinitions = listDefinitions();
+const definitions = allDefinitions.filter((item) => item.available && !retainedLegacyIds.has(item.id));
 
 function tokens(value) {
   return new Set(String(value).toLowerCase().match(/[a-z]{3,}/g)?.filter((word) => !stopWords.has(word)) || []);
@@ -43,15 +46,21 @@ export function retrieveDoctorCandidates(patient, message, history = []) {
     if (message.toLowerCase().includes(item.title.toLowerCase())) score += 20;
     return { id: `definition:${item.id}`, title: item.title,
       description: (item.description || '').slice(0, 240), score,
+      questionCount: item.questionCount, referencePeriod: item.referencePeriod,
       kind: item.ruleCount ? 'definition_draft' : 'answer_only' };
   }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
   const scored = scoredIds.filter((id) => id !== 'pcl5' || patient.summary.traumaExposure === 'confirmed').map((id) => {
     const entry = getCatalogEntry(id);
-    return { id, title: entry.title, description: entry.purpose, kind: 'scored' };
+    const form = getAssessmentForm(id, 'en');
+    return { id, title: entry.title, description: entry.purpose, kind: 'scored',
+      questionCount: form.questions.length, referencePeriod: form.referencePeriod };
   });
   const dass = getCatalogEntry('dass21');
+  const dassForm = getDraftAssessment(dass.catalogDraftId);
+  const dassDefinition = allDefinitions.find((item) => item.id === dass.catalogDraftId);
   return [...scored, { id: `draft:${dass.catalogDraftId}`, title: dass.title,
-    description: dass.purpose, kind: 'scored_draft' },
+    description: dass.purpose, kind: 'scored_draft', questionCount: dassForm?.extractedItemCount || 21,
+    referencePeriod: dassDefinition?.referencePeriod || '' },
   ...ranked.slice(0, 18).map(({ score, ...item }) => item)];
 }
 
@@ -65,6 +74,7 @@ export function fallbackDoctor(patient, message, history = []) {
     .filter(({ matches }) => matches.length)
     .slice(0, 3)
     .map(({ item, matches }) => ({ id: item.id, title: item.title, kind: item.kind,
+      description: item.description, questionCount: item.questionCount, referencePeriod: item.referencePeriod,
       reason: `The current discussion mentions ${matches.slice(0, 2).join(' and ')}. Review the form's relevance and wording before assigning it.` }));
   return {
     reply: suggestions.length
@@ -95,7 +105,7 @@ export async function answerDoctor({ patient, message, history = [], apiKey, mod
     patientContext: { ageGroup: patient.summary.ageGroup, safetyStatus: patient.summary.safetyStatus,
       traumaExposure: patient.summary.traumaExposure, currentObservations: current },
     conversation: [...validated.history, { role: 'doctor', text: validated.message }],
-    candidates,
+    candidates: candidates.map(({ id, title, description, kind }) => ({ id, title, description, kind })),
   });
   const client = generate ? null : new GoogleGenAI({ apiKey });
   const request = {
@@ -119,6 +129,9 @@ export async function answerDoctor({ patient, message, history = [], apiKey, mod
     return true;
   }).slice(0, 3).map((item) => ({
     id: item.id, title: allowed.get(item.id).title, kind: allowed.get(item.id).kind,
+    description: allowed.get(item.id).description,
+    questionCount: allowed.get(item.id).questionCount,
+    referencePeriod: allowed.get(item.id).referencePeriod,
     reason: typeof item.reason === 'string' ? item.reason.slice(0, 240) : 'Review this assessment against the patient summary.',
   }));
   return { reply: parsed.reply.slice(0, 500), suggestions, model, source: 'gemini', reviewedByDoctor: false };

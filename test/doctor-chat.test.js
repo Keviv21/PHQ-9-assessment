@@ -34,6 +34,8 @@ test('Gemini suggestions are limited to retrieved, runnable catalogue IDs', asyn
   assert.equal(request.store, false);
   assert.deepEqual(result.suggestions.map((item) => item.id), [catalogueItem.id]);
   assert.ok(['definition_draft', 'answer_only'].includes(result.suggestions[0].kind));
+  assert.equal(result.suggestions[0].questionCount, catalogueItem.questionCount);
+  assert.ok(result.suggestions[0].description);
   assert.equal(result.reviewedByDoctor, false);
 });
 

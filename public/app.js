@@ -528,7 +528,10 @@ async function start(nextMode) {
     ui.language.disabled = formId === 'pcl5';
     ui.textInput.disabled = true;
     ui.sendText.disabled = true;
-    if (state?.status !== 'completed') { setStatus('Disconnected'); stopMedia(); }
+    if (state?.status !== 'completed') {
+      setStatus('Disconnected. Start again to resume your saved answers.');
+      stopMedia();
+    }
   };
 }
 

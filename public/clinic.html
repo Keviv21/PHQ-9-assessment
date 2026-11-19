@@ -21,7 +21,7 @@
   </svg>
   <div class="clinic-app">
     <aside class="sidebar" aria-label="Main navigation">
-      <button id="sidebar-toggle" class="logo" type="button" aria-label="Collapse sidebar" aria-controls="sidebar-navigation" aria-expanded="true" title="Collapse sidebar"><img class="logo-mark" src="/openmind-mark.svg" alt=""><span class="logo-word">penMind</span><svg class="collapse-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m14 5-7 7 7 7"/></svg></button>
+      <div class="logo"><a class="logo-home" href="/" aria-label="OpenMind home" title="Go to home"><img class="logo-mark" src="/openmind-mark.svg" alt=""><span class="logo-word">penMind</span></a><button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-controls="sidebar-navigation" aria-expanded="true" title="Collapse sidebar"><svg class="collapse-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m14 5-7 7 7 7"/></svg></button></div>
       <nav id="sidebar-navigation" aria-label="Patient assessment navigation">
         <div class="nav-row muted" title="Deep Research"><svg class="nav-icon" aria-hidden="true"><use href="#icon-edit"></use></svg><span class="nav-label">Deep Research</span></div>
         <div class="nav-row muted" title="Patient Casebooks"><svg class="nav-icon" aria-hidden="true"><use href="#icon-book"></use></svg><span class="nav-label">Patient Casebooks</span></div>
@@ -31,56 +31,6 @@
         <button id="nav-prescribe" class="nav-row nav-action active" type="button" aria-label="Prescribe Test" title="Prescribe Test"><svg class="nav-icon" aria-hidden="true"><use href="#icon-add"></use></svg><span class="nav-label">Prescribe Test</span></button>
         <button id="nav-reports" class="nav-row nav-action" type="button" aria-label="View Test Reports" title="View Test Reports"><svg class="nav-icon" aria-hidden="true"><use href="#icon-chart"></use></svg><span class="nav-label">View Test Reports</span></button>
         <button id="nav-analytics" class="nav-row nav-action" type="button" aria-label="Analytics" title="Analytics"><svg class="nav-icon" aria-hidden="true"><use href="#icon-chart"></use></svg><span class="nav-label">Analytics</span></button>
-        <div class="sidebar-language-section">
-          <label class="sidebar-language-label" for="clinic-language">
-            <span class="sidebar-language-title"><svg class="nav-icon" style="width:16px;height:16px;vertical-align:-2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>Assessment Language</span>
-            <select id="clinic-language" class="sidebar-language-select">
-              <option value="en" selected>English</option>
-              <option value="hi">Hindi (हिन्दी)</option>
-              <option value="mr">Marathi (मराठी)</option>
-              <option value="es">Spanish (Español)</option>
-              <option value="bn">Bengali (বাংলা)</option>
-              <option value="te">Telugu (తెలుగు)</option>
-              <option value="ta">Tamil (தமிழ்)</option>
-              <option value="gu">Gujarati (ગુજરાતી)</option>
-              <option value="kn">Kannada (ಕನ್ನಡ)</option>
-              <option value="ml">Malayalam (മലയാളം)</option>
-              <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
-              <option value="or">Odia (ଓଡ଼ିଆ)</option>
-              <option value="ur">Urdu (اردو)</option>
-              <option value="as">Assamese (অসমীয়া)</option>
-              <option value="ar">Arabic (العربية)</option>
-              <option value="zh">Chinese Simplified (简体中文)</option>
-              <option value="zh-TW">Chinese Traditional (繁體中文)</option>
-              <option value="cs">Czech (Čeština)</option>
-              <option value="da">Dansk (Danish)</option>
-              <option value="nl">Dutch (Nederlands)</option>
-              <option value="fil">Filipino (Tagalog)</option>
-              <option value="fi">Finnish (Suomi)</option>
-              <option value="fr">French (Français)</option>
-              <option value="de">German (Deutsch)</option>
-              <option value="el">Greek (Ελληνικά)</option>
-              <option value="he">Hebrew (עברית)</option>
-              <option value="hu">Hungarian (Magyar)</option>
-              <option value="id">Indonesian (Bahasa Indonesia)</option>
-              <option value="it">Italian (Italiano)</option>
-              <option value="ja">Japanese (日本語)</option>
-              <option value="ko">Korean (한국어)</option>
-              <option value="ms">Malay (Bahasa Melayu)</option>
-              <option value="no">Norwegian (Norsk)</option>
-              <option value="fa">Persian (فारसी)</option>
-              <option value="pl">Polish (Polski)</option>
-              <option value="pt">Portuguese (Português)</option>
-              <option value="ro">Romanian (Română)</option>
-              <option value="ru">Russian (Русский)</option>
-              <option value="sv">Swedish (Svenska)</option>
-              <option value="th">Thai (ไทย)</option>
-              <option value="tr">Turkish (Türkçe)</option>
-              <option value="uk">Ukrainian (Українська)</option>
-              <option value="vi">Vietnamese (Tiếng Việt)</option>
-            </select>
-          </label>
-        </div>
       </nav>
       <div class="sidebar-footer"><span class="workspace-avatar" aria-hidden="true">OM</span><div class="footer-label"><strong>Assessment workspace</strong><small>Sample patient records</small></div></div>
     </aside>
@@ -104,6 +54,14 @@
               <div id="doctor-chat-messages" class="doctor-chat-messages" aria-live="polite"><p class="doctor-chat-intro">Ask about another concern or assessment, for example: “The patient also reports difficulty sleeping. Which assessments should I consider?”</p></div>
               <form id="doctor-chat-form" class="doctor-chat-form"><label for="doctor-chat-input">Your message</label><textarea id="doctor-chat-input" maxlength="1200" rows="3" placeholder="Describe a current concern without names, contact details, or identifying notes"></textarea><button id="doctor-chat-send" class="button primary" type="submit">Send</button></form>
               <div id="doctor-chat-suggestions" class="doctor-chat-suggestions"></div>
+            </section>
+            <section class="panel assessment-library-panel" aria-labelledby="assessment-library-title">
+              <div class="assessment-library-heading"><h2 id="assessment-library-title">Assessment Library</h2><p>Explore the assessment collection and select a measure for your patient.</p></div>
+              <label class="assessment-library-search" for="assessment-library-search"><span class="visually-hidden">Search Assessment Library</span><input id="assessment-library-search" type="search" placeholder="Search Assessment Library" autocomplete="off"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg></label>
+              <div id="assessment-library-categories" class="assessment-library-categories" role="group" aria-label="Filter assessments by category"></div>
+              <div class="assessment-library-results"><span id="assessment-library-count" aria-live="polite"></span><button id="assessment-library-suggested" type="button" class="assessment-library-suggested" aria-pressed="false">Suggested for this patient</button></div>
+              <div id="assessment-library-grid" class="assessment-library-grid" aria-live="polite"></div>
+              <div class="assessment-library-pagination"><button id="assessment-library-previous" class="button outline" type="button">Previous</button><span id="assessment-library-page"></span><button id="assessment-library-next" class="button outline" type="button">Next</button></div>
             </section>
             <section class="panel decision-panel">
               <h2>Doctor's final selection</h2>

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { recommendAssessments } from './recommendation.js';
 import { getCatalogEntry } from './assessment-catalog.js';
+import { getAssessmentForm } from './forms.js';
 
 // Synthetic, de-identified summaries. No clinical text from the supplied Digital Twin report is copied here.
 const patients = JSON.parse(readFileSync(new URL('../data/demo-patients.json', import.meta.url), 'utf8'));
@@ -55,6 +56,7 @@ export function suggestForDemoPatient(id, focus = '') {
   const primary = recommendations.find((item) => item.availability === 'available') || null;
   const prescriptionChoices = result.status === 'suggestions' ? runnableFormIds.map((id) => {
     const entry = getCatalogEntry(id);
+    const form = getAssessmentForm(id, 'en');
     const match = recommendations.find((item) => item.id === id);
     const traumaReady = id !== 'pcl5' || (match?.availability === 'available' && context.traumaExposure === 'confirmed');
     const availability = traumaReady ? 'available' : 'requires_trauma_review';
@@ -64,6 +66,7 @@ export function suggestForDemoPatient(id, focus = '') {
       : 'No matching current concern appears in the summary. The clinician may still choose this test if appropriate.');
     return {
       id, title: entry.title, priority, availability, reason,
+      questionCount: form.questions.length, referencePeriod: form.referencePeriod,
       selectionBasis: match ? 'summary_match' : 'clinician_option',
       evidence: match?.evidence || [],
       note: match?.note || entry.ageCaveats?.[context.ageGroup] || '',

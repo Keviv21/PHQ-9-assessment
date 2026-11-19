@@ -7,6 +7,7 @@ let sessionId = query.get('sessionId') || '';
 const prescriptionId = query.get('prescriptionId') || '';
 let form = null;
 let state = null;
+let config = { geminiConfigured: false };
 let socket = null;
 let microphone = null;
 let audioContext = null;
@@ -246,8 +247,12 @@ function connect() {
     if (socket !== connection || state?.status === 'completed') return;
     stopMedia();
     $('draft-text').disabled = true; $('draft-send').disabled = true;
+    $('draft-start-live').disabled = !config.geminiConfigured || state?.mode !== 'live';
+    $('draft-start-screen').disabled = Boolean(state && state.mode !== 'demo');
     if (state?.status === 'in_progress') {
       $('draft-start').hidden = false;
+      $('draft-start-live').textContent = 'Resume voice conversation';
+      $('draft-start-screen').textContent = 'Resume on screen';
       setStatus('Disconnected. Use the resume button to continue this saved session.');
     } else if (state?.status === 'review') {
       $('draft-start').hidden = false;
@@ -255,6 +260,10 @@ function connect() {
       $('draft-start-screen').disabled = false;
       $('draft-start-screen').textContent = 'Reconnect to save review';
       setStatus('Disconnected. Reconnect to save the reviewed answers.');
+    } else {
+      $('draft-start').hidden = false;
+      $('draft-start-live').disabled = !config.geminiConfigured;
+      setStatus('Connection closed. Try starting again.');
     }
   };
 }
@@ -333,7 +342,7 @@ try {
   $('draft-period').textContent = form.referencePeriod ? `Reference period: ${form.referencePeriod}` : `${form.extractedItemCount} questions`;
   $('draft-source').href = /^https:\/\//.test(form.sourceUrl) ? form.sourceUrl : '#';
   $('draft-source').hidden = !/^https:\/\//.test(form.sourceUrl);
-  const config = await (await fetch('/api/config')).json();
+  config = await (await fetch('/api/config')).json();
   $('draft-start-live').disabled = !config.geminiConfigured;
   $('draft-start-screen').disabled = false;
   if (state) {

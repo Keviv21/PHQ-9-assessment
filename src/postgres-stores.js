@@ -23,30 +23,36 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
     console.warn('PostgreSQL idle connection closed:', error.code || error.message);
   });
 
-  async function initialize() {
-    await pool.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-    await pool.query(`CREATE TABLE IF NOT EXISTS ${sessions} (
-      id UUID PRIMARY KEY,
-      kind TEXT NOT NULL CHECK (kind IN ('scored', 'draft')),
-      form_id TEXT NOT NULL,
-      patient_id TEXT,
-      state JSONB NOT NULL,
-      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      completed_at TIMESTAMPTZ
-    )`);
-    await pool.query(`CREATE TABLE IF NOT EXISTS ${prescriptions} (
-      id UUID PRIMARY KEY,
-      kind TEXT NOT NULL CHECK (kind IN ('scored', 'draft')),
-      patient_id TEXT NOT NULL,
-      form_id TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      session_id UUID UNIQUE REFERENCES ${sessions}(id)
-    )`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS prototype_sessions_patient_completed
-      ON ${sessions}(patient_id, completed_at) WHERE completed_at IS NOT NULL`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS prototype_prescriptions_patient_created
-      ON ${prescriptions}(patient_id, created_at DESC)`);
-    return true;
+  async function initialize(initializeAdditional = async () => {}) {
+    return transaction(async (client) => {
+      // Cold starts can initialize the same database simultaneously. PostgreSQL's
+      // IF NOT EXISTS does not itself prevent concurrent catalogue creation races.
+      await client.query('SELECT pg_advisory_xact_lock(764920011)');
+      await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+      await client.query(`CREATE TABLE IF NOT EXISTS ${sessions} (
+        id UUID PRIMARY KEY,
+        kind TEXT NOT NULL CHECK (kind IN ('scored', 'draft')),
+        form_id TEXT NOT NULL,
+        patient_id TEXT,
+        state JSONB NOT NULL,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        completed_at TIMESTAMPTZ
+      )`);
+      await client.query(`CREATE TABLE IF NOT EXISTS ${prescriptions} (
+        id UUID PRIMARY KEY,
+        kind TEXT NOT NULL CHECK (kind IN ('scored', 'draft')),
+        patient_id TEXT NOT NULL,
+        form_id TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        session_id UUID UNIQUE REFERENCES ${sessions}(id)
+      )`);
+      await client.query(`CREATE INDEX IF NOT EXISTS prototype_sessions_patient_completed
+        ON ${sessions}(patient_id, completed_at) WHERE completed_at IS NOT NULL`);
+      await client.query(`CREATE INDEX IF NOT EXISTS prototype_prescriptions_patient_created
+        ON ${prescriptions}(patient_id, created_at DESC)`);
+      await initializeAdditional(client);
+      return true;
+    });
   }
 
   async function transaction(operation) {
@@ -132,6 +138,16 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
       return state;
     },
     get: (id) => getState(id, 'scored'),
+    async updateLanguage(id, language) {
+      return transaction(async (client) => {
+        const state = await getState(id, 'scored', client, true);
+        if (!state || state.status === 'completed') throw new Error('No active assessment.');
+        const form = getAssessmentForm(state.formId, language);
+        state.language = form.language;
+        await putState(state, 'scored', client);
+        return state;
+      });
+    },
     async record(id, number, value, method, summary = null) {
       if (!['voice', 'screen', 'demo'].includes(method)) throw new RangeError('Unsupported answer method.');
       if (summary !== null && (typeof summary !== 'string' || !summary.trim() || summary.length > 240)) throw new RangeError('Response summary must be short text.');
@@ -206,7 +222,14 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
       const state = await transaction(async (client) => {
         const row = await prescriptionRow(id, 'scored', client, true);
         if (!row) throw new Error('Prescription not found.');
-        if (row.session_id) return row.session_state;
+        if (row.session_id) {
+          const previous = await getState(row.session_id, 'scored', client, true);
+          if (previous?.status === 'in_progress' && language && previous.language !== language) {
+            previous.language = getAssessmentForm(previous.formId, language).language;
+            await putState(previous, 'scored', client);
+          }
+          return previous;
+        }
         const fresh = newScoredState(mode, language, row.patient_id, row.form_id);
         await insertState(fresh, 'scored', client);
         await client.query(`UPDATE ${prescriptions} SET session_id = $1 WHERE id = $2`, [fresh.id, id]);

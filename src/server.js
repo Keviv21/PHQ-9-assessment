@@ -22,6 +22,9 @@ import { buildDefinitionReport, definitionReportHtml } from './definition-report
 import { definitionReportPdf } from './definition-report-pdf.js';
 import { openDefinitionStore } from './definition-store.js';
 import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
+import { isAllowedWebSocketOrigin, validateDeploymentEnvironment } from './deployment.js';
+
+validateDeploymentEnvironment();
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
@@ -406,8 +409,7 @@ function matchOptionValue(text, form, currentNumber) {
 }
 
 async function handleScoredConnection(socket, request) {
-  const origin = request.headers.origin;
-  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+  if (!isAllowedWebSocketOrigin(request)) {
     socket.close(1008, 'Unexpected origin.');
     return;
   }
@@ -563,7 +565,7 @@ async function handleScoredConnection(socket, request) {
           const nextForm = getAssessmentForm(formId, nextLang);
           form = nextForm;
           language = nextLang;
-          store.updateLanguage?.(assessment.id, nextLang);
+          await store.updateLanguage(assessment.id, nextLang);
           if (bridge) {
             await bridge.setLanguage(nextLang, nextForm);
           }
@@ -611,8 +613,7 @@ definitionWss.on('connection', (socket, request) => {
   });
 });
 async function handleDefinitionConnection(socket, request) {
-  const origin = request.headers.origin;
-  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+  if (!isAllowedWebSocketOrigin(request)) {
     socket.close(1008, 'Unexpected origin.'); return;
   }
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
@@ -681,8 +682,7 @@ draftWss.on('connection', (socket, request) => {
   });
 });
 async function handleDraftConnection(socket, request) {
-  const origin = request.headers.origin;
-  if (origin && origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`) {
+  if (!isAllowedWebSocketOrigin(request)) {
     socket.close(1008, 'Unexpected origin.');
     return;
   }
@@ -810,7 +810,7 @@ if (postgres) {
     const { rows } = await postgres.pool.query('SELECT current_database() AS name');
     if (rows[0].name !== process.env.ASSESSMENT_DATABASE_NAME) throw new Error('Connected database does not match ASSESSMENT_DATABASE_NAME.');
   }
-  await postgres.initialize();
+  await postgres.initialize((client) => definitionStore.initialize(client));
 }
 await assessmentLibrary.initialize();
 const storedLibraryLoaded = useStoredDefinitions(await assessmentLibrary.activeDefinitions());
@@ -820,13 +820,21 @@ if (!storedLibraryLoaded && process.env.ASSESSMENT_LIBRARY_FILE) {
   if (exported.schemaVersion !== 1 || !Array.isArray(exported.records)) throw new Error('Unsupported assessment library file.');
   fileLibraryLoaded = useStoredDefinitions(exported.records);
 }
-await definitionStore.initialize();
-server.listen(port, '127.0.0.1', () => {
-  console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
-  console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
-  console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
-  console.log(`Assessment library: ${storedLibraryLoaded ? 'versioned database definitions' : fileLibraryLoaded ? 'exported JSON definitions' : 'legacy bundled definitions; run library:import to upgrade'}`);
-});
+if (!postgres) await definitionStore.initialize();
+
+export default server;
+
+// Imports by the Vercel adapter must not open a second listening socket.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  server.listen(port, process.env.HOST || '127.0.0.1', () => {
+    console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
+    console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
+    console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
+    console.log(`Assessment library: ${storedLibraryLoaded ? 'versioned database definitions' : fileLibraryLoaded ? 'exported JSON definitions' : 'legacy bundled definitions; run library:import to upgrade'}`);
+  });
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
 
 function shutdown() {
   for (const client of wss.clients) client.close();
@@ -842,5 +850,3 @@ function shutdown() {
     else { store.close(); draftStore.close(); }
   });
 }
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
