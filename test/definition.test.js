@@ -13,6 +13,15 @@ test('cleaned catalogue preserves all source records and identifies missing ques
   assert.equal(entries.filter((entry) => entry.available).length, 185);
   assert.equal(entries.filter((entry) => entry.ruleCount > 0).length, 183);
   assert.equal(entries.filter((entry) => entry.clinicallyApproved).length, 0);
+  const asrs = entries.find((entry) => entry.id === 'adult-adhd-self-report-scale-asrs--814829bfeff1');
+  assert.equal(asrs.referencePeriod, 'past 6 months');
+  assert.ok(asrs.responseTypes.includes('choice'));
+  assert.deepEqual(asrs.categories, ['ADHD', 'Diagnosis']);
+  assert.ok(entries.every((entry) => entry.categories.length > 0));
+  assert.equal(entries.filter((entry) => entry.categories.includes('Sport')).length, 4);
+  assert.equal(entries.filter((entry) => entry.categories.includes('Trauma')).length, 12);
+  const bam = entries.find((entry) => entry.id === 'brief-addiction-monitor-bam--dce6e8665d04');
+  assert.ok(bam.responseTypes.includes('integer'));
 });
 
 test('draft rule uses printed option values and withholds missing required responses', () => {

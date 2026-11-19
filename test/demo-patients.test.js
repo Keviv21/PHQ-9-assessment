@@ -8,6 +8,8 @@ test('patient selection derives current concerns and a primary suggestion with e
   const depression = suggestForDemoPatient('demo-a');
   assert.deepEqual(depression.context.concerns, ['depression']);
   assert.equal(depression.primaryAssessmentId, 'phq9');
+  assert.equal(depression.prescriptionChoices.find((item) => item.id === 'phq9').questionCount, 9);
+  assert.equal(depression.prescriptionChoices.find((item) => item.id === 'phq9').referencePeriod, 'Past two weeks');
   assert.equal(depression.recommendations[0].evidence.length, 2);
   assert.equal(depression.recommendations[0].catalogDraftId, 'patient-health-questionnaire-depression-phq-9--8f81b7b3270c');
 

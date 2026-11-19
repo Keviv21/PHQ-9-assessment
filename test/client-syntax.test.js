@@ -27,6 +27,14 @@ test('browser scripts parse and the assessment screen has its referenced control
   assert.match(clinicHtml, /id="assessment-search"[^>]*role="combobox"/);
   assert.match(clinicHtml, /id="assessment-options"[^>]*role="listbox"/);
   assert.ok(clinicHtml.indexOf('id="doctor-chat-form"') < clinicHtml.indexOf('id="assessment-search"'));
+  assert.ok(clinicHtml.indexOf('class="panel doctor-chat-panel"') < clinicHtml.indexOf('class="panel assessment-library-panel"'));
+  assert.ok(clinicHtml.indexOf('class="panel assessment-library-panel"') < clinicHtml.indexOf('class="panel decision-panel"'));
+  assert.match(clinicHtml, /id="assessment-library-categories"/);
+  assert.match(clinicHtml, /id="assessment-library-suggested"[^>]*aria-pressed="false"/);
+  const categoryMap = JSON.parse(readFileSync(new URL('../data/assessment-library-categories.json', import.meta.url), 'utf8'));
+  const embeddedMap = clinic.match(/const libraryCategoryMap = (\{[\s\S]*?\n\});/);
+  assert.ok(embeddedMap, 'The clinic must contain categories even when a local server is not restarted');
+  assert.deepEqual(JSON.parse(embeddedMap[1]), categoryMap);
   assert.doesNotMatch(clinicHtml, /id="library-view"/);
   const analytics = readFileSync(new URL('../public/analytics.js', import.meta.url), 'utf8');
   for (const [, id] of analytics.matchAll(/byId\('([^']+)'\)/g)) {

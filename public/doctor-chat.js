@@ -31,7 +31,12 @@ function renderSuggestions(items) {
     const text = node('div');
     const scoreLabel = item.kind === 'scored' ? 'Scored assessment' :
       item.kind === 'answer_only' ? 'Answers only' : 'Score available';
-    text.append(node('strong', item.title), node('p', item.reason), node('small', scoreLabel));
+    const facts = node('div', undefined, 'doctor-chat-facts');
+    if (item.questionCount) facts.append(node('span', `${item.questionCount} questions`));
+    if (item.referencePeriod) facts.append(node('span', `Reference period: ${item.referencePeriod}`));
+    text.append(node('strong', item.title), facts);
+    if (item.description) text.append(node('p', item.description, 'doctor-chat-overview'));
+    text.append(node('p', `Why suggested: ${item.reason}`), node('small', scoreLabel));
     const choose = node('button', 'Select', 'button outline');
     choose.type = 'button';
     choose.addEventListener('click', () => window.dispatchEvent(new CustomEvent('clinic:select-assessment', { detail: { id: item.id } })));

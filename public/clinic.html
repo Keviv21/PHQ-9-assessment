@@ -55,6 +55,14 @@
               <form id="doctor-chat-form" class="doctor-chat-form"><label for="doctor-chat-input">Your message</label><textarea id="doctor-chat-input" maxlength="1200" rows="3" placeholder="Describe a current concern without names, contact details, or identifying notes"></textarea><button id="doctor-chat-send" class="button primary" type="submit">Send</button></form>
               <div id="doctor-chat-suggestions" class="doctor-chat-suggestions"></div>
             </section>
+            <section class="panel assessment-library-panel" aria-labelledby="assessment-library-title">
+              <div class="assessment-library-heading"><h2 id="assessment-library-title">Assessment Library</h2><p>Explore the assessment collection and select a measure for your patient.</p></div>
+              <label class="assessment-library-search" for="assessment-library-search"><span class="visually-hidden">Search Assessment Library</span><input id="assessment-library-search" type="search" placeholder="Search Assessment Library" autocomplete="off"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg></label>
+              <div id="assessment-library-categories" class="assessment-library-categories" role="group" aria-label="Filter assessments by category"></div>
+              <div class="assessment-library-results"><span id="assessment-library-count" aria-live="polite"></span><button id="assessment-library-suggested" type="button" class="assessment-library-suggested" aria-pressed="false">Suggested for this patient</button></div>
+              <div id="assessment-library-grid" class="assessment-library-grid" aria-live="polite"></div>
+              <div class="assessment-library-pagination"><button id="assessment-library-previous" class="button outline" type="button">Previous</button><span id="assessment-library-page"></span><button id="assessment-library-next" class="button outline" type="button">Next</button></div>
+            </section>
             <section class="panel decision-panel">
               <h2>Doctor's final selection</h2>
               <label class="search-label" for="assessment-search">Assessment to prescribe</label>
