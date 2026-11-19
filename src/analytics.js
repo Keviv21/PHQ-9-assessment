@@ -11,15 +11,15 @@ export function buildPatientAnalytics(patientId, rows) {
       isImported ? `/report.html?draftSessionId=${encodeURIComponent(row.id)}` :
       `/report.html?id=${encodeURIComponent(row.id)}`;
     const draftMetrics = scores?.metrics?.filter((metric) => Number.isFinite(metric.value) &&
-      Number.isFinite(metric.maximum) && metric.maximum > 0 && (metric.minimum ?? 0) >= 0) ?? [];
-    const displayMetric = draftMetrics.find((metric) => /total/i.test(metric.id)) ?? draftMetrics[0];
+      Number.isFinite(metric.maximum) && metric.maximum > (metric.minimum ?? 0)) ?? [];
+    const displayMetric = Object.hasOwn(row, 'overall_metric_id') ? draftMetrics.find(m => m.id === row.overall_metric_id) : draftMetrics.find((metric) => /total/i.test(metric.id)) ?? draftMetrics[0];
     const maxTotal = displayMetric?.maximum ?? scores?.maxTotal ?? (row.form_id === 'dass21' ? 63 : null);
     activity.push({ id: row.id, formId: row.form_id, formTitle: row.form_title || null,
       completedAt: row.completed_at, score: displayMetric?.value ?? (Number.isFinite(scores?.rawTotal) ? scores.rawTotal : null),
-      maxTotal, detailUrl });
+      maxTotal, detailUrl, metricCount: draftMetrics.length, scoreStatus: scores?.status ?? null });
     if ((!Number.isFinite(scores?.rawTotal) || !Number.isFinite(maxTotal)) && !draftMetrics.length) continue;
     const metrics = draftMetrics.length ? draftMetrics.map((metric) => ({ id: metric.id,
-      name: metric.label, score: metric.value, maxTotal: metric.maximum, severity: metric.band })) :
+      name: metric.label, score: metric.value, minTotal: metric.minimum ?? 0, maxTotal: metric.maximum, severity: metric.band })) :
       [{ id: 'total', name: 'Total score', score: scores.rawTotal,
       maxTotal, severity: typeof scores.severity === 'string' ? scores.severity : scores.severity?.total ?? null }];
     if (row.form_id === 'dass21') for (const name of ['depression', 'anxiety', 'stress']) {
@@ -28,11 +28,11 @@ export function buildPatientAnalytics(patientId, rows) {
         score: value, maxTotal: 21, severity: scores.severity?.[name] ?? null });
     }
     for (const metric of metrics) {
-      const key = `${row.form_id}:${row.form_version}:${row.language}:${metric.id}`;
+      const key = `${row.form_id}:${row.form_version}:${row.language}:${row.compatibility_key || ''}:${metric.id}`;
       if (!groups.has(key)) groups.set(key, {
         formId: row.form_id, formTitle: row.form_title || null,
         formVersion: row.form_version, language: row.language,
-        metricId: metric.id, metricName: metric.name, maxTotal: metric.maxTotal, points: [],
+        metricId: metric.id, metricName: metric.name, minTotal: metric.minTotal ?? 0, maxTotal: metric.maxTotal, scoreStatus: scores?.status ?? null, points: [],
       });
       groups.get(key).points.push({
         id: row.id, completedAt: row.completed_at, score: metric.score,

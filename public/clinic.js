@@ -1,3 +1,4 @@
+import { assessmentInformation } from './definition-information.js';
 const $ = (id) => document.getElementById(id);
 const patients = [];
 const catalogue = [];
@@ -187,6 +188,11 @@ function renderSuggestions(result) {
 
 function defaultAssessmentId(result) {
   if (result.status !== 'suggestions') return '';
+  if (definitions.some(item => item.versionId)) {
+    const names = { phq9: 'patient-health-questionnaire-depression-phq-9', gad7: 'generalised-anxiety-disorder', pcl5: 'ptsd-checklist', dass21: 'depression-anxiety-stress-scales-short-form-dass-21' };
+    const match = definitions.find(item => item.available && names[result.primaryAssessmentId] && item.id.startsWith(names[result.primaryAssessmentId]));
+    if (match) return `definition:${match.id}`;
+  }
   if (result.primaryAssessmentId === 'dass21') {
     const draftId = result.recommendations.find((item) => item.id === 'dass21')?.catalogDraftId;
     return catalogue.some((item) => item.id === draftId && item.previewAvailable) ? `draft:${draftId}` : '';
@@ -196,6 +202,9 @@ function defaultAssessmentId(result) {
 }
 
 function assessmentChoices() {
+  if (definitions.some(item => item.versionId)) return definitions.map(item => ({
+    id: `definition:${item.id}`, title: item.title, enabled: item.available, label: item.title,
+  })).sort((a, b) => a.title.localeCompare(b.title));
   const scored = suggestion?.prescriptionChoices || [];
   return [
     ...scored.map((item) => ({ id: item.id, title: item.title, enabled: item.availability === 'available',
@@ -295,6 +304,12 @@ function updateSelectedChoice() {
   }
   if (definition) {
     area.replaceChildren(el('p', `${definition.title} · ${definition.questionCount} questions`));
+    const selected = selectedFormId;
+    fetch(`/api/definitions/${encodeURIComponent(definition.id)}`).then(async response => {
+      if (!response.ok) throw new Error('Assessment information unavailable.');
+      const form = await response.json();
+      if (selectedFormId === selected) area.append(assessmentInformation(form));
+    }).catch(error => { if (selectedFormId === selected) area.append(el('p', error.message)); });
     return;
   }
   if (!choice) {

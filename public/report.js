@@ -10,17 +10,7 @@ const id = params.get('id');
 const draftSessionId = params.get('draftSessionId');
 const definitionSessionId = params.get('definitionSessionId');
 if (definitionSessionId && /^[0-9a-f-]{36}$/i.test(definitionSessionId)) {
-  try {
-    const response = await fetch(`/api/definition-sessions/${encodeURIComponent(definitionSessionId)}`);
-    if (!response.ok) throw new Error('Report not found.');
-    const assessment = await response.json();
-    if (assessment.demoPatientId) backLink.href = `/?view=reports&patient=${encodeURIComponent(assessment.demoPatientId)}`;
-    renderDefinitionReport(container, assessment);
-    document.title = `${assessment.formSnapshot.title} Report | OpenMind`;
-    printButton.disabled = false;
-  } catch (error) {
-    container.textContent = error.message;
-  }
+  location.replace(`/api/definition-sessions/${encodeURIComponent(definitionSessionId)}/report.html`);
 } else if (draftSessionId && /^[0-9a-f-]{36}$/i.test(draftSessionId)) {
   try {
     const sessionResponse = await fetch(`/api/draft-sessions/${encodeURIComponent(draftSessionId)}`);

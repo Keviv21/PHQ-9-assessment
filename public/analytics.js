@@ -94,11 +94,12 @@ function scoreChart(series) {
   const x = (point, index) => first === last ?
     (points.length === 1 ? left + plotWidth / 2 : left + (index / (points.length - 1)) * plotWidth) :
     left + ((Date.parse(point.completedAt) - first) / (last - first)) * plotWidth;
-  const y = (score) => top + (1 - score / series.maxTotal) * plotHeight;
+  const min = series.minTotal ?? 0;
+  const y = (score) => top + (1 - (score - min) / (series.maxTotal - min)) * plotHeight;
   const chart = svg('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img',
     'aria-label': `${formLabel(series)} ${series.metricName || 'total score'} over time, out of ${series.maxTotal}` });
   for (const fraction of [0, 0.5, 1]) {
-    const score = Math.round(fraction * series.maxTotal);
+    const score = Number((min + fraction * (series.maxTotal - min)).toFixed(2));
     chart.append(svg('line', { x1: left, y1: y(score), x2: width - right, y2: y(score), class: 'analytics-gridline' }));
     const label = svg('text', { x: left - 10, y: y(score) + 4, 'text-anchor': 'end', class: 'analytics-axis-label' });
     label.textContent = String(score);
@@ -175,7 +176,7 @@ function renderPatient() {
       const link = node('a', 'View answers'); link.href = item.detailUrl;
       detail.append(link);
       row.append(node('td', dateLabel(item.completedAt)), node('td', formLabel(item)),
-        node('td', item.score === null ? 'Answers saved; no score available' : `${item.score} / ${item.maxTotal}`), detail);
+        node('td', item.score === null ? item.metricCount ? `${item.metricCount} separate draft measures; no overall total` : 'Answers saved; no score available' : `${item.score} / ${item.maxTotal}${item.scoreStatus === 'source_draft_unapproved' ? ' · Draft' : ''}`), detail);
       tbody.append(row);
     }
     table.append(thead, tbody);
@@ -195,7 +196,8 @@ function renderPatient() {
     const previous = item.points.at(-2);
     const change = previous ? ` · Change from previous: ${latest.score - previous.score >= 0 ? '+' : ''}${latest.score - previous.score}` :
       ' · Complete it again to see change';
-    heading.append(node('p', `Latest: ${latest.score} / ${item.maxTotal}${change}`));
+    heading.append(node('p', `Latest: ${latest.score} · Scale ${item.minTotal ?? 0} to ${item.maxTotal}${change}`));
+    if (item.scoreStatus === 'source_draft_unapproved') heading.append(node('p', 'Draft score — not clinically validated'));
     card.append(heading, scoreChart({ ...item, maxTotal: item.maxTotal }));
     const table = node('table', undefined, 'analytics-table');
     const thead = node('thead');

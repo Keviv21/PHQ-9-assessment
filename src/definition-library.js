@@ -1,15 +1,24 @@
 import { readFileSync } from 'node:fs';
+import { displayTitle, displayText } from './assessment-content.js';
 
 const bundle = JSON.parse(readFileSync(new URL('../data/assessment-definitions-20261116.json', import.meta.url), 'utf8'));
-const byId = new Map(bundle.records.map((record) => [record.id, record]));
+let records = bundle.records;
+let byId = new Map(records.map((record) => [record.id, record]));
 if (byId.size !== 186) throw new Error('The cleaned assessment bundle is incomplete.');
 
 export const definitionVersion = bundle.version;
 export const sourceSha256 = bundle.sourceSha256;
+export function useStoredDefinitions(definitions) {
+  if (!definitions.length) return false;
+  if (new Set(definitions.map(d => d.id)).size !== definitions.length) throw new Error('Duplicate stored definition.');
+  records = definitions;
+  byId = new Map(records.map(record => [record.id, record]));
+  return true;
+}
 export function listDefinitions() {
-  return bundle.records.map(({ id, title, description, questions, rules, scoringStatus, clinicallyApproved,
-    questionnaireVerified, reviewIssues }) => ({ id, title, description,
-    questionCount: questions.length, ruleCount: rules.length, available: questions.length > 0,
+  return records.map(({ id, title, description, questions, rules, scoringStatus, clinicallyApproved, versionId,
+    questionnaireVerified, reviewIssues }) => ({ id, title: displayTitle(title), description: displayText(description),
+    versionId, questionCount: questions.length, ruleCount: rules.length, available: questions.length > 0,
     scoringStatus, clinicallyApproved, questionnaireVerified,
     reviewIssues: reviewIssues.map(({ code }) => code) }));
 }

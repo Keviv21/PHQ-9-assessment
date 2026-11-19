@@ -14,7 +14,12 @@ import { openDraftStore } from './draft-store.js';
 import { openPostgresStores } from './postgres-stores.js';
 import { answerDoctor, fallbackDoctor, validateDoctorMessage } from './doctor-chat.js';
 import { getCatalogEntry } from './assessment-catalog.js';
-import { getDefinition, listDefinitions } from './definition-library.js';
+import { getDefinition, listDefinitions, useStoredDefinitions } from './definition-library.js';
+import { openAssessmentLibrary } from './assessment-library-store.js';
+import { publicDefinition, publicSession } from './assessment-content.js';
+import { assetPath } from './assessment-assets.js';
+import { buildDefinitionReport, definitionReportHtml } from './definition-report.js';
+import { definitionReportPdf } from './definition-report-pdf.js';
 import { openDefinitionStore } from './definition-store.js';
 import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
 
@@ -25,13 +30,15 @@ const postgres = process.env.DATABASE_URL ? openPostgresStores() : null;
 const store = postgres?.store ?? openStore(dbPath);
 const draftStore = postgres?.draftStore ?? openDraftStore(dbPath);
 const definitionStore = openDefinitionStore(postgres ? { pool: postgres.pool } : { path: dbPath });
+const assessmentLibrary = openAssessmentLibrary(postgres ? { pool: postgres.pool } : { path: dbPath });
+const assetRoot = process.env.ASSESSMENT_ASSET_ROOT || join(root, 'local-data/assessment-assets');
 const definitionVoiceStore = createDefinitionVoiceStore(definitionStore);
 const apiKey = process.env.GEMINI_API_KEY?.trim();
 const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const textModel = process.env.GEMINI_TEXT_MODEL?.trim() || 'gemini-3.5-flash-lite';
 const scoredDraftIds = new Set(['phq9', 'gad7', 'pcl5'].map((id) => getCatalogEntry(id).catalogDraftId));
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/assessment-unified.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css', '/definition.html', '/definition.js', '/definition-voice.js', '/definition.css']);
+const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/assessment-unified.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css', '/definition.html', '/definition.js', '/definition-information.js', '/definition-voice.js', '/definition.css']);
 const activeAssessments = new Set();
 
 function json(response, status, value) {
@@ -58,7 +65,35 @@ const server = http.createServer(async (request, response) => {
     try { id = decodeURIComponent(url.pathname.slice('/api/definitions/'.length)); }
     catch { return json(response, 400, { error: 'Invalid ID.' }); }
     const definition = getDefinition(id);
-    return definition ? json(response, 200, definition) : json(response, 404, { error: 'Assessment not found.' });
+    return definition ? json(response, 200, publicDefinition(definition)) : json(response, 404, { error: 'Assessment not found.' });
+  }
+  const assetRoute = /^\/api\/assessment-assets\/([a-f0-9]{64})\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
+  if (assetRoute && request.method === 'GET') {
+    const version = await assessmentLibrary.getVersion(assetRoute[1]);
+    const selected = version?.runtime.assets?.find(a => a.id === assetRoute[2]);
+    const asset = selected && await assessmentLibrary.getAsset(selected.sha256);
+    if (!asset || !['image/png', 'image/jpeg'].includes(asset.mime_type)) return json(response, 404, { error: 'Display image not found.' });
+    const bytes = readFileSync(assetPath(assetRoot, asset.storage_key));
+    response.writeHead(200, { 'content-type': asset.mime_type, 'x-content-type-options': 'nosniff', 'cache-control': 'private, max-age=3600' });
+    return response.end(bytes);
+  }
+  const definitionReportRoute = /^\/api\/definition-sessions\/([0-9a-f-]{36})\/report\.(json|html|pdf)$/.exec(url.pathname);
+  if (definitionReportRoute && request.method === 'GET') {
+    const state = await definitionStore.getSession(definitionReportRoute[1]);
+    if (!state) return json(response, 404, { error: 'Session not found.' });
+    if (state.status !== 'completed') return json(response, 409, { error: 'Complete the assessment before generating a report.' });
+    const report = buildDefinitionReport(state, await definitionStore.patientSessions(state.demoPatientId));
+    if (definitionReportRoute[2] === 'json') return json(response, 200, report);
+    if (definitionReportRoute[2] === 'pdf') {
+      try {
+        const pdf = await definitionReportPdf(report);
+        response.writeHead(200, { 'content-type': 'application/pdf', 'cache-control': 'no-store', 'content-disposition': `attachment; filename="assessment-${state.id}.pdf"` });
+        return response.end(pdf);
+      } catch (error) { return json(response, error.status || 500, { error: error.message }); }
+    }
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
+      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'self'" });
+    return response.end(definitionReportHtml(report));
   }
   const definitionPatientRoute = /^\/api\/definition-patients\/(demo-[a-z])\/prescriptions$/.exec(url.pathname);
   if (definitionPatientRoute) {
@@ -83,7 +118,7 @@ const server = http.createServer(async (request, response) => {
         json(response, 404, { error: 'Assignment not found.' });
     }
     if (request.method === 'POST' && definitionPrescriptionRoute[2]) {
-      try { return json(response, 200, await definitionStore.start(id)); }
+      try { return json(response, 200, publicSession(await definitionStore.start(id))); }
       catch (error) { return json(response, 400, { error: error.message }); }
     }
   }
@@ -92,12 +127,12 @@ const server = http.createServer(async (request, response) => {
     const id = definitionSessionRoute[1];
     if (request.method === 'GET' && !definitionSessionRoute[2]) {
       const state = await definitionStore.getSession(id);
-      return state ? json(response, 200, state) : json(response, 404, { error: 'Session not found.' });
+      return state ? json(response, 200, publicSession(state)) : json(response, 404, { error: 'Session not found.' });
     }
     if (request.method === 'PUT' || (request.method === 'POST' && definitionSessionRoute[2])) {
       try {
         const { answers, context } = await readJson(request);
-        return json(response, 200, await definitionStore.save(id, answers, Boolean(definitionSessionRoute[2]), context ?? null));
+        return json(response, 200, publicSession(await definitionStore.save(id, answers, Boolean(definitionSessionRoute[2]), context ?? null)));
       } catch (error) { return json(response, 400, { error: error.message }); }
     }
   }
@@ -603,7 +638,7 @@ async function handleDefinitionConnection(socket, request) {
   const send = (message) => { if (socket.readyState === 1) socket.send(JSON.stringify(message)); };
   const sendState = (current) => {
     const next = nextDefinitionItem(current);
-    send({ type: 'state', assessment: voiceDefinitionState(current),
+    send({ type: 'state', assessment: publicSession(voiceDefinitionState(current)),
       question: next ? { number: next.number, total: snapshot.questions.length, ...next.item } : null });
   };
   sendState(state);
@@ -770,12 +805,27 @@ async function handleDraftConnection(socket, request) {
   socket.on('close', () => { activeDraftSessions.delete(sessionId); bridge?.stop(); });
 }
 
-if (postgres) await postgres.initialize();
+if (postgres) {
+  if (process.env.ASSESSMENT_DATABASE_NAME) {
+    const { rows } = await postgres.pool.query('SELECT current_database() AS name');
+    if (rows[0].name !== process.env.ASSESSMENT_DATABASE_NAME) throw new Error('Connected database does not match ASSESSMENT_DATABASE_NAME.');
+  }
+  await postgres.initialize();
+}
+await assessmentLibrary.initialize();
+const storedLibraryLoaded = useStoredDefinitions(await assessmentLibrary.activeDefinitions());
+let fileLibraryLoaded = false;
+if (!storedLibraryLoaded && process.env.ASSESSMENT_LIBRARY_FILE) {
+  const exported = JSON.parse(readFileSync(process.env.ASSESSMENT_LIBRARY_FILE, 'utf8'));
+  if (exported.schemaVersion !== 1 || !Array.isArray(exported.records)) throw new Error('Unsupported assessment library file.');
+  fileLibraryLoaded = useStoredDefinitions(exported.records);
+}
 await definitionStore.initialize();
 server.listen(port, '127.0.0.1', () => {
   console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
   console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
   console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
+  console.log(`Assessment library: ${storedLibraryLoaded ? 'versioned database definitions' : fileLibraryLoaded ? 'exported JSON definitions' : 'legacy bundled definitions; run library:import to upgrade'}`);
 });
 
 function shutdown() {
@@ -787,6 +837,7 @@ function shutdown() {
   definitionWss.close();
   server.close(async () => {
     await definitionStore.close();
+    await assessmentLibrary.close();
     if (postgres) await postgres.close();
     else { store.close(); draftStore.close(); }
   });

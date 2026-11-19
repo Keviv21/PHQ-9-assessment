@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { getDefinition, definitionVersion, sourceSha256 } from './definition-library.js';
 import { conditionState, scoreDefinition, validateAnswer } from './definition-scoring.js';
+import { contentHash } from './assessment-content.js';
 
 const schema = 'pod_assessment_prototype';
 const prescriptionsTable = `${schema}.definition_prescriptions`;
@@ -18,7 +19,7 @@ function summary(row) {
 function newSession(prescription) {
   const form = getDefinition(prescription.formId);
   return { id: randomUUID(), prescriptionId: prescription.id, demoPatientId: prescription.demoPatientId,
-    formId: form.id, formVersion: definitionVersion, sourceSha256,
+    formId: form.id, formVersion: form.versionId ?? definitionVersion, sourceSha256: form.sourceSha256 ?? sourceSha256,
     // Save the exact questionnaire and rules used for this session.
     formSnapshot: form, answers: {}, context: {}, status: 'in_progress',
     startedAt: new Date().toISOString(), completedAt: null, scores: null };
@@ -113,6 +114,9 @@ function openSqlite(path) {
         completed_at: row.state_json ? JSON.parse(row.state_json).completedAt : null,
       }));
     },
+    async patientSessions(patientId) {
+      return selectPatientAnalytics.all(patientId).map(row => JSON.parse(row.state_json));
+    },
     async patientAnalyticsRows(patientId) {
       return selectPatientAnalytics.all(patientId).map((row) => ({ id: JSON.parse(row.state_json).id,
         prescription_id: row.prescription_id, kind: 'definition', ...definitionAnalyticsState(JSON.parse(row.state_json)) }))
@@ -196,6 +200,10 @@ function openPostgres(pool) {
         created_at: row.created_at.toISOString(), assessment_id: row.session_id,
         assessment_status: row.session_status, completed_at: row.completed_at }));
     },
+    async patientSessions(patientId) {
+      const result = await pool.query(`SELECT s.state FROM ${prescriptionsTable} p JOIN ${sessionsTable} s ON s.id=p.session_id WHERE p.patient_id=$1`, [patientId]);
+      return result.rows.map(row => row.state);
+    },
     async patientAnalyticsRows(patientId) {
       const result = await pool.query(`SELECT p.id AS prescription_id, s.state FROM ${prescriptionsTable} p
         JOIN ${sessionsTable} s ON s.id=p.session_id WHERE p.patient_id=$1 ORDER BY p.created_at`, [patientId]);
@@ -222,6 +230,8 @@ function openPostgres(pool) {
 
 function definitionAnalyticsState(state) {
   return { form_id: `definition:${state.formId}`, form_title: state.formSnapshot.title,
-    form_version: state.formVersion, language: 'en', mode: 'screen',
+    form_version: state.formSnapshot.versionId ?? state.formVersion, language: state.formSnapshot.language || 'en', mode: 'screen',
+    compatibility_key: contentHash({ definition: state.formSnapshot.runtimeHash ?? state.formSnapshot, context: state.context || {}, engine: state.scores?.engineVersion ?? 'legacy' }),
+    overall_metric_id: state.formSnapshot.reporting?.interpretation?.overall_total ?? null,
     completed_at: state.completedAt, scores: state.scores };
 }

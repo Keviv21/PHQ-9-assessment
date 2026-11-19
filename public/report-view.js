@@ -108,7 +108,7 @@ export function renderDASS21Report(container, assessment, form) {
 
   const notes = element('section', 'phq-report-notes');
   if (assessment.reviewChangeCount) notes.append(element('p', '', `${assessment.reviewChangeCount} answer(s) changed during final review.`));
-  if (assessment.scores.source?.startsWith('https://')) {
+  if (assessment.scores.source?.startsWith('https://') && !/novopsych/i.test(assessment.scores.source)) {
     const source = element('a', '', 'Scoring reference');
     source.href = assessment.scores.source;
     source.target = '_blank';
@@ -170,6 +170,7 @@ export function renderDefinitionReport(container, assessment) {
     element('h2', '', form.title),
     element('p', 'phq-report-meta', `Completed ${new Date(assessment.completedAt).toLocaleString()} · ${Object.keys(assessment.answers).length} recorded responses${patient}`));
   report.append(header);
+  report.append(element('p', 'phq-report-notes', assessment.scores.label || 'Draft score — not clinically validated'));
   const scoring = element('section', 'phq-report-responses');
   scoring.append(element('h3', '', 'Scoring results'));
   if (!assessment.scores.metrics?.length) scoring.append(element('p', '', 'No numeric scoring rule is present in this definition.'));

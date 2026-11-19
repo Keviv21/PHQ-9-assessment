@@ -27,11 +27,13 @@
     "demo:analytics": "node --env-file-if-exists=.env scripts/run-analytics-demo.mjs",
     "smoke:live": "node scripts/smoke-draft-live.mjs",
     "smoke:doctor": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-doctor-chat.mjs",
-    "smoke:definition-live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-definition-live.mjs"
+    "smoke:definition-live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-definition-live.mjs",
+    "library:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-library.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",
     "pg": "^8.23.1",
-    "ws": "8.22.1"
+    "ws": "8.22.1",
+    "playwright-core": "1.59.1"
   }
 }

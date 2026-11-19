@@ -630,7 +630,7 @@ if (ui.conversationMode) {
 window.addEventListener('beforeunload', stopMedia);
 
 try {
-  if (!prescriptionId) throw new Error('A prescription is required. Return to NovoPsych assessments.');
+  if (!prescriptionId) throw new Error('A prescription is required. Return to assessments.');
   [form, config] = await Promise.all([fetch('/api/form?formId=phq9&language=en').then((response) => response.json()), fetch('/api/config').then((response) => response.json())]);
   const prescriptionResponse = await fetch(`/api/prescriptions/${encodeURIComponent(prescriptionId)}`);
   if (!prescriptionResponse.ok) throw new Error('Prescription not found.');

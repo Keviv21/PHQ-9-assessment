@@ -2,6 +2,14 @@
 
 A standalone OpenMind/Casebook-style demonstration of clinician-selected assessments, optional Gemini voice conversations, answer review, reporting, and patient-level analytics. It is **not connected to the Casebook backend**. The five selectable patients and their summaries are synthetic records in `data/demo-patients.json`.
 
+## Current assessment JSON library
+
+The dev branch now supports versioned PostgreSQL definitions, private asset archiving,
+a generated 186-assessment runtime JSON, saved-result reports with PDF download, and
+compatible visit analytics. See [library import and configuration](docs/ASSESSMENT_LIBRARY.md).
+The requested database is `sagar prototype`, schema `pod_assessment_prototype`.
+Live import must be completed before claiming the extracted library is in that database.
+
 ## Current scope
 
 1. A clinician selects a sample patient. Current summary observations produce an explained, rule-based shortlist. The doctor can also send de-identified notes to Gemini for catalogue-checked suggestions, then makes the final selection.
@@ -45,7 +53,7 @@ When `DATABASE_URL` is set, run `npm run db:check` to test the connection. The a
 
 ## Try the full workflow
 
-1. In **NovoPsych Assessment → Prescribe Test**, choose a sample patient and review the summary and suggested tests.
+1. In **Assessment → Prescribe Test**, choose a sample patient and review the summary and suggested tests.
 2. Optionally use **Doctor conversation** for another suggestion. Search the full picker and confirm the assessment yourself.
 3. Open the assigned patient link and choose **Complete on screen** or **Start voice conversation**. For voice, allow the microphone, answer naturally, and confirm or clarify each proposed answer.
 4. Review and edit answers, generate the report, then open **View Test Reports**. The report can be printed or saved as PDF through the browser.

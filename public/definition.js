@@ -1,4 +1,5 @@
 import { renderDefinitionReport } from './report-view.js';
+import { assessmentInformation, assessmentImages } from './definition-information.js';
 
 const $ = (id) => document.getElementById(id);
 const prescriptionId = new URL(location.href).searchParams.get('prescriptionId');
@@ -136,6 +137,7 @@ function question() {
   $('question').textContent = item.text;
   $('reference').textContent = state.formSnapshot.referencePeriod?.instruction_claims?.join(', ') || '';
   $('input-area').replaceChildren(inputFor(item, state.answers[item.id]));
+  $('question-images').replaceChildren(assessmentImages(state.formSnapshot, item.id));
   $('input-area').hidden = Boolean(voice?.active);
   renderVoiceAnswerGuide(item);
   $('voice-answer-guide').hidden = !voice?.active;
@@ -201,6 +203,7 @@ async function init() {
   const form = state?.formSnapshot || await api(`/api/definitions/${encodeURIComponent(prescription.formId)}`);
   $('side-title').textContent = form.title;
   $('side-description').textContent = form.description;
+  $('assessment-information').replaceChildren(assessmentInformation(form));
   $('side-count').textContent = String(form.questions.length);
   $('intro-count').textContent = `0 / ${form.questions.length}`;
   $('side-patient').textContent = `Assigned to ${prescription.patient?.label || 'patient'}`;
