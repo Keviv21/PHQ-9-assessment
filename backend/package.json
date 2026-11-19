@@ -1,10 +1,10 @@
 {
-  "name": "phq9-gemini-live-prototype",
+  "name": "phq9-backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": "24.x"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env --env-file-if-exists=.env.local src/server.js",
