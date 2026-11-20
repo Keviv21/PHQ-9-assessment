@@ -1,4 +1,6 @@
 import { renderDraftReport } from './report-view.js';
+import { fetchQuestionnaire, questionnaireLanguage } from './questionnaire-language.js';
+import { answerSelection } from './answer-selection.js';
 
 const $ = (id) => document.getElementById(id);
 const query = new URL(location.href).searchParams;
@@ -18,6 +20,29 @@ let muted = false;
 let playbackTime = 0;
 const playbackSources = new Set();
 const transcriptRows = new Map();
+const selection = answerSelection();
+const language = questionnaireLanguage($('draft-language-select'), {
+  note: $('draft-language-note'),
+  async load(code) {
+    if (socket?.readyState === WebSocket.CONNECTING) throw new Error('Wait for the assessment to connect, then try again.');
+    if (socket?.readyState === WebSocket.OPEN) {
+      send({ type: 'set_language', language: code });
+      return;
+    }
+    const questionnaire = await fetchQuestionnaire(`/api/assessment-library/${encodeURIComponent(draftId)}`, code);
+    applyQuestionnaire(questionnaire);
+    if (state && state.status !== 'completed') renderState(state);
+    return questionnaire;
+  },
+});
+
+function applyQuestionnaire(questionnaire) {
+  form = { ...form, ...questionnaire };
+  $('draft-title').textContent = form.title;
+  $('draft-title').lang = form.language;
+  $('draft-period').textContent = form.referencePeriod || `${form.questions.length} questions`;
+  document.title = `${form.title} | OpenMind`;
+}
 
 function element(tag, text, className) {
   const item = document.createElement(tag);
@@ -46,7 +71,7 @@ function transcript(speaker, text, messageId = null) {
 }
 
 function stopPlayback() {
-  for (const source of playbackSources) { try { source.stop(); } catch {} }
+  for (const source of playbackSources) { try { source.stop(); } catch { } }
   playbackSources.clear();
   playbackTime = 0;
 }
@@ -140,7 +165,7 @@ function stopMedia() {
   $('draft-mic').textContent = 'Turn microphone off';
   $('draft-session-mode').textContent = 'OFF';
   stopPlayback();
-  audioContext?.close().catch(() => {});
+  audioContext?.close().catch(() => { });
   audioContext = null;
 }
 
@@ -150,12 +175,13 @@ function renderProposal(message) {
   for (const option of $('draft-options').children) option.classList.toggle('selected', Number(option.dataset.value) === message.value);
 }
 
-function renderReview() {
+function renderReview(values) {
   $('draft-start').hidden = true;
   $('draft-question-card').hidden = true;
   $('draft-review').hidden = false;
   $('draft-complete').hidden = true;
   const container = $('draft-review-items');
+  container.lang = form.language || 'en';
   container.replaceChildren();
   state.answers.forEach((answer, index) => {
     const row = element('label', undefined, 'draft-review-row');
@@ -163,7 +189,7 @@ function renderReview() {
     const select = element('select');
     select.dataset.index = String(index);
     form.questions[index].options.forEach((option, value) => select.add(new Option(option.label, String(value))));
-    select.value = String(answer.value);
+    select.value = values?.[index] ?? String(answer.value);
     row.append(select); container.append(row);
   });
   $('draft-review-help').textContent = form.scoringAvailable ?
@@ -185,12 +211,15 @@ function renderComplete() {
 }
 
 function renderState(nextState) {
+  const reviewValues = state?.status === 'review'
+    ? [...$('draft-review-items').querySelectorAll('select')].map((select) => select.value) : null;
   state = nextState;
   $('draft-mode').textContent = nextState.mode === 'live' ? 'VOICE' : 'ON SCREEN';
   $('draft-session-mode').textContent = nextState.mode === 'live' ? 'VOICE' : 'ON SCREEN';
+  $('draft-mode-select').value = nextState.mode === 'live' ? 'live' : 'demo';
   $('draft-start').hidden = true;
   if (nextState.status === 'completed') return renderComplete();
-  if (nextState.status === 'review') return renderReview();
+  if (nextState.status === 'review') return renderReview(reviewValues);
   $('draft-review').hidden = true;
   $('draft-complete').hidden = true;
   $('draft-question-card').hidden = false;
@@ -201,33 +230,56 @@ function renderState(nextState) {
   $('draft-progress-bar').style.width = `${Math.round((index / form.questions.length) * 100)}%`;
   $('draft-question-number').textContent = `QUESTION ${index + 1}`;
   $('draft-question').textContent = question.text;
-  $('draft-question-help').hidden = true;
+  $('draft-question').lang = form.language || 'en';
+  $('draft-question').dir = 'auto';
+  $('draft-question-help').textContent = index === 0 ? form.instructions : '';
+  $('draft-question-help').lang = form.language || 'en';
+  $('draft-question-help').dir = 'auto';
+  $('draft-question-help').hidden = index !== 0 || !form.instructions;
   const options = $('draft-options');
+  options.lang = form.language || 'en';
   options.replaceChildren();
   question.options.forEach((option, value) => {
     const choice = element(nextState.mode === 'demo' ? 'button' : 'div', undefined,
       `option draft-option${nextState.mode === 'live' ? ' voice-option' : ''}`);
     const label = element('span');
+    label.dir = 'auto';
     label.append(element('strong', option.label));
     choice.append(element('span', String(value), 'number'), label);
     if (nextState.mode === 'demo') {
       choice.type = 'button';
-      choice.addEventListener('click', () => send({ type: 'select', value }));
+      choice.setAttribute('aria-pressed', 'false');
+      choice.addEventListener('click', () => {
+        if (socket?.readyState !== WebSocket.OPEN || !selection.show(choice)) return;
+        send({ type: 'select', number: nextState.currentNumber, value });
+      });
     }
     choice.dataset.value = String(value);
     options.append(choice);
   });
-  setStatus(nextState.mode === 'live' ? 'Describe your answer aloud or type it below.' : 'Choose an answer, then confirm it.');
+  setStatus(nextState.mode === 'live' ? 'Describe your answer aloud or type it below.' : 'Choose an answer to continue.');
 }
 
 function connect() {
-  const connection = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/draft-ws?sessionId=${encodeURIComponent(sessionId)}`);
+  const preferredMode = state?.mode ? `&mode=${encodeURIComponent(state.mode)}` : '';
+  const connection = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/draft-ws?sessionId=${encodeURIComponent(sessionId)}&language=${encodeURIComponent(language.code)}${preferredMode}`);
   socket = connection;
   setStatus('Connecting…');
-  connection.onmessage = (event) => {
+  connection.onmessage = async (event) => {
+    if (socket !== connection) return;
     const message = JSON.parse(event.data);
-    if (message.type === 'state') renderState(message.assessment);
-    else if (message.type === 'proposal') renderProposal(message);
+    if (message.type === 'state') {
+      if (selection.visible) await selection.visible;
+      if (socket !== connection || connection.readyState !== WebSocket.OPEN) return;
+      selection.clear();
+      if (message.questionnaire) {
+        applyQuestionnaire(message.questionnaire);
+        language.accept(message.questionnaire);
+      }
+      renderState(message.assessment);
+    }
+    else if (message.type === 'language_error') language.fail(message.message);
+    else if (message.type === 'proposal' && state?.mode === 'live') renderProposal(message);
     else if (message.type === 'proposal_cleared') {
       $('draft-confirmation').hidden = true;
       for (const option of $('draft-options').children) option.classList.remove('selected');
@@ -239,12 +291,20 @@ function connect() {
       if (message.status === 'connected') {
         setStatus('Voice conversation connected.');
         $('draft-text').disabled = false; $('draft-send').disabled = false;
-      } else if (message.detail) transcript('system', message.detail);
-    } else if (message.type === 'error') transcript('system', message.message);
+      } else {
+        $('draft-text').disabled = true; $('draft-send').disabled = true;
+        if (message.detail) transcript('system', message.detail);
+      }
+    } else if (message.type === 'error') {
+      selection.clear();
+      transcript('system', message.message);
+    }
   };
   connection.onerror = () => transcript('system', 'Connection error.');
   connection.onclose = () => {
     if (socket !== connection || state?.status === 'completed') return;
+    selection.clear();
+    language.restore();
     stopMedia();
     $('draft-text').disabled = true; $('draft-send').disabled = true;
     $('draft-start-live').disabled = !config.geminiConfigured || state?.mode !== 'live';
@@ -269,6 +329,7 @@ function connect() {
 }
 
 async function start(mode) {
+  if (language.pending) { setStatus('Wait for the questionnaire language to load.'); return; }
   $('draft-start-live').disabled = true;
   $('draft-start-screen').disabled = true;
   try {
@@ -328,6 +389,8 @@ try {
     if (!response.ok) throw new Error('Saved review session not found.');
     state = await response.json();
     if (prescriptionId && state.prescriptionId !== prescriptionId) throw new Error('Saved review does not belong to this assignment.');
+    const requestedMode = query.get('mode');
+    if (state.status === 'in_progress' && ['demo', 'live'].includes(requestedMode)) state.mode = requestedMode;
     draftId = state.formId;
   }
   if (!draftId) throw new Error('Choose an assessment in the library first.');
@@ -335,16 +398,62 @@ try {
   if (!response.ok) throw new Error('Assessment not found.');
   form = await response.json();
   if (!form.previewAvailable) throw new Error('This assessment has incomplete answer options.');
-  $('draft-title').textContent = form.title;
+  applyQuestionnaire({ language: 'en' });
   $('draft-count').textContent = String(form.questions.length);
   $('draft-progress').textContent = `0 / ${form.questions.length}`;
-  document.title = `${form.title} | OpenMind`;
-  $('draft-period').textContent = form.referencePeriod ? `Reference period: ${form.referencePeriod}` : `${form.extractedItemCount} questions`;
   $('draft-source').href = /^https:\/\//.test(form.sourceUrl) ? form.sourceUrl : '#';
   $('draft-source').hidden = !/^https:\/\//.test(form.sourceUrl);
   config = await (await fetch('/api/config')).json();
+  if (config.languages?.length) {
+    const langSelect = $('draft-language-select');
+    langSelect.replaceChildren();
+    for (const lang of config.languages) {
+      langSelect.append(new Option(lang.name, lang.code));
+    }
+    language.restore();
+    const preferred = query.get('language');
+    if (config.languages.some(({ code }) => code === preferred)) await language.change(preferred);
+  }
   $('draft-start-live').disabled = !config.geminiConfigured;
   $('draft-start-screen').disabled = false;
+  $('draft-mode-select').addEventListener('change', async () => {
+    const chosenMode = $('draft-mode-select').value;
+    if (!state) {
+      if (chosenMode === 'live') $('draft-start-live').focus();
+      else $('draft-start-screen').focus();
+      return;
+    }
+    if (state.status === 'in_progress') {
+      if (chosenMode === 'demo') {
+        stopMedia();
+        state.mode = 'demo';
+        $('draft-mode').textContent = 'ON SCREEN';
+        $('draft-session-mode').textContent = 'ON SCREEN';
+        send({ type: 'switch_mode', mode: 'demo' });
+        renderState(state);
+      } else if (chosenMode === 'live') {
+        if (!config.geminiConfigured) {
+          setStatus('Voice conversation is not configured.');
+          $('draft-mode-select').value = 'demo';
+          return;
+        }
+        try {
+          await startMicrophone();
+          state.mode = 'live';
+          $('draft-mode').textContent = 'VOICE';
+          $('draft-session-mode').textContent = 'VOICE';
+          send({ type: 'switch_mode', mode: 'live' });
+          renderState(state);
+        } catch (err) {
+          transcript('system', `Microphone access failed: ${err.message}`);
+          $('draft-mode-select').value = 'demo';
+        }
+      }
+      const url = new URL(location.href);
+      url.searchParams.set('mode', state.mode);
+      history.replaceState({}, '', url);
+    }
+  });
   if (state) {
     if (state.status === 'completed') renderComplete();
     else if (state.status === 'review') { renderReview(); connect(); }

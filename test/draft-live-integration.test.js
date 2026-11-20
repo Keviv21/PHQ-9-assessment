@@ -30,13 +30,13 @@ test('imported questionnaire supports a saved unscored WebSocket session', { tim
     const form = await (await fetch(`${base}/api/assessment-library/${encodeURIComponent(selected.id)}`)).json();
     const createdResponse = await fetch(`${base}/api/draft-sessions`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ draftId: selected.id, mode: 'demo' }),
+      body: JSON.stringify({ draftId: selected.id, mode: 'live' }),
     });
     assert.equal(createdResponse.status, 201);
     const created = await createdResponse.json();
     assert.equal(created.formId, selected.id);
     assert.equal(created.scores, null);
-    socket = new WebSocket(`ws://127.0.0.1:${port}/draft-ws?sessionId=${created.id}`);
+    socket = new WebSocket(`ws://127.0.0.1:${port}/draft-ws?sessionId=${created.id}&mode=demo`);
     const queue = [];
     const waiters = [];
     socket.on('message', (raw) => {
@@ -46,14 +46,18 @@ test('imported questionnaire supports a saved unscored WebSocket session', { tim
     });
     const next = () => queue.length ? Promise.resolve(queue.shift()) : new Promise((resolve) => waiters.push(resolve));
     await once(socket, 'open');
-    assert.equal((await next()).assessment.currentNumber, 1);
+    const initial = (await next()).assessment;
+    assert.equal(initial.currentNumber, 1);
+    assert.equal(initial.mode, 'demo');
     for (let number = 1; number <= form.questions.length; number++) {
-      socket.send(JSON.stringify({ type: 'select', value: 0 }));
-      assert.equal((await next()).type, 'proposal');
-      socket.send(JSON.stringify({ type: 'confirm' }));
+      socket.send(JSON.stringify({ type: 'select', number, value: 0 }));
+      if (number === 1) socket.send(JSON.stringify({ type: 'select', number, value: 1 }));
       const state = await next();
+      assert.equal(state.type, 'state');
       assert.equal(state.assessment.answers.length, number);
+      assert.equal(state.assessment.answers.at(-1).value, 0);
       assert.equal(state.assessment.status, number === form.questions.length ? 'review' : 'in_progress');
+      if (number === 1) assert.match((await next()).message, /wrong question/);
     }
     const finalValues = form.questions.map(() => 0);
     finalValues[0] = 1;

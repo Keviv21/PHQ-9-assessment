@@ -19,10 +19,19 @@ for (const [formId, translations] of Object.entries(forms)) {
   }
 }
 
-export function getAssessmentForm(formId, language = 'en') {
+export function validateAssessmentLanguage(language) {
   if (!languages.some((l) => l.code === language)) {
     throw new RangeError('Unsupported assessment or language.');
   }
+  return language;
+}
+
+export function hasBundledTranslation(formId, language) {
+  return Boolean(forms[formId]?.[language] || formTranslations[formId]?.[language]?.questions);
+}
+
+export function getAssessmentForm(formId, language = 'en') {
+  validateAssessmentLanguage(language);
   const base = forms[formId];
   if (!base) throw new RangeError('Unsupported assessment or language.');
 
@@ -57,7 +66,10 @@ export function assertAssessmentAnswer(formId, value) {
 }
 
 export function assessmentQuestion(formId, number, language = 'en') {
-  const form = getAssessmentForm(formId, language);
+  return formQuestion(getAssessmentForm(formId, language), number);
+}
+
+export function formQuestion(form, number) {
   if (!Number.isInteger(number) || number < 1 || number > form.questions.length) return null;
   return { number, total: form.questions.length, ...form.questions[number - 1] };
 }

@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { assertAssessmentAnswer, getAssessmentForm, scoreAssessment } from './forms.js';
+import { assertAssessmentAnswer, getAssessmentForm, hasBundledTranslation, scoreAssessment, validateAssessmentLanguage } from './forms.js';
 import { buildOverview, buildPatientAnalytics } from './analytics.js';
 
 export function openStore(path) {
@@ -168,7 +168,7 @@ export function openStore(path) {
   const linkPrescription = db.prepare('UPDATE prescriptions SET assessment_id = ? WHERE id = ? AND assessment_id IS NULL');
 
   function updateLanguage(id, nextLanguage) {
-    updateAssessmentLanguage.run(nextLanguage, id);
+    updateAssessmentLanguage.run(validateAssessmentLanguage(nextLanguage), id);
     return get(id);
   }
 
@@ -193,7 +193,8 @@ export function openStore(path) {
   function create(mode, language = 'en', demoPatientId = null, formId = 'phq9') {
     if (!['demo', 'live'].includes(mode)) throw new RangeError('Unsupported mode.');
     if (demoPatientId !== null && (typeof demoPatientId !== 'string' || !/^demo-[a-z]$/.test(demoPatientId))) throw new RangeError('Unsupported demo patient.');
-    const assessmentForm = getAssessmentForm(formId, language);
+    validateAssessmentLanguage(language);
+    const assessmentForm = getAssessmentForm(formId, hasBundledTranslation(formId, language) ? language : 'en');
     const id = randomUUID();
     insertAssessment.run(id, formId, assessmentForm.version, language, mode, mode === 'live' ? 'conversational_inference' : 'explicit_choice', demoPatientId, new Date().toISOString());
     return get(id);
@@ -211,7 +212,7 @@ export function openStore(path) {
       if (number !== before.currentNumber) throw new Error('Answer is for the wrong question.');
       const timestamp = new Date().toISOString();
       insertAnswer.run(id, number, value, method, summary?.trim() ?? null, timestamp);
-      if (number === getAssessmentForm(before.formId, before.language).questions.length) markReview.run(id);
+      if (number === getAssessmentForm(before.formId).questions.length) markReview.run(id);
       db.exec('COMMIT');
       return get(id);
     } catch (error) { db.exec('ROLLBACK'); throw error; }
@@ -223,7 +224,7 @@ export function openStore(path) {
     try {
       const before = get(id);
       if (!before) throw new Error('Assessment not found.');
-      const count = getAssessmentForm(before.formId, before.language).questions.length;
+      const count = getAssessmentForm(before.formId).questions.length;
       if (before.status !== 'review' || before.answers.length !== count || finalValues.length !== count) {
         throw new Error('Assessment is not ready for final review.');
       }

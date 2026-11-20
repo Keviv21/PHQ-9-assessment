@@ -4,6 +4,30 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { copy } from '../public/i18n.js';
+import { answerSelection } from '../public/answer-selection.js';
+
+test('an answer stays highlighted long enough to see and blocks a second selection', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const selection = answerSelection();
+  const button = {
+    classList: { add(name) { assert.equal(name, 'selected'); }, remove(name) { assert.equal(name, 'selected'); } },
+    setAttribute(name, value) { assert.equal(name, 'aria-pressed'); this.pressed = value; },
+  };
+  assert.equal(selection.show(button), true);
+  assert.equal(button.pressed, 'true');
+  assert.equal(selection.show(button), false);
+  let ready = false;
+  const highlighted = selection.visible.then(() => { ready = true; });
+  context.mock.timers.tick(399);
+  await Promise.resolve();
+  assert.equal(ready, false);
+  context.mock.timers.tick(1);
+  await highlighted;
+  assert.equal(selection.show(button), false);
+  selection.clear();
+  assert.equal(button.pressed, 'false');
+  assert.equal(selection.visible, null);
+});
 
 test('browser scripts parse and the assessment screen has its referenced controls', () => {
   for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'doctor-chat.js', 'analytics.js', 'assessment-library.js', 'draft-live.js', 'definition.js', 'definition-voice.js']) {
@@ -65,9 +89,7 @@ test('browser scripts parse and the assessment screen has its referenced control
     for (const element of ['assessment-card', 'assessment-topline', 'progress-track', 'question-area', 'transcript', 'composer', 'camera-box', 'media-actions']) {
       assert.match(page, new RegExp(`class="[^"]*\\b${element}\\b`), `Assessment page missing ${element}`);
     }
-    for (const label of ['IS THIS WHAT YOU MEANT?', 'Let me clarify', "Yes, that's right"]) {
-      assert.ok(page.includes(label), `Assessment confirmation missing ${label}`);
-    }
   }
+  assert.doesNotMatch(html, /id="confirmation"/);
   assert.match(html, /<option value="hi">हिन्दी<\/option>/);
 });

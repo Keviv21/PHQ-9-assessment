@@ -176,10 +176,9 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     assert.equal(firstState.assessment.demoPatientId, 'demo-a');
     assert.equal((await (await fetch(`${base}/api/prescriptions/${prescription.id}`)).json()).status, 'in_progress');
     for (let number = 1; number <= 9; number++) {
-      socket.send(JSON.stringify({ type: 'select', value: number === 9 ? 1 : 0 }));
-      assert.equal((await next()).number, number);
-      socket.send(JSON.stringify({ type: 'confirm' }));
+      socket.send(JSON.stringify({ type: 'select', number, value: number === 9 ? 1 : 0 }));
       const saved = await next();
+      assert.equal(saved.type, 'state');
       assert.equal(saved.assessment.answers.length, number);
       if (number === 9) {
         assert.equal(saved.assessment.status, 'review');
@@ -238,9 +237,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     const switchedBackToHindi = await nextHindi();
     assert.equal(switchedBackToHindi.question.text, hindiForm.questions[0].text);
     for (let number = 1; number <= 9; number++) {
-      socket.send(JSON.stringify({ type: 'select', value: 0 }));
-      assert.equal((await nextHindi()).number, number);
-      socket.send(JSON.stringify({ type: 'confirm' }));
+      socket.send(JSON.stringify({ type: 'select', number, value: 0 }));
       assert.equal((await nextHindi()).assessment.answers.length, number);
     }
     socket.send(JSON.stringify({ type: 'finalize', answers: Array(9).fill(0) }));
@@ -273,9 +270,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
       const nextOther = () => queue.length ? Promise.resolve(queue.shift()) : new Promise((resolve) => waiters.push(resolve));
       assert.equal((await nextOther()).assessment.formId, formId);
       for (let number = 1; number <= count; number++) {
-        socket.send(JSON.stringify({ type: 'select', value: number === 1 ? 2 : 0 }));
-        assert.equal((await nextOther()).number, number);
-        socket.send(JSON.stringify({ type: 'confirm' }));
+        socket.send(JSON.stringify({ type: 'select', number, value: number === 1 ? 2 : 0 }));
         const state = await nextOther();
         assert.equal(state.assessment.answers.length, number);
       }
