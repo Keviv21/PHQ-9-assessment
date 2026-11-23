@@ -12,8 +12,6 @@ flowchart LR
     N --> G[Gemini Live<br/>speech, transcript, tools]
     G --> N
     N --> B
-    B --> C[Participant confirms proposal]
-    C --> N
     N --> D[(SQLite or PostgreSQL write)]
     D --> Q[Next question or final review]
 ```
@@ -27,7 +25,7 @@ flowchart LR
 | Voice capture | Browser sends 16 kHz, 16-bit mono PCM to Node | Each worklet chunk is 1,600 samples, or 100 ms of audio |
 | Optional camera | Browser encodes 640 × 360 JPEG at quality 0.55 every 1.1 seconds when enabled | Actual JPEG size and visual tokens vary; frames are context only |
 | Gemini Live | `@google/genai` relays audio, optional frames, input/output transcription, and tool calls | First-audio and full-turn latency are not recorded |
-| Confirmation | Validates current item and proposed value; writes only after explicit confirmation | Human response time and DB round trip are not recorded |
+| Voice answer | Validates the current item and mapped value, then saves a clear answer immediately | Database round trip is not recorded |
 | Final review and report | Saves corrections and runs deterministic score code | No Gemini tokens; no recorded scoring or report timing |
 
 The audio worklet generates **3,200 raw bytes per chunk** (1,600 samples × 2 bytes) or about **32 KB/s** before WebSocket overhead. The browser-to-Node packet adds a one-byte type marker. Node sends the PCM to the Gemini SDK. Playback uses 24 kHz, 16-bit mono PCM, about **48 KB/s raw** while Gemini speaks, before transport encoding and overhead. These are **media byte rates, not token counts or network measurements**.
@@ -49,12 +47,12 @@ The Live bridge requests input and output transcription, uses sliding-window con
 
 The server does **not** save Gemini `usageMetadata` or a per-session modality breakdown. Consequently, there is no verified number of tokens, provider charge, or average latency per assessment in this repository. A rough estimate based only on audio seconds would omit repeated context, text, transcription, optional video, and provider billing details. Do not present one as an actual measured cost.
 
-To measure a real session, capture the provider's usage metadata for every Live and Doctor conversation response and tag it with a non-identifying session ID. Record monotonic timestamps at: microphone start, user speech end, first model audio, answer proposal, participant confirmation, successful DB write, and first audio for the next question. Then calculate:
+To measure a real session, capture the provider's usage metadata for every Live and Doctor conversation response and tag it with a non-identifying session ID. Record monotonic timestamps at: microphone start, user speech end, first model audio, answer mapping, successful DB write, and first audio for the next question. Then calculate:
 
 ```text
 first_audio_latency = first_model_audio - user_speech_end
-proposal_latency    = answer_proposal - user_speech_end
-next_question_delay = next_question_audio - confirmation
+mapping_latency     = answer_mapping - user_speech_end
+next_question_delay = next_question_audio - successful_db_write
 session_cost        = sum(provider_reported_tokens_by_modality × current_rate_by_modality)
 ```
 
@@ -63,7 +61,7 @@ Use the provider's current billing data to reconcile cost; do not infer price fr
 ## Current performance risks and useful checks
 
 1. A long conversation accumulates context and may increase model work; the bridge requests context compression but does not expose its savings.
-2. Each answer can require a model proposal, a human confirmation, a database write, and the next model turn. The human and remote-model stages dominate perceived delay but have not been quantified here.
+2. Each clear answer requires model mapping, a database write, and the next model turn. Remote-model and database stages dominate perceived delay but have not been quantified here.
 3. PostgreSQL adds remote round trips compared with SQLite. The chosen backend is visible at `GET /api/health`; neither mode currently has a latency benchmark in this project.
 4. Compare the same form, language, device, network, and camera setting when measuring sessions. Different item counts and clarification turns make raw total duration misleading.
 

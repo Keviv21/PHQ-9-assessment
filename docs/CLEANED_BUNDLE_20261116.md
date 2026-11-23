@@ -1,6 +1,6 @@
 # Cleaned assessment bundle: implementation status
 
-Source: `all-assessments-cleaned-20261116.json`, imported with `npm run import:new`. The generated runtime file is `data/assessment-definitions-20261116.json`; it includes the source file's SHA-256, questionnaire items, response schemas, conditional display rules, draft arithmetic rules, and review flags. Existing completed assessment records retain their earlier form definitions. New sessions store a complete snapshot of the assigned form.
+The 16 November cleaned bundle was the original import source. The current runtime uses the later `all-assessments.json` export, synchronized with `npm run sync:assessments`, as the single bundled `data/all-assessments.json`. It includes questionnaire items, response schemas, conditional display rules, draft arithmetic rules, and review flags. Existing completed assessment records retain their earlier form snapshots. New sessions store a complete snapshot of the assigned form.
 
 For the overall application path, see [prototype architecture](PROTOTYPE_ARCHITECTURE.md). For every source flag and an assessment-by-assessment matrix, see the [November 16 gap audit](NOVOPSYCH_20261116_GAP_AUDIT.md).
 

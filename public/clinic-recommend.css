@@ -93,8 +93,12 @@
 .assessment-library-tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; min-height: 26px; }
 .assessment-library-tags span { padding: 4px 7px; border-radius: 5px; background: #eaf4fb; color: #387b9f; font-size: 10px; font-weight: 650; }
 .assessment-library-card h3 { margin: 19px 0 8px; color: #3e526a; font-size: 17px; line-height: 1.32; font-weight: 700; }
+.assessment-library-card h3 a { color: inherit; text-decoration: none; }
+.assessment-library-card h3 a:hover,.assessment-library-card h3 a:focus-visible { color: #1687b8; text-decoration: underline; }
 .assessment-library-card .assessment-info-label { display: none; }
 .assessment-library-card .assessment-overview { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 4; min-height: 67px; margin: 0 auto 15px; color: #718096; font-size: 13px; line-height: 1.45; }
+.assessment-library-details { align-self: center; margin: 0 0 12px; color: #1485ba; font-size: 12px; font-weight: 700; text-decoration: none; }
+.assessment-library-details:hover,.assessment-library-details:focus-visible { text-decoration: underline; }
 .assessment-library-card .assessment-more { margin-top: -7px; text-align: left; }
 .assessment-library-card .assessment-facts { justify-content: center; margin: auto 0 10px; }
 .assessment-library-card .assessment-facts span { background: #fff; }

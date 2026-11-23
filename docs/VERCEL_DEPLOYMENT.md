@@ -81,8 +81,8 @@ Create a protected Preview deployment and verify the deployed runtime:
    hostname. The local tests do not exercise Vercel's proxy or account settings.
 6. Leave a session open beyond five minutes, then use the resume controls or
    continue on screen. Vercel closes WebSockets at the function duration limit;
-   confirmed answers persist in PostgreSQL, while an unconfirmed proposal must
-   be answered again. Voice conversation history is not restored across sessions.
+   recorded answers persist in PostgreSQL, while a response that was not saved
+   must be answered again. Voice conversation history is not restored across sessions.
 7. Check Vercel function logs for startup, database, or Gemini errors before
    promoting the deployment.
 

@@ -23,7 +23,7 @@
       <p id="side-patient" class="support-note"></p>
     </aside>
   <main class="conversation-panel definition-main">
-    <div class="conversation-header"><div class="assistant-avatar" aria-hidden="true"><span></span></div><div><h2>Assessment conversation</h2><p>Share your experience in your own words. Confirm each response before it is saved.</p></div><span id="definition-live-label" class="live-badge">OFF</span></div>
+    <div class="conversation-header"><div class="assistant-avatar" aria-hidden="true"><span></span></div><div><h2>Assessment conversation</h2><p>Share your experience in your own words. Review your answers before generating the report.</p></div><span id="definition-live-label" class="live-badge">OFF</span></div>
     <div class="conversation-body definition-body">
     <div id="error" class="error" hidden></div>
     <div id="definition-controls" class="definition-assessment-controls" aria-label="Assessment settings"><div class="definition-setting-pickers"><label class="inline-mode-picker" for="definition-mode"><span>Mode:</span><select id="definition-mode"><option value="voice">Voice conversation</option><option value="screen">Complete on screen</option></select></label><label class="inline-language-picker" for="definition-language"><span>Language:</span><select id="definition-language" aria-describedby="definition-language-note"><option value="en">English</option></select></label></div><p id="definition-language-note" class="muted definition-language-note">Only the English version is currently available for this assessment.</p></div>
@@ -34,12 +34,6 @@
       <div id="input-area" class="answer-options"></div>
       <div id="voice-answer-guide" class="voice-answer-guide" hidden></div>
       <div id="screen-actions" class="actions"><button id="back" class="secondary">Previous</button><button id="next" class="primary">Save &amp; continue</button></div>
-      <div id="voice-panel" class="voice-panel" hidden>
-        <div id="voice-confirmation" class="confirmation voice-confirmation" role="status" hidden>
-          <div><span class="eyebrow">IS THIS WHAT YOU MEANT?</span><strong id="voice-proposal"></strong></div>
-          <div class="confirm-actions"><button id="voice-cancel" class="button secondary" type="button">Let me clarify</button><button id="voice-confirm" class="button primary" type="button">Yes, that's right</button></div>
-        </div>
-      </div>
       <p id="save-status" class="muted"></p>
     </section>
     <section id="review" class="panel assessment-card" hidden>
@@ -52,7 +46,7 @@
     </div>
     <form id="voice-text-form" class="composer voice-text-form"><input id="voice-text" type="text" maxlength="1000" placeholder="You can type a response here during a Live session" aria-label="Type a response" disabled><button id="voice-send" class="button primary" type="submit" disabled>Send</button></form>
   </main>
-  <aside class="session-panel definition-side" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2>LIVE SESSION</h2><span id="definition-mode-label">OFF</span></div><div class="camera-box voice-session-box"><video id="voice-preview" autoplay muted playsinline></video><div id="voice-camera-placeholder">Camera is off</div><span class="camera-badge">CAMERA PREVIEW</span></div><div class="media-actions"><button id="voice-mute" class="button secondary" type="button" disabled>Turn microphone off</button><button id="voice-camera-toggle" class="button secondary" type="button" disabled>Turn camera on</button></div><p class="support-note">Confirmed answers and available scores are saved. Audio and optional camera frames are used during a live conversation.</p></section><section class="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>The assistant may ask a short follow-up.</li><li>Confirm the response before it is saved.</li></ol><p>Review your answers before generating the report.</p></section></aside>
+  <aside class="session-panel definition-side" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2>LIVE SESSION</h2><span id="definition-mode-label">OFF</span></div><div class="camera-box voice-session-box"><video id="voice-preview" autoplay muted playsinline></video><div id="voice-camera-placeholder">Camera is off</div><span class="camera-badge">CAMERA PREVIEW</span></div><div class="media-actions"><button id="voice-mute" class="button secondary" type="button" disabled>Turn microphone off</button><button id="voice-camera-toggle" class="button secondary" type="button" disabled>Turn camera on</button></div><p class="support-note">Recorded answers and available scores are saved. Audio and optional camera frames are used during a live conversation.</p></section><section class="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>If an answer is unclear, the assistant may ask a short follow-up.</li><li>Review your answers before generating the report.</li></ol></section></aside>
   </div>
   </div>
   <script src="/definition.js" type="module"></script>

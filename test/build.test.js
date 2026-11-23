@@ -12,10 +12,13 @@ test('static deployment opens the clinic at home and the patient screen at asses
   });
   const home = readFileSync(new URL('../dist/index.html', import.meta.url), 'utf8');
   const assessment = readFileSync(new URL('../dist/assessment.html', import.meta.url), 'utf8');
+  const detail = readFileSync(new URL('../dist/assessment-detail.html', import.meta.url), 'utf8');
   assert.match(home, /<h1>Prescribe Test<\/h1>/);
   assert.match(home, /src="\/clinic\.js"/);
   assert.match(home, /class="logo-home" href="\/"/);
   assert.doesNotMatch(home, /sidebar-language-section/);
   assert.match(assessment, /id="assessment-title"/);
   assert.match(assessment, /src="\/app\.js"/);
+  assert.match(detail, /id="assessment-title"/);
+  assert.match(detail, /src="\/assessment-detail\.js"/);
 });

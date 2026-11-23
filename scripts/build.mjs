@@ -51,4 +51,4 @@ await cp(join(root, 'public'), output, { recursive: true });
 await copyFile(join(root, 'public/index.html'), join(output, 'assessment.html'));
 await copyFile(join(root, 'public/clinic.html'), join(output, 'index.html'));
 console.log(`Build passed: ${sources.filter((path) => path.endsWith('.js')).length} JavaScript files checked; static assets copied to dist/.`);
-console.log('Vercel will bundle api/server.js, src/, and the included assessment JSON files as a Node.js function.');
+console.log('Vercel will bundle api/server.js, src/, and data/all-assessments.json as a Node.js function.');

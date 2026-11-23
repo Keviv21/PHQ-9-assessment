@@ -210,7 +210,7 @@ test('screen answer recorded via pending immediately advances to next question a
   } finally { store.close(); }
 });
 
-test('voice mode with requireConfirmation=false saves proposed answer immediately and advances without confirmation prompt', async () => {
+test('voice mode saves a clear answer immediately and advances without confirmation prompt', async () => {
   const store = openStore(':memory:');
   try {
     const assessment = store.create('live');
@@ -221,13 +221,12 @@ test('voice mode with requireConfirmation=false saves proposed answer immediatel
       socket: { readyState: 1, send: (raw) => events.push(JSON.parse(raw)) },
       store, assessmentId: assessment.id,
       onState: (state) => events.push({ type: 'state', value: state }),
-      requireConfirmation: false,
     });
     bridge.session = {
       sendToolResponse: () => {},
       sendClientContent: (val) => prompts.push(val),
     };
-    await bridge.handleToolCalls([{ id: 'v1', name: 'propose_answer', args: {
+    await bridge.handleToolCalls([{ id: 'v1', name: 'record_answer', args: {
       questionId: 'Q01', value: 1, summary: 'This occurred on several days.',
     } }]);
     assert.equal(events.some((e) => e.type === 'proposal'), false);
@@ -236,4 +235,28 @@ test('voice mode with requireConfirmation=false saves proposed answer immediatel
     assert.equal(prompts.length, 1);
     assert.match(prompts[0].turns[0].parts[0].text, /item Q02 of 9/);
   } finally { store.close(); }
+});
+
+test('catalogue voice answer saves immediately and advances to the next item', async () => {
+  const definitionStore = openDefinitionStore({ path: ':memory:' });
+  try {
+    const form = getDefinition('adult-adhd-self-report-scale-asrs--814829bfeff1');
+    const prescription = await definitionStore.prescribe('demo-a', form.id);
+    const state = await definitionStore.start(prescription.id);
+    const events = [];
+    const prompts = [];
+    const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model',
+      socket: { readyState: 1, send: (raw) => events.push(JSON.parse(raw)) },
+      store: createDefinitionVoiceStore(definitionStore), assessmentId: state.id,
+      formId: form.id, formOverride: { definition: true, formId: form.id, title: form.title, questions: form.questions },
+      onState: () => {} });
+    bridge.session = { sendToolResponse: () => {}, sendClientContent: (value) => prompts.push(value) };
+    const first = form.questions[0];
+    await bridge.handleToolCalls([{ id: 'one', name: 'record_answer', args: {
+      questionId: first.id, answerJson: JSON.stringify(first.options[0].id), summary: 'The first option fits.',
+    } }]);
+    assert.equal(events.some((event) => event.type === 'proposal'), false);
+    assert.equal((await definitionStore.getSession(state.id)).answers[first.id], first.options[0].id);
+    assert.match(prompts[0].turns[0].parts[0].text, new RegExp(form.questions[1].id));
+  } finally { await definitionStore.close(); }
 });

@@ -15,6 +15,7 @@ import { openPostgresStores } from './postgres-stores.js';
 import { answerDoctor, fallbackDoctor, validateDoctorMessage } from './doctor-chat.js';
 import { getCatalogEntry } from './assessment-catalog.js';
 import { getDefinition, listDefinitions } from './definition-library.js';
+import { getAssessmentDetail } from './assessment-details.js';
 import { openDefinitionStore } from './definition-store.js';
 import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
 import { isAllowedWebSocketOrigin, validateDeploymentEnvironment } from './deployment.js';
@@ -34,7 +35,7 @@ const model = process.env.GEMINI_LIVE_MODEL?.trim() || 'gemini-3.8-live';
 const textModel = process.env.GEMINI_TEXT_MODEL?.trim() || 'gemini-3.5-flash-lite';
 const scoredDraftIds = new Set(['phq9', 'gad7', 'pcl5'].map((id) => getCatalogEntry(id).catalogDraftId));
 const port = Number(process.env.PORT || 4174);
-const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/assessment-unified.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css', '/definition.html', '/definition.js', '/definition-voice.js', '/definition.css']);
+const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/assessment-unified.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/assessment-detail.html', '/assessment-detail.js', '/assessment-detail.css', '/draft-live.html', '/draft-live.js', '/draft-live.css', '/definition.html', '/definition.js', '/definition-voice.js', '/definition.css']);
 const activeAssessments = new Set();
 
 function json(response, status, value) {
@@ -55,6 +56,13 @@ async function readJson(request, maxBytes = 200_000) {
 const server = http.createServer(async (request, response) => {
   try {
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+  if (url.pathname.startsWith('/api/assessment-details/') && request.method === 'GET') {
+    let id;
+    try { id = decodeURIComponent(url.pathname.slice('/api/assessment-details/'.length)); }
+    catch { return json(response, 400, { error: 'Invalid assessment ID.' }); }
+    const detail = getAssessmentDetail(id);
+    return detail ? json(response, 200, detail) : json(response, 404, { error: 'Assessment not found.' });
+  }
   if (url.pathname === '/api/definitions' && request.method === 'GET') return json(response, 200, listDefinitions());
   if (url.pathname.startsWith('/api/definitions/') && request.method === 'GET') {
     let id;

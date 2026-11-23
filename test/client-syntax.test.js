@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { copy } from '../public/i18n.js';
 
 test('browser scripts parse and the assessment screen has its referenced controls', () => {
-  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'doctor-chat.js', 'analytics.js', 'assessment-library.js', 'draft-live.js', 'definition.js', 'definition-voice.js']) {
+  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'doctor-chat.js', 'analytics.js', 'assessment-library.js', 'assessment-detail.js', 'draft-live.js', 'definition.js', 'definition-voice.js']) {
     const path = fileURLToPath(new URL(`../public/${name}`, import.meta.url));
     execFileSync(process.execPath, ['--check', path], { stdio: 'pipe' });
   }
@@ -31,11 +31,17 @@ test('browser scripts parse and the assessment screen has its referenced control
   assert.ok(clinicHtml.indexOf('class="panel assessment-library-panel"') < clinicHtml.indexOf('class="panel decision-panel"'));
   assert.match(clinicHtml, /id="assessment-library-categories"/);
   assert.match(clinicHtml, /id="assessment-library-suggested"[^>]*aria-pressed="false"/);
-  const categoryMap = JSON.parse(readFileSync(new URL('../data/assessment-library-categories.json', import.meta.url), 'utf8'));
+  const categoryMap = JSON.parse(readFileSync(new URL('../data/all-assessments.json', import.meta.url), 'utf8')).appMetadata.categories;
   const embeddedMap = clinic.match(/const libraryCategoryMap = (\{[\s\S]*?\n\});/);
   assert.ok(embeddedMap, 'The clinic must contain categories even when a local server is not restarted');
   assert.deepEqual(JSON.parse(embeddedMap[1]), categoryMap);
   assert.doesNotMatch(clinicHtml, /id="library-view"/);
+  assert.match(clinic, /assessment-detail\.html/);
+  const detailHtml = readFileSync(new URL('../public/assessment-detail.html', import.meta.url), 'utf8');
+  const detailScript = readFileSync(new URL('../public/assessment-detail.js', import.meta.url), 'utf8');
+  for (const [, id] of detailScript.matchAll(/byId\('([^']+)'\)/g)) {
+    assert.match(detailHtml, new RegExp(`id="${id}"`), `Missing assessment detail control ${id}`);
+  }
   const analytics = readFileSync(new URL('../public/analytics.js', import.meta.url), 'utf8');
   for (const [, id] of analytics.matchAll(/byId\('([^']+)'\)/g)) {
     assert.match(clinicHtml, new RegExp(`id="${id}"`), `Missing analytics control ${id}`);
@@ -65,9 +71,10 @@ test('browser scripts parse and the assessment screen has its referenced control
     for (const element of ['assessment-card', 'assessment-topline', 'progress-track', 'question-area', 'transcript', 'composer', 'camera-box', 'media-actions']) {
       assert.match(page, new RegExp(`class="[^"]*\\b${element}\\b`), `Assessment page missing ${element}`);
     }
-    for (const label of ['IS THIS WHAT YOU MEANT?', 'Let me clarify', "Yes, that's right"]) {
-      assert.ok(page.includes(label), `Assessment confirmation missing ${label}`);
-    }
+  }
+  assert.doesNotMatch(definitionHtml, /IS THIS WHAT YOU MEANT\?|Let me clarify|Yes, that's right/);
+  for (const page of [html, draftHtml]) {
+    assert.match(page, /IS THIS WHAT YOU MEANT\?/); // On-screen mode still offers confirmation.
   }
   assert.match(html, /<option value="hi">हिन्दी<\/option>/);
 });

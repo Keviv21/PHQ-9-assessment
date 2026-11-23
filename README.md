@@ -5,10 +5,11 @@ A standalone OpenMind/Casebook-style demonstration of clinician-selected assessm
 ## Current scope
 
 1. A clinician selects a sample patient. Current summary observations produce an explained, rule-based shortlist. The doctor can also send de-identified notes to Gemini for catalogue-checked suggestions, then makes the final selection.
-2. The Assessment Library below Doctor Conversation shows 186 entries from the 16 November 2026 assessment bundle. Clinicians can search, filter by category or patient suggestion, read each card's overview, and select one for final review. Category labels matched to the NovoPsych library are stored in `data/assessment-library-categories.json` and included in the browser script, so filters work even when an existing local server process has not restarted. Entries without a matching source category appear under Other. The searchable Prescribe Test picker reflects the selection. The 185 entries with questionnaires can be assigned; SDQ has no recovered form and is unavailable.
-3. The patient completes the assessment on screen or in a Gemini Live voice conversation. The voice flow proposes an answer and saves it only after confirmation. Questions and applicable options stay visible. A final review permits corrections before the report is created.
+2. The Assessment Library below Doctor Conversation shows 186 entries from the supplied `all-assessments.json`. Clinicians can search, filter by category or patient suggestion, open a dedicated details page, and select one for final review. Questions, response choices, scoring rules, descriptions, references, question previews, category mappings, and recommendation metadata are read from the single bundled `data/all-assessments.json`. Entries without a mapped source category appear under Other. The searchable Prescribe Test picker reflects the selection. The 185 entries with questionnaires can be assigned; SDQ has no recovered form and is unavailable.
+3. The patient completes the assessment on screen or in a Gemini Live voice conversation. A clear spoken answer is validated and saved immediately; the assistant asks a follow-up only when it cannot map the response. Questions and applicable options stay visible. A final review permits corrections before the report is created.
 4. PHQ-9, GAD-7, PCL-5, and DASS-21 have dedicated scoring flows. Other imported forms show source-draft raw calculations when their rules apply; LEC-5 and asQ save answers without a numeric composite. The prototype does not claim that imported calculations reproduce NovoPsych's clinical reports.
 5. Assignments, answers, results, and analytics persist in SQLite or an isolated PostgreSQL schema. Patient profiles and summaries remain in the JSON file, not in the database.
+   `data/all-assessments.json` is the only runtime assessment JSON. Its `appMetadata.legacyDraftRecords` section retains the old draft wording for sessions started before this consolidation; current catalogue definitions and detail pages use the supplied export. `data/demo-patients.json` remains separate because it contains synthetic patient data, not assessment definitions.
 6. Multi-language support: 43 languages are available in the assessment screens, defaulting to English (`en`). Core clinical instruments (PHQ-9, GAD-7, DASS-21) feature translations for English (`en`), Hindi (`hi`), Marathi (`mr`), and Spanish (`es`). The patient can change languages on the fly while an assessment is actively underway, immediately re-rendering the current item and options in real time.
 
 ## Start locally
@@ -47,11 +48,14 @@ When `DATABASE_URL` is set, run `npm run db:check` to test the connection. The a
 
 1. In **NovoPsych Assessment → Prescribe Test**, choose a sample patient and review the summary and suggested tests.
 2. Optionally use **Doctor conversation** for another suggestion. Search the full picker and confirm the assessment yourself.
-3. Open the assigned patient link and choose **Complete on screen** or **Start voice conversation**. For voice, allow the microphone, answer naturally, and confirm or clarify each proposed answer.
+   Open **View full details** on a library card to review its overview, score components, psychometric narrative, references, and questionnaire preview. **Select for final review** returns to the same patient and fills the final picker; it does not prescribe automatically.
+3. Open the assigned patient link and choose **Complete on screen** or **Start voice conversation**. For voice, allow the microphone and answer naturally. The assistant advances after each clear answer.
 4. Review and edit answers, generate the report, then open **View Test Reports**. The report can be printed or saved as PDF through the browser.
 5. Open **Analytics** to inspect completion activity and same-form score trends for the selected patient.
 
 Run `npm test` for the automated suite. For PostgreSQL, `npm run db:inspect` examines the core and legacy draft sessions; `npm run db:inspect:definition -- <assignment-id>` inspects an imported assessment assignment. See the architecture guide for the other storage paths and endpoints.
+
+To refresh every assessment from a revised export, run `npm run sync:assessments -- "C:\path\to\all-assessments.json"`, then restart the server. The command validates 186 unique assessment IDs and updates the single bundled `data/all-assessments.json`. It preserves the app's category and recommendation metadata while replacing the source questions, options, scoring rules, and detail content.
 
 ## Documentation
 
@@ -64,4 +68,4 @@ Run `npm test` for the automated suite. For PostgreSQL, `npm run db:inspect` exa
 
 ## Limits
 
-This is a local demonstration with synthetic patients. It has no Casebook patient API, production authentication, patient notification, or automatic clinical escalation. Voice interpretation is confirmed by the respondent but has not been clinically validated as an alternative administration method. The imported bundle marks every form's scoring as disabled for clinical use; its raw draft calculations and printable reports are for workflow testing. Use only de-identified information in Doctor conversation.
+This is a local demonstration with synthetic patients. It has no Casebook patient API, production authentication, patient notification, or automatic clinical escalation. Voice interpretation is reviewed by the respondent at the end but has not been clinically validated as an alternative administration method. The imported bundle marks every form's scoring as disabled for clinical use; its raw draft calculations and printable reports are for workflow testing. Use only de-identified information in Doctor conversation.

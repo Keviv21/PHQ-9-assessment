@@ -1,16 +1,11 @@
-import { readFileSync } from 'node:fs';
 import { dass21DraftId } from './draft-scoring.js';
+import { legacyDraftRecords } from './assessment-source.js';
 
-const data = JSON.parse(readFileSync(new URL('../data/draft-assessments.json', import.meta.url), 'utf8'));
-if (!Array.isArray(data.records) || data.records.length !== data.sourceCount ||
-    new Set(data.records.map((record) => record.id)).size !== data.records.length) {
-  throw new Error('The assessment library import is invalid.');
-}
-
-const records = new Map(data.records.map((record) => [record.id, record]));
+if (legacyDraftRecords.length !== 186) throw new Error('Legacy draft snapshots are missing.');
+const records = new Map(legacyDraftRecords.map((record) => [record.id, record]));
 
 export function listDraftAssessments() {
-  return data.records.map(({ id, title, description, referencePeriod, sourceUrl, extractedItemCount,
+  return [...records.values()].map(({ id, title, description, referencePeriod, sourceUrl, extractedItemCount,
     incompleteItems, previewAvailable, reviewStatus }) => ({
     id, title, description, referencePeriod, sourceUrl, extractedItemCount,
     incompleteItems, previewAvailable, reviewStatus,

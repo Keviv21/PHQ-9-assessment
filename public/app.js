@@ -59,11 +59,11 @@ function localizePage() {
     ui.assessmentTitle.textContent = form.shortTitle || name;
     ui.assessmentAvatar.textContent = formId === 'phq9' ? 'PH' : formId === 'gad7' ? 'GA' : 'PC';
     const formInfoEn = {
-      phq9: { period: 'PAST TWO WEEKS', intro: 'Discuss nine symptoms from the past two weeks. Each answer is confirmed before it is saved.' },
-      gad7: { period: 'PAST TWO WEEKS', intro: 'Discuss seven anxiety symptoms from the past two weeks. Each answer is confirmed before it is saved.' },
-      pcl5: { period: 'PAST MONTH', intro: 'Discuss twenty PTSD symptoms from the past month. Each answer is confirmed before it is saved.' },
+      phq9: { period: 'PAST TWO WEEKS', intro: 'Discuss nine symptoms from the past two weeks. Review your answers before generating the report.' },
+      gad7: { period: 'PAST TWO WEEKS', intro: 'Discuss seven anxiety symptoms from the past two weeks. Review your answers before generating the report.' },
+      pcl5: { period: 'PAST MONTH', intro: 'Discuss twenty PTSD symptoms from the past month. Review your answers before generating the report.' },
     };
-    const info = formInfoEn[formId] || { period: 'PAST TWO WEEKS', intro: 'Discuss symptoms from the past two weeks. Each answer is confirmed before it is saved.' };
+    const info = formInfoEn[formId] || { period: 'PAST TWO WEEKS', intro: 'Discuss symptoms from the past two weeks. Review your answers before generating the report.' };
     ui.assessmentPeriod.textContent = `ASSESSMENT · ${info.period}`;
     ui.assessmentIntro.textContent = info.intro;
     ui.questionCount.textContent = String(form.questions.length);

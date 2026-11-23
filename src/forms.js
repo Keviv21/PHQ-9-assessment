@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { form as phq9, hindiForm as phq9Hindi, scoreAnswers as scorePhq9, languages } from './assessment.js';
 import { formTranslations } from './form-translations.js';
+import { getCoreAssessmentForm } from './core-assessment-forms.js';
 
-const gad7 = JSON.parse(readFileSync(new URL('../data/gad7.json', import.meta.url), 'utf8'));
-const pcl5 = JSON.parse(readFileSync(new URL('../data/pcl5.json', import.meta.url), 'utf8'));
+const gad7 = getCoreAssessmentForm('gad7');
+const pcl5 = getCoreAssessmentForm('pcl5');
 const forms = { phq9: { en: phq9, hi: phq9Hindi }, gad7: { en: gad7 }, pcl5: { en: pcl5 } };
 export const formIds = Object.freeze(Object.keys(forms));
 
