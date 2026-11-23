@@ -44,10 +44,12 @@ test('draft assessment enables the matching resume control after a function disc
     const context = {
       $, location: { protocol: 'https:', host: 'clinic.example.com' },
       sessionId: 'saved-session', socket: null, state: { status: 'in_progress', mode },
-      config: { geminiConfigured: true }, stopMedia() {}, setStatus() {},
+      selection: { clear() {} },
+      config: { geminiConfigured: true }, language: { code: 'hi', restore() {} }, stopMedia() {}, setStatus() {},
       WebSocket: class { constructor(url) { this.url = url; } },
     };
     runInNewContext(`${connect}\nconnect(); socket.onclose();`, context);
+    assert.match(context.socket.url, /[&?]language=hi/);
     assert.equal($('draft-start').hidden, false);
     assert.equal($('draft-start-live').disabled, mode !== 'live');
     assert.equal($('draft-start-screen').disabled, mode !== 'demo');
@@ -78,6 +80,10 @@ test('exported Vercel server serves HTTP and resumes a saved assessment with an 
     const options = { headers: { host: 'clinic.example.com', origin: 'https://clinic.example.com' } };
     assert.equal((await fetch(`${base}/api/health`)).status, 200);
     assert.equal((await fetch(`${base}/clinic.js`)).status, 200);
+    const languageModule = await fetch(`${base}/questionnaire-language.js`);
+    assert.equal(languageModule.status, 200);
+    assert.match(languageModule.headers.get('content-type'), /javascript/);
+    assert.equal((await fetch(`${base}/answer-selection.js`)).status, 200);
     const prescription = await (await fetch(`${base}/api/demo-patients/demo-a/prescriptions`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ formId: 'phq9' }),
     })).json();
@@ -85,9 +91,7 @@ test('exported Vercel server serves HTTP and resumes a saved assessment with an 
     socket = new WebSocket(url, options);
     let message = JSON.parse((await once(socket, 'message'))[0].toString());
     const sessionId = message.assessment.id;
-    socket.send(JSON.stringify({ type: 'select', value: 1 }));
-    await once(socket, 'message');
-    socket.send(JSON.stringify({ type: 'confirm' }));
+    socket.send(JSON.stringify({ type: 'select', number: 1, value: 1 }));
     message = JSON.parse((await once(socket, 'message'))[0].toString());
     assert.equal(message.assessment.answers.length, 1);
     socket.close();

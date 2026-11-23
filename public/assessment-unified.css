@@ -32,6 +32,12 @@
 .draft-main .draft-options:empty { display: none; }
 .draft-main .draft-option { min-height: 65px; margin: 0; padding: 12px 14px; border: 1px solid #e1e8f2; border-radius: 11px; color: #263445; background: #fff; font-size: 13px; line-height: 1.45; }
 .draft-main .draft-option.selected { border: 2px solid #0088ff; background: #eef5ff; }
+.answer-options button.option.selected {
+  border: 1px solid #0068ce;
+  background: #eaf3ff;
+  box-shadow: inset 0 0 0 1px #0068ce;
+}
+.answer-options button.option.selected .number { background: #0068ce; color: #fff; }
 .draft-main .draft-confirmation { margin-top: 19px; padding: 17px; border: 1px solid #cfe1ff; background: #eff6ff; border-radius: 13px; }
 .draft-main .draft-confirmation .draft-actions { margin: 0; gap: 8px; }
 .draft-main .draft-confirmation p { margin: 0; }

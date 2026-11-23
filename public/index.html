@@ -41,7 +41,7 @@
                   <option value="text">Text conversation</option>
                 </select></label>
                 <span id="progress-label">0 / 9</span>
-                <label class="inline-language-picker" for="language"><span>Language:</span><select id="language">
+                <label class="inline-language-picker" for="language"><span>Language:</span><select id="language" aria-describedby="assessment-language-note">
                 <option value="en" selected>English</option>
                 <option value="hi">हिन्दी</option>
                 <option value="mr">मराठी (Marathi)</option>
@@ -88,10 +88,10 @@
               </select></label>
               </div>
             </div>
+            <p id="assessment-language-note" class="muted definition-language-note" role="status"></p>
             <div class="progress-track"><div id="progress-bar"></div></div>
             <div id="question-area" class="question-area"><span class="question-number">PHQ-9</span><h2>Choose a mode to begin</h2><p>Gemini Live uses your microphone and, if enabled, camera frames for conversational context. The camera does not determine scores.</p></div>
             <div id="answer-options" class="answer-options" aria-label="Form test response choices"></div>
-            <div id="confirmation" class="confirmation hidden" role="status" hidden style="display:none"><div><span class="eyebrow">IS THIS WHAT YOU MEANT?</span><strong id="pending-label"></strong></div><div class="confirm-actions"><button id="cancel-answer" class="button secondary">Let me clarify</button><button id="confirm-answer" class="button primary">Yes, that's right</button></div></div>
             <div id="results" class="results hidden"></div>
           </section>
           <section id="transcript" class="transcript" aria-label="Conversation" aria-live="polite"><p class="empty">The conversation will appear here.</p></section>
@@ -99,7 +99,7 @@
         <form id="text-form" class="composer"><input id="text-input" type="text" maxlength="1000" autocomplete="off" disabled aria-label="Type a response" placeholder="You can type a response here during a Live session"><button id="send-text" class="button primary" type="submit" disabled>Send</button></form>
       </main>
 
-      <aside class="session-panel" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2>LIVE SESSION</h2><span id="mode-label">OFF</span></div><div class="camera-box"><video id="preview" autoplay muted playsinline></video><div id="camera-placeholder">Camera is off</div><span class="camera-badge">CAMERA PREVIEW</span></div><div class="media-actions"><button id="mic-toggle" class="button secondary" disabled>Turn microphone off</button><button id="camera-toggle" class="button secondary" disabled>Turn camera on</button></div><p class="support-note">Confirmed answers and scores are saved for this assessment. Audio and camera frames are used only during a live conversation.</p></section><section class="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>Gemini may ask a short follow-up.</li><li>Confirm the summary before it is saved.</li></ol><p id="footer-note">Review your answers before generating the report.</p></section></aside>
+      <aside class="session-panel" aria-label="Session controls"><section class="session-card"><div class="session-heading"><h2>LIVE SESSION</h2><span id="mode-label">OFF</span></div><div class="camera-box"><video id="preview" autoplay muted playsinline></video><div id="camera-placeholder">Camera is off</div><span class="camera-badge">CAMERA PREVIEW</span></div><div class="media-actions"><button id="mic-toggle" class="button secondary" disabled>Turn microphone off</button><button id="camera-toggle" class="button secondary" disabled>Turn camera on</button></div><p class="support-note">Answers and scores are saved for this assessment. Audio and camera frames are used only during a live conversation.</p></section><section class="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>Gemini may ask a short follow-up.</li></ol><p id="footer-note">Review your answers before generating the report.</p></section></aside>
     </div>
   </div>
   <script type="module" src="/app.js"></script>

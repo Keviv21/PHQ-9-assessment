@@ -54,7 +54,7 @@ test('Hindi conversation advances using the fixed Hindi question text', async ()
   } finally { store.close(); }
 });
 
-test('setLanguage switches bridge language and resets audio state', async () => {
+test('voice recognition follows the selected language when a session starts and switches', async () => {
   const store = openStore(':memory:');
   try {
     const assessment = store.create('live', 'hi');
@@ -62,21 +62,51 @@ test('setLanguage switches bridge language and resets audio state', async () => 
     const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model', language: 'hi',
       socket: { readyState: 1, send: (raw) => events.push(JSON.parse(raw)) }, store, assessmentId: assessment.id, onState: () => {} });
     let closed = false;
-    let connected = false;
-    bridge.session = { close: () => { closed = true; } };
+    const languages = [];
     bridge.client = {
       live: {
-        connect: async () => {
-          connected = true;
-          return { close: () => {} };
+        connect: async ({ config, callbacks }) => {
+          languages.push(config.inputAudioTranscription.languageCodes);
+          if (languages.length === 2) callbacks.onmessage({ serverContent: { inputTranscription: { text: 'ಒಂದು ದಿನವೂ ಇಲ್ಲ.' } } });
+          return { close: () => { closed = true; }, sendClientContent: () => {} };
         },
       },
     };
-    await bridge.setLanguage('en', getForm('en'));
-    assert.equal(bridge.language, 'en');
+    await bridge.start();
+    await bridge.setLanguage('kn', getForm('kn'));
+    assert.equal(bridge.language, 'kn');
     assert.equal(closed, true);
-    assert.equal(connected, true);
+    assert.deepEqual(languages, [['hi-IN'], ['kn-IN']]);
+    assert.ok(events.some((event) => event.speaker === 'participant' && event.text === 'ಒಂದು ದಿನವೂ ಇಲ್ಲ.'));
     assert.ok(events.some((event) => event.type === 'audio_interrupt'));
+  } finally { store.close(); }
+});
+
+test('imported voice sessions reuse translated prompts and anchors after switching language', async () => {
+  const store = openDraftStore(':memory:');
+  try {
+    const form = getLiveDraftForm('autism-treatment-evaluation-checklist-atec--45f7ca5c94cc');
+    const assessment = store.create(form.formId, 'live');
+    store.record(assessment.id, 1, 0, 'screen');
+    const localized = { ...form, language: 'hi', questions: form.questions.map((question) => ({
+      ...question, text: `प्रश्न ${question.id}`, options: question.options.map((option) => ({
+        ...option, label: `विकल्प ${option.value}`,
+      })),
+    })) };
+    const prompts = [];
+    const bridge = new GeminiBridge({ apiKey: 'test-only', model: 'test-model',
+      socket: { readyState: 1, send: () => {} }, store, assessmentId: assessment.id,
+      formId: form.formId, formOverride: form, onState: () => {} });
+    bridge.client = { live: { connect: async ({ config }) => {
+      assert.match(config.systemInstruction, /Hindi/);
+      return { sendClientContent: ({ turns }) => prompts.push(turns[0].parts[0].text) };
+    } } };
+    await bridge.setLanguage('hi', localized);
+    assert.match(prompts[0], /प्रश्न Q2/);
+    assert.match(prompts[0], /विकल्प 0/);
+    await bridge.propose(form.questions[1].id, 0, 'पहला विकल्प', 'voice');
+    bridge.afterConfirmation(await bridge.confirm());
+    assert.match(prompts[1], /प्रश्न Q3/);
   } finally { store.close(); }
 });
 

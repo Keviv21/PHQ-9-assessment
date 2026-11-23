@@ -4,9 +4,33 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { copy } from '../public/i18n.js';
+import { answerSelection } from '../public/answer-selection.js';
+
+test('an answer stays highlighted long enough to see and blocks a second selection', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const selection = answerSelection();
+  const button = {
+    classList: { add(name) { assert.equal(name, 'selected'); }, remove(name) { assert.equal(name, 'selected'); } },
+    setAttribute(name, value) { assert.equal(name, 'aria-pressed'); this.pressed = value; },
+  };
+  assert.equal(selection.show(button), true);
+  assert.equal(button.pressed, 'true');
+  assert.equal(selection.show(button), false);
+  let ready = false;
+  const highlighted = selection.visible.then(() => { ready = true; });
+  context.mock.timers.tick(399);
+  await Promise.resolve();
+  assert.equal(ready, false);
+  context.mock.timers.tick(1);
+  await highlighted;
+  assert.equal(selection.show(button), false);
+  selection.clear();
+  assert.equal(button.pressed, 'false');
+  assert.equal(selection.visible, null);
+});
 
 test('browser scripts parse and the assessment screen has its referenced controls', () => {
-  for (const name of ['app.js', 'i18n.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'doctor-chat.js', 'analytics.js', 'assessment-library.js', 'assessment-detail.js', 'draft-live.js', 'definition.js', 'definition-voice.js']) {
+  for (const name of ['app.js', 'i18n.js', 'questionnaire-language.js', 'answer-selection.js', 'audio-worklet.js', 'report-view.js', 'report.js', 'recommend.js', 'patient-suggest.js', 'clinic.js', 'doctor-chat.js', 'analytics.js', 'assessment-library.js', 'assessment-detail.js', 'draft-live.js', 'definition.js', 'definition-voice.js']) {
     const path = fileURLToPath(new URL(`../public/${name}`, import.meta.url));
     execFileSync(process.execPath, ['--check', path], { stdio: 'pipe' });
   }
@@ -73,8 +97,8 @@ test('browser scripts parse and the assessment screen has its referenced control
     }
   }
   assert.doesNotMatch(definitionHtml, /IS THIS WHAT YOU MEANT\?|Let me clarify|Yes, that's right/);
-  for (const page of [html, draftHtml]) {
-    assert.match(page, /IS THIS WHAT YOU MEANT\?/); // On-screen mode still offers confirmation.
-  }
+  assert.doesNotMatch(html, /IS THIS WHAT YOU MEANT\?|Let me clarify|Yes, that's right/);
+  assert.match(draftHtml, /IS THIS WHAT YOU MEANT\?/); // On-screen draft mode retains confirmation.
+  assert.doesNotMatch(html, /id="confirmation"/);
   assert.match(html, /<option value="hi">हिन्दी<\/option>/);
 });

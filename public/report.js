@@ -50,7 +50,7 @@ if (definitionSessionId && /^[0-9a-f-]{36}$/i.test(definitionSessionId)) {
     document.title = `${assessment.formId.toUpperCase()} Report | OpenMind`;
     document.documentElement.lang = assessment.language;
     if (assessment.language === 'hi') {
-      document.title = 'PHQ-9 रिपोर्ट | Casebook पूर्वावलोकन';
+      document.title = `${assessment.formId.toUpperCase()} रिपोर्ट | Casebook पूर्वावलोकन`;
       backLink.textContent = '← आकलन पर वापस जाएँ';
       printButton.textContent = 'प्रिंट करें / PDF के रूप में सहेजें';
     }

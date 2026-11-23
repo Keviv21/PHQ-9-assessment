@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
-import { assertAssessmentAnswer, getAssessmentForm, scoreAssessment } from './forms.js';
+import { assertAssessmentAnswer, getAssessmentForm, hasBundledTranslation, scoreAssessment, validateAssessmentLanguage } from './forms.js';
 import { buildOverview, buildPatientAnalytics } from './analytics.js';
 import { getDraftAssessment, getLiveDraftForm } from './draft-library.js';
 import { dass21DraftId, scoreImportedAssessment } from './draft-scoring.js';
@@ -123,7 +123,8 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
   function newScoredState(mode, language, patientId, formId) {
     if (!['demo', 'live'].includes(mode)) throw new RangeError('Unsupported mode.');
     if (patientId !== null && !/^demo-[a-z]$/.test(patientId)) throw new RangeError('Unsupported demo patient.');
-    const form = getAssessmentForm(formId, language);
+    validateAssessmentLanguage(language);
+    const form = getAssessmentForm(formId, hasBundledTranslation(formId, language) ? language : 'en');
     return { id: randomUUID(), formId, formVersion: form.version, language, mode,
       collectionMethod: mode === 'live' ? 'conversational_inference' : 'explicit_choice',
       demoPatientId: patientId, status: 'in_progress', startedAt: new Date().toISOString(),
@@ -142,8 +143,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
       return transaction(async (client) => {
         const state = await getState(id, 'scored', client, true);
         if (!state || state.status === 'completed') throw new Error('No active assessment.');
-        const form = getAssessmentForm(state.formId, language);
-        state.language = form.language;
+        state.language = validateAssessmentLanguage(language);
         await putState(state, 'scored', client);
         return state;
       });
@@ -159,7 +159,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
         if (number !== state.currentNumber) throw new Error('Answer is for the wrong question.');
         state.answers.push({ number, value, method, responseSummary: summary?.trim() ?? null,
           answeredAt: new Date().toISOString() });
-        if (state.answers.length === getAssessmentForm(state.formId, state.language).questions.length) {
+        if (state.answers.length === getAssessmentForm(state.formId).questions.length) {
           state.status = 'review';
           state.currentNumber = null;
         } else state.currentNumber = state.answers.length + 1;
@@ -172,7 +172,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
       return transaction(async (client) => {
         const state = await getState(id, 'scored', client, true);
         if (!state) throw new Error('Assessment not found.');
-        const count = getAssessmentForm(state.formId, state.language).questions.length;
+        const count = getAssessmentForm(state.formId).questions.length;
         if (state.status !== 'review' || state.answers.length !== count || finalValues.length !== count) {
           throw new Error('Assessment is not ready for final review.');
         }
@@ -225,7 +225,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
         if (row.session_id) {
           const previous = await getState(row.session_id, 'scored', client, true);
           if (previous?.status === 'in_progress' && language && previous.language !== language) {
-            previous.language = getAssessmentForm(previous.formId, language).language;
+            previous.language = validateAssessmentLanguage(language);
             await putState(previous, 'scored', client);
           }
           return previous;

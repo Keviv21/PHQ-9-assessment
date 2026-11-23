@@ -47,11 +47,9 @@ async function finishOnScreen(url, count) {
   let message = await next();
   assert.equal(message.assessment.currentNumber, 1);
   for (let number = 1; number <= count; number++) {
-    socket.send(JSON.stringify({ type: 'select', value: 0 }));
+    socket.send(JSON.stringify({ type: 'select', number, value: 0 }));
     message = await next();
-    assert.equal(message.type, 'proposal');
-    socket.send(JSON.stringify({ type: 'confirm' }));
-    message = await next();
+    assert.equal(message.type, 'state');
     assert.equal(message.assessment.answers.length, number);
   }
   assert.equal(message.assessment.status, 'review');

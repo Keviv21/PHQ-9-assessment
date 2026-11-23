@@ -1,4 +1,5 @@
 import { renderDefinitionReport } from './report-view.js';
+import { fetchQuestionnaire, questionnaireLanguage } from './questionnaire-language.js';
 
 const $ = (id) => document.getElementById(id);
 const prescriptionId = new URL(location.href).searchParams.get('prescriptionId');
@@ -6,6 +7,29 @@ let state;
 let items = [];
 let index = 0;
 let voice;
+let formId;
+let questionnaire;
+const language = questionnaireLanguage($('definition-language'), {
+  note: $('definition-language-note'),
+  async load(code) {
+    if (voice?.active) {
+      voice.send({ type: 'set_language', language: code });
+      return;
+    }
+    const path = state ? `/api/definition-sessions/${state.id}/questionnaire` : `/api/definitions/${encodeURIComponent(formId)}`;
+    const localized = await fetchQuestionnaire(path, code);
+    const answer = items[index] && !$('questionnaire').hidden ? readAnswer(items[index], $('input-area')) : null;
+    const reviewAnswers = Object.fromEntries([...$('review-list').children].map((row) => {
+      const wrap = row.lastChild;
+      const item = state.formSnapshot.questions.find(({ id }) => id === wrap.dataset.questionId);
+      return [item.id, readAnswer(item, wrap)];
+    }));
+    applyQuestionnaire(localized);
+    if (!$('questionnaire').hidden) question(answer);
+    if (!$('review').hidden) review(reviewAnswers);
+    return localized;
+  },
+});
 const transcriptRows = new Map();
 const screens = ['intro', 'questionnaire', 'review', 'report'];
 const node = (tag, text, className) => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; };
@@ -24,8 +48,8 @@ function show(name) {
   $('voice-camera-toggle').disabled = !isVoice;
   $('voice-camera-toggle').textContent = voice?.camera ? 'Turn camera off' : 'Turn camera on';
   $('voice-camera-placeholder').hidden = Boolean(voice?.camera);
-  $('definition-mode').disabled = name !== 'intro';
-  $('definition-language').disabled = name !== 'intro';
+  $('definition-mode').disabled = false;
+  $('definition-language').disabled = language.pending;
 }
 function fail(message) { $('error').textContent = message; $('error').hidden = false; }
 async function api(path, options) {
@@ -56,7 +80,15 @@ function conditionCheck(condition, answers) {
   if (condition.operator === 'gt') return Number(value) > Number(condition.value);
   return false;
 }
-function visibleItems(answers) { return state.formSnapshot.questions.filter((item) => condition(item.displayIf, answers)); }
+function applyQuestionnaire(form) {
+  questionnaire = form;
+  $('side-title').textContent = form.title;
+  $('side-description').textContent = form.description;
+  $('side-title').lang = $('side-description').lang = form.language;
+}
+function visibleItems(answers) {
+  return (questionnaire?.questions || state.formSnapshot.questions).filter((item) => condition(item.displayIf, answers));
+}
 function inputFor(item, answer, review = false) {
   const wrap = node('div');
   if (['choice', 'single_choice', 'multiple_choice'].includes(item.responseType)) {
@@ -127,7 +159,7 @@ function renderVoiceAnswerGuide(item) {
     guide.append(node('p', 'Please describe your response in your own words.', 'voice-guide-label'));
   }
 }
-function question() {
+function question(editedAnswer) {
   items = visibleItems(state.answers);
   index = Math.min(index, items.length - 1);
   const item = items[index];
@@ -136,8 +168,10 @@ function question() {
   $('progress-fill').style.width = `${Math.round((index + 1) / items.length * 100)}%`;
   $('question-number').textContent = `QUESTION ${index + 1}`;
   $('question').textContent = item.text;
-  $('reference').textContent = state.formSnapshot.referencePeriod?.instruction_claims?.join(', ') || '';
-  $('input-area').replaceChildren(inputFor(item, state.answers[item.id]));
+  $('reference').textContent = questionnaire?.referencePeriod ?? (state.formSnapshot.referencePeriod?.instruction_claims?.join(', ') || '');
+  for (const id of ['question', 'reference', 'input-area', 'voice-answer-guide']) $(id).lang = questionnaire?.language || 'en';
+  $('question').dir = $('reference').dir = 'auto';
+  $('input-area').replaceChildren(inputFor(item, editedAnswer === undefined ? state.answers[item.id] : editedAnswer));
   $('input-area').hidden = Boolean(voice?.active);
   renderVoiceAnswerGuide(item);
   $('voice-answer-guide').hidden = !voice?.active;
@@ -164,13 +198,14 @@ async function next() {
   } catch (error) { fail(error.message); }
   finally { $('next').disabled = false; }
 }
-function review() {
+function review(answers = state.answers) {
   show('review');
   const list = $('review-list'); list.replaceChildren();
+  list.lang = questionnaire?.language || 'en';
   for (const item of visibleItems(state.answers)) {
     const row = node('div', undefined, 'review-item');
     row.append(node('strong', `${item.order ?? ''}. ${item.text}`));
-    const input = inputFor(item, state.answers[item.id], true);
+    const input = inputFor(item, answers[item.id], true);
     input.dataset.questionId = item.id; row.append(input); list.append(row);
   }
 }
@@ -204,7 +239,17 @@ async function init() {
   if (!prescriptionId) throw new Error('Open this assessment from an assigned patient link.');
   const requestedMode = new URL(location.href).searchParams.get('mode');
   if (requestedMode === 'voice' || requestedMode === 'screen') $('definition-mode').value = requestedMode;
+  const config = await api('/api/config').catch(() => ({ languages: [] }));
+  if (config.languages?.length) {
+    const langSelect = $('definition-language');
+    langSelect.replaceChildren();
+    for (const lang of config.languages) {
+      langSelect.append(new Option(lang.name, lang.code));
+    }
+    langSelect.value = 'en';
+  }
   const prescription = await api(`/api/definition-prescriptions/${prescriptionId}`);
+  formId = prescription.formId;
   if (prescription.assessmentId) state = await api(`/api/definition-sessions/${prescription.assessmentId}`);
   const form = state?.formSnapshot || await api(`/api/definitions/${encodeURIComponent(prescription.formId)}`);
   $('side-title').textContent = form.title;
@@ -216,9 +261,11 @@ async function init() {
   const keys = new Set(form.questions.map((item) => item.displayIf?.context_key).filter(Boolean));
   if (form.rules.some((rule) => (Array.isArray(rule.context_constraints) ? rule.context_constraints : [rule.context_constraints])
     .some((constraint) => constraint?.context_key === 'source_scoring_sex'))) keys.add('source_scoring_sex');
-  const prompts = { attends_school: 'Does the respondent attend school?',
+  const prompts = {
+    attends_school: 'Does the respondent attend school?',
     works_or_studies: 'Does the respondent currently work or study?',
-    source_scoring_sex: 'Source scoring category (if applicable)' };
+    source_scoring_sex: 'Source scoring category (if applicable)'
+  };
   const fields = $('context-fields'); fields.replaceChildren();
   for (const key of keys) {
     const label = node('label', prompts[key] || key);
@@ -231,11 +278,16 @@ async function init() {
     select.value = state?.context?.[key] === undefined ? '' : String(state.context[key]);
     label.append(select); fields.append(label);
   }
+  language.restore();
+  const preferred = new URL(location.href).searchParams.get('language');
+  if (config.languages.some(({ code }) => code === preferred)) await language.change(preferred);
   if (state?.status === 'completed') report();
   else if (state) {
     items = visibleItems(state.answers);
     index = items.findIndex((item) => !Object.hasOwn(state.answers, item.id));
-    if (index < 0) review(); else question();
+    if (index < 0) review();
+    else if (requestedMode === 'voice') show('intro');
+    else question();
   }
   else show('intro');
 }
@@ -248,6 +300,7 @@ function initialContext() {
   return context;
 }
 async function begin(useVoice) {
+  if (language.pending) { fail('Wait for the questionnaire language to load.'); return; }
   try {
     const url = new URL(location.href);
     url.searchParams.set('mode', useVoice ? 'voice' : 'screen');
@@ -264,7 +317,7 @@ async function begin(useVoice) {
     items = visibleItems(state.answers);
     index = items.findIndex((item) => !Object.hasOwn(state.answers, item.id));
     if (index < 0) { if (useVoice) voice.stop(); review(); return; }
-    if (useVoice) voice.connect(state.id);
+    if (useVoice) voice.connect(state.id, language.code);
     question();
   } catch (error) { if (useVoice) voice?.stop(); fail(error.message); }
 }
@@ -288,25 +341,49 @@ async function ensureVoice() {
   try { ({ DefinitionVoiceClient } = await import('./definition-voice.js')); }
   catch { throw new Error('Voice files are unavailable. Restart the assessment server and refresh this page.'); }
   voice = new DefinitionVoiceClient({
-  onState: (nextState, current) => {
-    state = nextState;
-    if (state.status === 'review') { voice.stop(); review(); return; }
-    items = visibleItems(state.answers);
-    index = Math.max(0, items.findIndex((item) => item.id === current?.id));
-    question();
-  },
-  onProposal: () => voice.send({ type: 'confirm' }),
-  onClear: () => {},
-  onStatus: (message) => { $('voice-status').textContent = message; },
-  onTranscript: appendTranscript,
-  onError: (message) => { appendTranscript('system', message); },
-  onClose: () => {
-    if (state?.status === 'in_progress') { question(); fail('Voice disconnected. Your recorded answers were saved. Continue on screen.'); }
-  },
+    onState: (nextState, current, localized) => {
+      state = nextState;
+      if (localized) {
+        applyQuestionnaire(localized);
+        language.accept(localized);
+      }
+      if (state.status === 'review') { voice.stop(); review(); return; }
+      items = visibleItems(state.answers);
+      index = Math.max(0, items.findIndex((item) => item.id === current?.id));
+      question();
+    },
+    onProposal: () => voice.send({ type: 'confirm' }),
+    onClear: () => {},
+    onStatus: (message) => { $('voice-status').textContent = message; },
+    onTranscript: appendTranscript,
+    onError: (message) => { appendTranscript('system', message); },
+    onLanguageError: language.fail,
+    onClose: () => {
+      language.restore();
+      if (state?.status === 'in_progress') {
+        $('definition-mode').value = 'screen';
+        $('definition-live-label').textContent = 'ON SCREEN';
+        $('definition-mode-label').textContent = 'ON SCREEN';
+        question();
+        fail('Voice disconnected. Your recorded answers were saved. Continue on screen.');
+      }
+    },
   });
   return voice;
 }
-$('definition-mode').addEventListener('change', updateSelectedModeLabel);
+$('definition-mode').addEventListener('change', () => {
+  updateSelectedModeLabel();
+  if (state?.status === 'in_progress' && $('intro').hidden) {
+    if ($('definition-mode').value === 'screen') {
+      if (voice?.active) voice.stop();
+      $('definition-live-label').textContent = 'ON SCREEN';
+      $('definition-mode-label').textContent = 'ON SCREEN';
+      question();
+    } else if ($('definition-mode').value === 'voice') {
+      if (!voice?.active) begin(true);
+    }
+  }
+});
 $('start-selected').addEventListener('click', () => begin($('definition-mode').value === 'voice'));
 $('voice-mute').addEventListener('click', () => { $('voice-mute').textContent = voice.mute() ? 'Turn microphone on' : 'Turn microphone off'; });
 $('voice-camera-toggle').addEventListener('click', async () => {
