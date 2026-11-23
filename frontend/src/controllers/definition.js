@@ -179,7 +179,6 @@ function question(editedAnswer) {
   $('back').disabled = index === 0;
   $('next').textContent = index === items.length - 1 ? 'Review answers' : 'Save & continue';
   $('screen-actions').hidden = Boolean(voice?.active);
-  $('voice-panel').hidden = !voice?.active;
   show('questionnaire');
 }
 async function save(answers, context = state.context) {
@@ -349,24 +348,13 @@ async function ensureVoice() {
         applyQuestionnaire(localized);
         language.accept(localized);
       }
-      $('voice-confirmation').hidden = true;
       if (state.status === 'review') { voice.stop(); review(); return; }
       items = visibleItems(state.answers);
       index = Math.max(0, items.findIndex((item) => item.id === current?.id));
       question();
     },
-    onProposal: (proposal) => {
-      $('voice-proposal').textContent = proposal.summary || 'Please confirm the proposed answer.';
-      $('voice-confirmation').hidden = false;
-      const selected = Array.isArray(proposal.value) ? proposal.value : [proposal.value];
-      for (const option of $('voice-answer-guide').querySelectorAll('[data-option-id]')) {
-        option.classList.toggle('selected', selected.includes(option.dataset.optionId));
-      }
-    },
-    onClear: () => {
-      $('voice-confirmation').hidden = true;
-      for (const option of $('voice-answer-guide').querySelectorAll('[data-option-id]')) option.classList.remove('selected');
-    },
+    onProposal: () => voice.send({ type: 'confirm' }),
+    onClear: () => {},
     onStatus: (message) => { $('voice-status').textContent = message; },
     onTranscript: appendTranscript,
     onError: (message) => { appendTranscript('system', message); },
@@ -378,7 +366,7 @@ async function ensureVoice() {
         $('definition-live-label').textContent = 'ON SCREEN';
         $('definition-mode-label').textContent = 'ON SCREEN';
         question();
-        fail('Voice disconnected. Your confirmed answers were saved. Continue on screen.');
+        fail('Voice disconnected. Your recorded answers were saved. Continue on screen.');
       }
     },
   });
@@ -398,8 +386,6 @@ $('definition-mode').addEventListener('change', () => {
   }
 });
 $('start-selected').addEventListener('click', () => begin($('definition-mode').value === 'voice'));
-$('voice-confirm').addEventListener('click', () => { try { voice.send({ type: 'confirm' }); } catch (error) { fail(error.message); } });
-$('voice-cancel').addEventListener('click', () => { try { voice.send({ type: 'cancel' }); } catch (error) { fail(error.message); } });
 $('voice-mute').addEventListener('click', () => { $('voice-mute').textContent = voice.mute() ? 'Turn microphone on' : 'Turn microphone off'; });
 $('voice-camera-toggle').addEventListener('click', async () => {
   try {

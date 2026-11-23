@@ -23,7 +23,7 @@ export default function DefinitionPage() {
       <p id="side-patient" className="support-note"></p>
     </aside>
   <main className="conversation-panel definition-main">
-    <div className="conversation-header"><div className="assistant-avatar" aria-hidden="true"><span></span></div><div><h2>Assessment conversation</h2><p>Share your experience in your own words. Confirm each response before it is saved.</p></div><span id="definition-live-label" className="live-badge">OFF</span></div>
+    <div className="conversation-header"><div className="assistant-avatar" aria-hidden="true"><span></span></div><div><h2>Assessment conversation</h2><p>Share your experience in your own words. Review your answers before generating the report.</p></div><span id="definition-live-label" className="live-badge">OFF</span></div>
     <div className="conversation-body definition-body">
     <div id="error" className="error" hidden></div>
     <div id="definition-controls" className="definition-assessment-controls" aria-label="Assessment settings"><div className="definition-setting-pickers"><label className="inline-mode-picker" htmlFor="definition-mode"><span>Mode:</span><select id="definition-mode"><option value="voice">Voice conversation</option><option value="screen">Complete on screen</option></select></label><label className="inline-language-picker" htmlFor="definition-language"><span>Language:</span><select id="definition-language" aria-describedby="definition-language-note"><option value="en">English</option></select></label></div><p id="definition-language-note" className="muted definition-language-note" role="status"></p></div>
@@ -34,12 +34,6 @@ export default function DefinitionPage() {
       <div id="input-area" className="answer-options"></div>
       <div id="voice-answer-guide" className="voice-answer-guide" hidden></div>
       <div id="screen-actions" className="actions"><button id="back" className="secondary">Previous</button><button id="next" className="primary">Save &amp; continue</button></div>
-      <div id="voice-panel" className="voice-panel" hidden>
-        <div id="voice-confirmation" className="confirmation voice-confirmation" role="status" hidden>
-          <div><span className="eyebrow">IS THIS WHAT YOU MEANT?</span><strong id="voice-proposal"></strong></div>
-          <div className="confirm-actions"><button id="voice-cancel" className="button secondary" type="button">Let me clarify</button><button id="voice-confirm" className="button primary" type="button">Yes, that's right</button></div>
-        </div>
-      </div>
       <p id="save-status" className="muted"></p>
     </section>
     <section id="review" className="panel assessment-card" hidden>
@@ -52,7 +46,7 @@ export default function DefinitionPage() {
     </div>
     <form id="voice-text-form" className="composer voice-text-form"><input id="voice-text" type="text" maxLength="1000" placeholder="You can type a response here during a Live session" aria-label="Type a response" disabled /><button id="voice-send" className="button primary" type="submit" disabled>Send</button></form>
   </main>
-  <aside className="session-panel definition-side" aria-label="Session controls"><section className="session-card"><div className="session-heading"><h2>LIVE SESSION</h2><span id="definition-mode-label">OFF</span></div><div className="camera-box voice-session-box"><video id="voice-preview" autoPlay muted playsInline></video><div id="voice-camera-placeholder">Camera is off</div><span className="camera-badge">CAMERA PREVIEW</span></div><div className="media-actions"><button id="voice-mute" className="button secondary" type="button" disabled>Turn microphone off</button><button id="voice-camera-toggle" className="button secondary" type="button" disabled>Turn camera on</button></div><p className="support-note">Confirmed answers and available scores are saved. Audio and optional camera frames are used during a live conversation.</p></section><section className="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>The assistant may ask a short follow-up.</li><li>Confirm the response before it is saved.</li></ol><p>Review your answers before generating the report.</p></section></aside>
+  <aside className="session-panel definition-side" aria-label="Session controls"><section className="session-card"><div className="session-heading"><h2>LIVE SESSION</h2><span id="definition-mode-label">OFF</span></div><div className="camera-box voice-session-box"><video id="voice-preview" autoPlay muted playsInline></video><div id="voice-camera-placeholder">Camera is off</div><span className="camera-badge">CAMERA PREVIEW</span></div><div className="media-actions"><button id="voice-mute" className="button secondary" type="button" disabled>Turn microphone off</button><button id="voice-camera-toggle" className="button secondary" type="button" disabled>Turn camera on</button></div><p className="support-note">Recorded answers and available scores are saved. Audio and optional camera frames are used during a live conversation.</p></section><section className="session-card guide"><h2>How this works</h2><ol><li>Describe your experience in your own words.</li><li>If an answer is unclear, the assistant may ask a short follow-up.</li><li>Review your answers before generating the report.</li></ol></section></aside>
   </div>
   </div>
 

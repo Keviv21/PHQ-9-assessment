@@ -171,6 +171,10 @@ function stopMedia() {
 }
 
 function renderProposal(message) {
+  if (state?.mode === 'live') {
+    send({ type: 'confirm' });
+    return;
+  }
   $('draft-confirmation').hidden = false;
   $('draft-proposal').textContent = message.summary || message.label || 'Is this the answer you meant?';
   for (const option of $('draft-options').children) option.classList.toggle('selected', Number(option.dataset.value) === message.value);

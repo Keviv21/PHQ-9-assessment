@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { recommendationCatalog } from './assessment-source.js';
 
-const entries = JSON.parse(readFileSync(new URL('../data/assessment-catalog.json', import.meta.url), 'utf8'));
+const entries = recommendationCatalog;
 const concernSet = new Set(['depression', 'anxiety', 'traumaSymptoms', 'stress']);
 const statuses = new Set(['available']);
 

@@ -26,6 +26,7 @@ an HTTP error status and `{ "error": "message" }`.
 | GET | `/api/assessment-library/:id` | Imported questionnaire, optional `language` query |
 | GET, POST | `/api/draft-sessions` | List sessions or create with `draftId`, `mode`, optional `prescriptionId` |
 | GET | `/api/draft-sessions/:id` | Saved imported session and report |
+| GET | `/api/assessment-details/:id` | Assessment overview, scoring narrative, references, and preview |
 | GET | `/api/definitions` | Full definition catalogue |
 | GET | `/api/definitions/:id` | Definition, optional `language` query |
 | GET, POST | `/api/definition-patients/:id/prescriptions` | Definition assignments; POST accepts `formId` |

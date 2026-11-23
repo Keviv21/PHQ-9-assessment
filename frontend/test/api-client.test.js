@@ -27,7 +27,7 @@ test('API client reports an unavailable backend without losing the original erro
 });
 
 test('every React page renders its existing workflow controls', () => {
-  for (const page of ['ClinicPage', 'AssessmentPage', 'DefinitionPage', 'DraftPage', 'ReportPage', 'RecommendPage', 'PatientSuggestPage']) {
+  for (const page of ['ClinicPage', 'AssessmentDetailPage', 'AssessmentPage', 'DefinitionPage', 'DraftPage', 'ReportPage', 'RecommendPage', 'PatientSuggestPage']) {
     assert.match(renderPage(page), /<(?:main|div|header|svg)\b/);
   }
 });

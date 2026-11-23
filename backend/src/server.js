@@ -14,6 +14,7 @@ import { openPostgresStores } from './postgres-stores.js';
 import { answerDoctor, fallbackDoctor, validateDoctorMessage } from './doctor-chat.js';
 import { getCatalogEntry } from './assessment-catalog.js';
 import { getDefinition, listDefinitions } from './definition-library.js';
+import { getAssessmentDetail } from './assessment-details.js';
 import { openDefinitionStore } from './definition-store.js';
 import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
 import { withIndividualReport } from './individual-report.js';
@@ -80,6 +81,13 @@ const server = http.createServer(async (request, response) => {
       return response.end();
     }
     const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+    if (url.pathname.startsWith('/api/assessment-details/') && request.method === 'GET') {
+      let id;
+      try { id = decodeURIComponent(url.pathname.slice('/api/assessment-details/'.length)); }
+      catch { return json(response, 400, { error: 'Invalid assessment ID.' }); }
+      const detail = getAssessmentDetail(id);
+      return detail ? json(response, 200, detail) : json(response, 404, { error: 'Assessment not found.' });
+    }
     if (url.pathname === '/api/definitions' && request.method === 'GET') return json(response, 200, listDefinitions());
     if (url.pathname.startsWith('/api/definitions/') && request.method === 'GET') {
       let id;

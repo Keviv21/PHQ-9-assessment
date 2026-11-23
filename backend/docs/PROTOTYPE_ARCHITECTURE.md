@@ -1,8 +1,6 @@
 # Prototype architecture and workflows
 
-**Folder migration:** React pages are in `frontend/`; the Node.js APIs, database stores, and data are in `backend/`. See the README for the two-process startup.
-
-**Original workflow scope:** the standalone `D:\phq9-gemini-live-prototype` application as implemented on 17 November 2026. It describes the local demonstration, not the deployed Casebook product. Start and configuration steps are in the [README](../README.md).
+**Applies to:** the standalone `D:\phq9-gemini-live-prototype` application as implemented on 17 November 2026. It describes the local demonstration, not the deployed Casebook product. Start and configuration steps are in the [README](../README.md).
 
 ## System at a glance
 
@@ -12,7 +10,7 @@ flowchart LR
     P[Participant browser<br/>screen or voice assessment]
     N[Node HTTP and WebSocket server<br/>backend/src/server.js]
     J[(Synthetic patient JSON<br/>backend/data/demo-patients.json)]
-    F[(Versioned assessment definitions<br/>backend/data/*.json)]
+    F[(Assessment source<br/>backend/data/all-assessments.json)]
     R[Rules and catalogue checks]
     D[(SQLite file or<br/>PostgreSQL prototype schema)]
     G[Google Gemini API<br/>Live voice and doctor chat]
@@ -25,7 +23,7 @@ flowchart LR
     N <-->|optional model calls| G
 ```
 
-The browser does not connect directly to the database or Gemini. The server owns assessment validation, answer persistence, deterministic scoring, and Gemini connections. The microphone and optional camera stream to the server over a local WebSocket; video provides conversational context and is never an input to scoring. The application saves confirmed answers and derived results, not an audio or video recording.
+The browser does not connect directly to the database or Gemini. The server owns assessment validation, answer persistence, deterministic scoring, and Gemini connections. The microphone and optional camera stream to the server over a local WebSocket; video provides conversational context and is never an input to scoring. The application saves recorded answers and derived results, not an audio or video recording.
 
 | Area | Implementation | Source of truth |
 | --- | --- | --- |
@@ -33,7 +31,7 @@ The browser does not connect directly to the database or Gemini. The server owns
 | Sample patient profiles and summaries | `backend/src/demo-patients.js` | `backend/data/demo-patients.json`; **not** a DB table |
 | Core recommendation shortlist | `backend/src/recommendation.js`, `backend/src/assessment-catalog.js` | Current structured observations and four curated entries |
 | Doctor conversation | `backend/src/doctor-chat.js` | De-identified current observations, message, keyword-retrieved candidates, Gemini response checked against those candidates |
-| Questionnaire catalogue | `backend/src/definition-library.js`, `backend/src/draft-library.js`, `backend/src/forms.js` | Versioned JSON definitions and fixed core forms |
+| Questionnaire catalogue | `backend/src/assessment-source.js`, `backend/src/definition-library.js`, `backend/src/draft-library.js`, `backend/src/forms.js` | One bundled `backend/data/all-assessments.json`; core IDs are normalized in code |
 | Assessment sessions and reports | `backend/src/store.js`, `backend/src/draft-store.js`, `backend/src/definition-store.js`, `backend/src/postgres-stores.js` | Configured SQLite or PostgreSQL database |
 | Voice bridge | `backend/src/gemini-bridge.js`, `backend/src/definition-voice.js` | Gemini Live and server-side answer validation |
 | Score calculations | `backend/src/assessment.js`, `backend/src/draft-scoring.js`, `backend/src/definition-scoring.js` | Deterministic code and the assigned form snapshot |
@@ -105,18 +103,13 @@ sequenceDiagram
         Participant->>Browser: Speak answer; optional camera context
         Browser->>API: 16 kHz PCM and optional JPEG frames
         API->>Live: Stream media and exact item
-        Live-->>API: propose_answer(item, value, summary)
-        API->>API: Check current item and permitted value
-        API-->>Browser: Show proposed answer and highlight choice
-        alt Correct or needs clarification
-            Participant->>Browser: Let me clarify
-            Browser->>API: Cancel proposal
-            API->>Live: Ask a clarifying follow-up
-        else Confirmed
-            Participant->>Browser: Yes, that's right
-            Browser->>API: Confirm proposal
-            API->>DB: Save confirmed answer
+        alt Response maps to a permitted answer
+            Live-->>API: record_answer(item, value, summary)
+            API->>API: Check current item and permitted value
+            API->>DB: Save recorded answer
             API-->>Browser: Advance to next eligible item
+        else Response is unclear
+            Live-->>Participant: Ask a neutral follow-up
         end
     else Complete on screen
         Participant->>Browser: Select or enter answer
@@ -132,7 +125,7 @@ sequenceDiagram
     API-->>Browser: Common report view
 ```
 
-The voice proposal, confirmation card, question display, and report shell share a consistent layout across the dedicated and generic flows. Response widgets vary with the form's actual answer type. Gemini interprets natural language and may clarify; only server-validated, confirmed values are saved. Final review can change values before deterministic scoring. Camera frames cannot set an answer or score. Audio and video are not retained by the database.
+The question display and report shell share a consistent layout across the dedicated and generic flows. Response widgets vary with the form's actual answer type. Gemini interprets natural language and may ask a follow-up when an answer is unclear; only server-validated values are saved. Final review can change values before deterministic scoring. Camera frames cannot set an answer or score. Audio and video are not retained by the database.
 
 ### Scoring by form family
 
@@ -186,4 +179,4 @@ The report view reads saved completed sessions. Analytics combine completed pres
 
 ## Boundaries and next integration work
 
-The application is a localhost demonstration without production authentication, Casebook API integration, patient delivery, access control, or automatic clinical escalation. It should use synthetic or de-identified context only. The doctor remains responsible for selecting an assessment. Respondent confirmation helps prevent accidental AI answer selection, but conversational administration and draft source calculations still need instrument-specific review before real patient use. The [bundle guide](CLEANED_BUNDLE_20261116.md) and [gap audit](NOVOPSYCH_20261116_GAP_AUDIT.md) track source and scoring work; the [performance guide](WORKFLOW_AND_PERFORMANCE.md) separates measured values from estimates.
+The application is a localhost demonstration without production authentication, Casebook API integration, patient delivery, access control, or automatic clinical escalation. It should use synthetic or de-identified context only. The doctor remains responsible for selecting an assessment. Participants can correct AI-mapped answers during final review, but conversational administration and draft source calculations still need instrument-specific review before real patient use. The [bundle guide](CLEANED_BUNDLE_20261116.md) and [gap audit](NOVOPSYCH_20261116_GAP_AUDIT.md) track source and scoring work; the [performance guide](WORKFLOW_AND_PERFORMANCE.md) separates measured values from estimates.

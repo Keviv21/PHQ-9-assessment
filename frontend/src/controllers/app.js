@@ -61,12 +61,12 @@ function localizePage() {
     ui.assessmentTitle.textContent = form.shortTitle || name;
     ui.assessmentAvatar.textContent = formId === 'phq9' ? 'PH' : formId === 'gad7' ? 'GA' : 'PC';
     const formInfoEn = {
-      phq9: { period: 'PAST TWO WEEKS', intro: 'Discuss nine symptoms from the past two weeks.' },
-      gad7: { period: 'PAST TWO WEEKS', intro: 'Discuss seven anxiety symptoms from the past two weeks.' },
-      pcl5: { period: 'PAST MONTH', intro: 'Discuss twenty PTSD symptoms from the past month.' },
+      phq9: { period: 'PAST TWO WEEKS', intro: 'Discuss nine symptoms from the past two weeks. Review your answers before generating the report.' },
+      gad7: { period: 'PAST TWO WEEKS', intro: 'Discuss seven anxiety symptoms from the past two weeks. Review your answers before generating the report.' },
+      pcl5: { period: 'PAST MONTH', intro: 'Discuss twenty PTSD symptoms from the past month. Review your answers before generating the report.' },
     };
-    const info = formInfoEn[formId] || { period: 'PAST TWO WEEKS', intro: 'Discuss symptoms from the past two weeks.' };
-    ui.assessmentPeriod.textContent = form.referencePeriod || info.period;
+    const info = formInfoEn[formId] || { period: 'PAST TWO WEEKS', intro: 'Discuss symptoms from the past two weeks. Review your answers before generating the report.' };
+    ui.assessmentPeriod.textContent = `ASSESSMENT · ${form.referencePeriod || info.period}`;
     ui.assessmentIntro.textContent = form.language === 'en' ? info.intro : form.instructions;
     ui.assessmentPeriod.lang = ui.assessmentIntro.lang = form.language;
     ui.questionCount.textContent = String(form.questions.length);

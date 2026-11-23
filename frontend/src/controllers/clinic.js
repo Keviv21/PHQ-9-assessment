@@ -844,6 +844,20 @@ function suggestedLibraryIds() {
     item.id === 'dass21' ? `draft:${legacyDraftIds.dass21}` : item.id));
 }
 
+function detailIdForChoice(id) {
+  if (id.startsWith('definition:')) return id.slice(11);
+  if (id.startsWith('draft:')) return id.slice(6);
+  if (id === 'gad7') return 'generalised-anxiety-disorder-assessment-gad-7--265a24c61d94';
+  return legacyDraftIds[id];
+}
+
+function detailUrlForChoice(id) {
+  const url = new URL('/assessment-detail.html', location.origin);
+  url.searchParams.set('id', detailIdForChoice(id));
+  if (selectedPatientId) url.searchParams.set('patient', selectedPatientId);
+  return url.href;
+}
+
 function renderLibraryCategories() {
   const container = $('assessment-library-categories');
   if (!container.childElementCount) {
@@ -902,8 +916,15 @@ function renderAssessmentLibrary() {
     const card = el('article', undefined, `assessment-library-card${item.id === selectedFormId ? ' selected' : ''}`);
     const categoryTags = el('div', undefined, 'assessment-library-tags');
     for (const category of info.categories) categoryTags.append(el('span', category));
-    card.append(categoryTags, el('h3', info.title));
-    appendOverview(card, info.description);
+    const title = el('h3');
+    const titleLink = el('a', info.title);
+    titleLink.href = detailUrlForChoice(item.id);
+    title.append(titleLink);
+    card.append(categoryTags, title);
+    if (info.description) card.append(el('p', info.description, 'assessment-overview'));
+    const detailLink = el('a', 'View full details →', 'assessment-library-details');
+    detailLink.href = titleLink.href;
+    card.append(detailLink);
     card.append(assessmentFacts(info));
     if (suggested.has(item.id)) card.append(el('span', 'Suggested for this patient', 'assessment-library-recommended'));
     const action = el('button', item.id === selectedFormId ? 'Selected for review' : 'Select assessment', 'button outline');
@@ -1252,6 +1273,18 @@ try {
   const patientId = query.get('patient');
   if (patients.some((item) => item.id === patientId)) $('report-patient').value = patientId;
   setView(query.get('view'), false);
+  const prescribePatient = query.get('prescribePatient');
+  if (patients.some((item) => item.id === prescribePatient)) {
+    selectedPatientId = prescribePatient;
+    $('next-step').disabled = false;
+    renderPatientList();
+    await showConfirmation();
+    if (query.get('select')) chooseAssessment(query.get('select'));
+    if (query.get('returnTo') === 'library') $('assessment-library-title').scrollIntoView({ block: 'start' });
+    const cleanUrl = new URL(location.href);
+    for (const key of ['prescribePatient', 'select', 'returnTo']) cleanUrl.searchParams.delete(key);
+    history.replaceState({}, '', cleanUrl);
+  }
 } catch (error) {
   $('patient-list').replaceChildren(notice(error.message, true));
   $('report-content').replaceChildren(notice(error.message, true));

@@ -1,5 +1,6 @@
 import { Component, Suspense, lazy } from 'react';
 
+const AssessmentDetail = lazy(() => import('./pages/AssessmentDetailPage.jsx'));
 const Clinic = lazy(() => import('./pages/ClinicPage.jsx'));
 const Assessment = lazy(() => import('./pages/AssessmentPage.jsx'));
 const Definition = lazy(() => import('./pages/DefinitionPage.jsx'));
@@ -11,6 +12,7 @@ const PatientSuggest = lazy(() => import('./pages/PatientSuggestPage.jsx'));
 // Keep existing assignment/report URLs valid, including their query strings.
 const routes = {
   '/': Clinic,
+  '/assessment-detail.html': AssessmentDetail,
   '/clinic.html': Clinic,
   '/index.html': Assessment,
   '/assessment.html': Assessment,

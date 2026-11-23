@@ -1,8 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { formTranslations } from './form-translations.js';
+import { getCoreAssessmentForm } from './core-assessment-forms.js';
 
-export const form = Object.freeze(JSON.parse(readFileSync(new URL('../data/phq9.json', import.meta.url), 'utf8')));
-export const hindiForm = Object.freeze(JSON.parse(readFileSync(new URL('../data/phq9.hi.json', import.meta.url), 'utf8')));
+export const form = Object.freeze(getCoreAssessmentForm('phq9'));
+export const hindiForm = Object.freeze({ ...form, ...formTranslations.phq9.hi,
+  language: 'hi', version: 'v1-hi-prototype' });
 export const languages = Object.freeze([
   { code: 'en', name: 'English', speechCode: 'en-US' },
   { code: 'hi', name: 'Hindi (हिन्दी)', speechCode: 'hi-IN' },

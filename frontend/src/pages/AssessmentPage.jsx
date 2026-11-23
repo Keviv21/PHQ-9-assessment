@@ -20,7 +20,7 @@ export default function AssessmentPage() {
       <aside className="context-panel" aria-label="Assessment setup">
         <div className="breadcrumb"><a href="/">Patient Assessments</a> <span aria-hidden="true">/</span> <strong>Assessments</strong></div>
         <div className="assessment-identity"><div id="assessment-avatar" className="assessment-avatar">PH</div><div><h1 id="assessment-title">PHQ-9</h1><p id="assessment-period">ASSESSMENT · PAST TWO WEEKS</p></div></div>
-        <p id="assessment-intro" className="context-summary">Discuss nine symptoms from the past two weeks.</p>
+        <p id="assessment-intro" className="context-summary">Discuss nine symptoms from the past two weeks. Review your answers before generating the report.</p>
         <div className="context-meta"><div><span>Questions</span><strong id="question-count">9</strong></div></div>
         <div className="mode-actions"><a href="/" className="button secondary" style={{"textAlign": "center"}}>Back to assessments</a><button id="start-live" className="button primary">Start voice conversation</button><button id="start-demo" className="button secondary">Complete on screen</button></div>
         <p id="patient-context" className="support-note" hidden></p>
