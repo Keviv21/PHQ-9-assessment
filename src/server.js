@@ -248,6 +248,11 @@ const server = http.createServer(async (request, response) => {
       return record ? json(response, 200, record) : json(response, 404, { error: 'Assessment not found.' });
     }
     if (url.pathname === '/api/demo-patients') return json(response, 200, listDemoPatients());
+    const patientDetailRoute = /^\/api\/demo-patients\/(demo-[a-z])$/.exec(url.pathname);
+    if (patientDetailRoute) {
+      const patient = getDemoPatient(patientDetailRoute[1]);
+      return patient ? json(response, 200, patient) : json(response, 404, { error: 'Demo patient not found.' });
+    }
     if (url.pathname === '/api/analytics/overview') return json(response, 200,
       await store.analyticsOverview([...await draftStore.analyticsPrescriptionRows(),
       ...await definitionStore.analyticsPrescriptionRows()]));

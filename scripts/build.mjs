@@ -37,10 +37,11 @@ for (const path of sources.filter((path) => path.endsWith('.html'))) {
   }
 }
 
-const { listDefinitions } = await import('../src/definition-library.js');
-const { listDraftAssessments } = await import('../src/draft-library.js');
-assert.equal(listDefinitions().length, 186);
-assert.equal(listDraftAssessments().length, 186);
+const assessmentImport = JSON.parse(await readFile(join(root, 'data/all-assessments.json'), 'utf8'));
+assert.equal(assessmentImport.assessments?.length, 186);
+assert.equal(assessmentImport.appMetadata?.legacyDraftRecords?.length, 186);
+const patientImport = JSON.parse(await readFile(join(root, 'data/demo-patients.json'), 'utf8'));
+assert.ok(patientImport.length > 0);
 
 const output = join(root, 'dist');
 await rm(output, { recursive: true, force: true });
@@ -51,4 +52,4 @@ await cp(join(root, 'public'), output, { recursive: true });
 await copyFile(join(root, 'public/index.html'), join(output, 'assessment.html'));
 await copyFile(join(root, 'public/clinic.html'), join(output, 'index.html'));
 console.log(`Build passed: ${sources.filter((path) => path.endsWith('.js')).length} JavaScript files checked; static assets copied to dist/.`);
-console.log('Vercel will bundle api/server.js, src/, and data/all-assessments.json as a Node.js function.');
+console.log('The runtime reads published assessments and sample patients from PostgreSQL or local SQLite.');

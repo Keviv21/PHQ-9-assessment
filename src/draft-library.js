@@ -1,5 +1,5 @@
 import { dass21DraftId } from './draft-scoring.js';
-import { legacyDraftRecords } from './assessment-source.js';
+import { assessmentCategories, legacyDraftRecords } from './assessment-source.js';
 
 if (legacyDraftRecords.length !== 186) throw new Error('Legacy draft snapshots are missing.');
 const records = new Map(legacyDraftRecords.map((record) => [record.id, record]));
@@ -8,7 +8,7 @@ export function listDraftAssessments() {
   return [...records.values()].map(({ id, title, description, referencePeriod, sourceUrl, extractedItemCount,
     incompleteItems, previewAvailable, reviewStatus }) => ({
     id, title, description, referencePeriod, sourceUrl, extractedItemCount,
-    incompleteItems, previewAvailable, reviewStatus,
+    incompleteItems, previewAvailable, reviewStatus, categories: assessmentCategories[id] || ['Other'],
     scoringAvailable: id === dass21DraftId,
   }));
 }

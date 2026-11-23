@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { content } from './content-store.js';
 
-const source = JSON.parse(readFileSync(new URL('../data/all-assessments.json', import.meta.url), 'utf8'));
+const source = content;
 if (!Array.isArray(source.assessments) || source.assessments.length !== 186 ||
     new Set(source.assessments.map((entry) => entry.assessment_id)).size !== 186) {
   throw new Error('The assessment source must contain 186 unique records.');

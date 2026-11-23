@@ -92,6 +92,9 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
     const demoPatients = await (await fetch(`${base}/api/demo-patients`)).json();
     assert.equal(demoPatients.length, 5);
     assert.deepEqual(Object.keys(demoPatients[0]).sort(), ['id', 'label']);
+    const patientProfile = await (await fetch(`${base}/api/demo-patients/demo-a`)).json();
+    assert.equal(patientProfile.id, 'demo-a');
+    assert.ok(patientProfile.summary.overview);
     const chatUnavailable = await fetch(`${base}/api/demo-patients/demo-a/doctor-chat`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ message: 'What else should I consider?', history: [] }),

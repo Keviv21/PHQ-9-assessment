@@ -22,7 +22,7 @@ index file before applying a fallback rewrite.
 - Enable **Fluid compute** for WebSockets.
 
 `vercel.json` configures the frontend routes, the HTTP API, all three WebSocket
-paths, the questionnaire JSON files required at runtime, and a 300-second function
+paths, the static assets, and a 300-second function
 duration. Keep this file in the repository. Do not deploy only the `dist` folder:
 the backend must be built from the repository too.
 
@@ -43,6 +43,14 @@ Local `.env` files are excluded from deployment uploads. Do not set `DB_PATH` or
 instead of saving answers in a temporary SQLite file. The database role must be
 able to create and use tables in `pod_assessment_prototype`. Simultaneous cold
 starts serialize schema initialization with a PostgreSQL advisory lock.
+
+Before the first deployment against each database, run `npm run db:import-content`
+from a trusted local checkout with `DATABASE_URL` set. The command imports 186
+versioned assessment definitions and five synthetic sample patients into
+`pod_assessment_content`. The running function reads this schema at startup;
+the JSON import files are not bundled into the function. Run `npm run db:check`
+to confirm the published counts before testing the deployment. The database role
+also needs to create and read tables in `pod_assessment_content`.
 
 Use a separate database for Preview if preview submissions must not appear in
 Production. Local SQLite records are not automatically copied to PostgreSQL.

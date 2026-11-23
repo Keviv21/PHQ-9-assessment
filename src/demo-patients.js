@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { content } from './content-store.js';
 import { recommendAssessments } from './recommendation.js';
 import { getCatalogEntry } from './assessment-catalog.js';
 import { getAssessmentForm } from './forms.js';
 
 // Synthetic, de-identified summaries. No clinical text from the supplied Digital Twin report is copied here.
-const patients = JSON.parse(readFileSync(new URL('../data/demo-patients.json', import.meta.url), 'utf8'));
+const patients = content.patients;
 const concernForCode = Object.freeze({
   lowMood: 'depression', lossOfInterest: 'depression', persistentWorry: 'anxiety',
   traumaIntrusions: 'traumaSymptoms', highStress: 'stress',

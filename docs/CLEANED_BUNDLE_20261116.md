@@ -1,6 +1,6 @@
 # Cleaned assessment bundle: implementation status
 
-The 16 November cleaned bundle was the original import source. The current runtime uses the later `all-assessments.json` export, synchronized with `npm run sync:assessments`, as the single bundled `data/all-assessments.json`. It includes questionnaire items, response schemas, conditional display rules, draft arithmetic rules, and review flags. Existing completed assessment records retain their earlier form snapshots. New sessions store a complete snapshot of the assigned form.
+The 16 November cleaned bundle was the original import source. The later `all-assessments.json` export is synchronized into `data/all-assessments.json` and imported with `npm run db:import-content`. The runtime reads versioned assessment definitions from SQLite or PostgreSQL, not from the JSON file. The import includes questionnaire items, response schemas, conditional display rules, draft arithmetic rules, and review flags. Existing completed assessment records retain their earlier form snapshots. New generic sessions store a complete snapshot of the assigned form.
 
 For the overall application path, see [prototype architecture](PROTOTYPE_ARCHITECTURE.md). For every source flag and an assessment-by-assessment matrix, see the [November 16 gap audit](NOVOPSYCH_20261116_GAP_AUDIT.md).
 

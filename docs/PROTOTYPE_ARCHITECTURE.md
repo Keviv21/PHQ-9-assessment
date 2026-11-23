@@ -1,6 +1,6 @@
 # Prototype architecture and workflows
 
-**Applies to:** the standalone `D:\phq9-gemini-live-prototype` application as implemented on 17 November 2026. It describes the local demonstration, not the deployed Casebook product. Start and configuration steps are in the [README](../README.md).
+**Applies to:** the standalone `D:\phq9-gemini-live-prototype` application. It describes the demonstration, not the deployed Casebook product. Start and configuration steps are in the [README](../README.md).
 
 ## System at a glance
 
@@ -9,17 +9,15 @@ flowchart LR
     C[Clinician browser<br/>patient, prescription, reports, analytics]
     P[Participant browser<br/>screen or voice assessment]
     N[Node HTTP and WebSocket server<br/>src/server.js]
-    J[(Synthetic patient JSON<br/>data/demo-patients.json)]
-    F[(Assessment source<br/>data/all-assessments.json)]
+    I[One-time JSON import<br/>scripts/import-content.mjs]
     R[Rules and catalogue checks]
-    D[(SQLite file or<br/>PostgreSQL prototype schema)]
+    D[(SQLite or PostgreSQL<br/>content and session tables)]
     G[Google Gemini API<br/>Live voice and doctor chat]
     C <-->|HTTP| N
     P <-->|HTTP and WebSocket| N
-    N --> J
-    N --> F
+    I --> D
     N --> R
-    N <-->|assignments, sessions, results| D
+    N <-->|catalogue, patients, assignments, sessions, results| D
     N <-->|optional model calls| G
 ```
 
@@ -28,10 +26,10 @@ The browser does not connect directly to the database or Gemini. The server owns
 | Area | Implementation | Source of truth |
 | --- | --- | --- |
 | Clinician UI | `public/clinic.html`, `public/clinic.js`, `public/analytics.js` | API responses |
-| Sample patient profiles and summaries | `src/demo-patients.js` | `data/demo-patients.json`; **not** a DB table |
+| Sample patient profiles and summaries | `src/demo-patients.js`, `src/content-db.js` | Database `content_patients`; JSON is a one-time import source |
 | Core recommendation shortlist | `src/recommendation.js`, `src/assessment-catalog.js` | Current structured observations and four curated entries |
 | Doctor conversation | `src/doctor-chat.js` | De-identified current observations, message, keyword-retrieved candidates, Gemini response checked against those candidates |
-| Questionnaire catalogue | `src/assessment-source.js`, `src/definition-library.js`, `src/draft-library.js`, `src/forms.js` | One bundled `data/all-assessments.json`; core IDs are normalized in code |
+| Questionnaire catalogue | `src/content-store.js`, `src/assessment-source.js`, `src/definition-library.js`, `src/draft-library.js`, `src/forms.js` | Versioned database `assessment_versions`; core IDs are normalized in code |
 | Assessment sessions and reports | `src/store.js`, `src/draft-store.js`, `src/definition-store.js`, `src/postgres-stores.js` | Configured SQLite or PostgreSQL database |
 | Voice bridge | `src/gemini-bridge.js`, `src/definition-voice.js` | Gemini Live and server-side answer validation |
 | Score calculations | `src/assessment.js`, `src/draft-scoring.js`, `src/definition-scoring.js` | Deterministic code and the assigned form snapshot |
@@ -156,10 +154,10 @@ flowchart LR
 
 | Storage mode | Records |
 | --- | --- |
-| SQLite default | `data/prototype.sqlite`; core `prescriptions`, `assessments`, `answers`, `answer_revisions`; `draft_*` and `definition_*` tables for the other flows |
-| PostgreSQL when `DATABASE_URL` is set | Isolated `pod_assessment_prototype` schema; core/draft `prescriptions` and `sessions`, plus `definition_prescriptions` and `definition_sessions` |
+| SQLite default | `data/content.sqlite` holds versioned definitions, metadata, and sample patients; `data/prototype.sqlite` holds assignments and sessions |
+| PostgreSQL when `DATABASE_URL` is set | Isolated `pod_assessment_content` schema holds definitions, metadata, and sample patients; `pod_assessment_prototype` holds assignments and sessions |
 
-Core/draft PostgreSQL sessions and generic definition sessions keep JSON state; the generic session includes its exact form snapshot, answers, context, completion time, and calculations. SQLite uses corresponding local tables. Sample patient labels and summaries remain in the checked-in JSON file. A production Casebook integration would need authenticated patient lookup and stable patient IDs before replacing this demo source.
+Core/draft PostgreSQL sessions and generic definition sessions keep JSON state; the generic session includes its exact form snapshot, answers, context, completion time, and calculations. SQLite uses corresponding local tables. The JSON files are used only by the explicit import command; the server loads active content from the database at startup. A new assessment version is required when questions or rules change, while existing patient rows are preserved by repeated imports. A production Casebook integration would need authenticated patient lookup and stable patient IDs before replacing these synthetic profiles.
 
 The report view reads saved completed sessions. Analytics combine completed prescriptions across the three form families, show activity over time, and plot scores only against the **same assessment, version, language, and metric**. Forms without a valid comparable score remain visible in activity and reports without being plotted as a misleading score trend.
 
@@ -170,6 +168,7 @@ The report view reads saved completed sessions. Analytics combine completed pres
 | `/` | Clinician Prescribe Test, View Test Reports, and Analytics |
 | `GET /api/health` | Active database mode and health |
 | `GET /api/demo-patients` | Synthetic patient IDs and labels |
+| `GET /api/demo-patients/{id}` | Stored synthetic patient profile and summary |
 | `GET /api/demo-patients/{id}/recommendations` | Structured summary, shortlist, and evidence |
 | `POST /api/demo-patients/{id}/doctor-chat` | Catalogue-checked Gemini suggestion |
 | `GET /api/definitions` | Imported form catalogue |

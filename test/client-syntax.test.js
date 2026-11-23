@@ -55,10 +55,8 @@ test('browser scripts parse and the assessment screen has its referenced control
   assert.ok(clinicHtml.indexOf('class="panel assessment-library-panel"') < clinicHtml.indexOf('class="panel decision-panel"'));
   assert.match(clinicHtml, /id="assessment-library-categories"/);
   assert.match(clinicHtml, /id="assessment-library-suggested"[^>]*aria-pressed="false"/);
-  const categoryMap = JSON.parse(readFileSync(new URL('../data/all-assessments.json', import.meta.url), 'utf8')).appMetadata.categories;
-  const embeddedMap = clinic.match(/const libraryCategoryMap = (\{[\s\S]*?\n\});/);
-  assert.ok(embeddedMap, 'The clinic must contain categories even when a local server is not restarted');
-  assert.deepEqual(JSON.parse(embeddedMap[1]), categoryMap);
+  assert.doesNotMatch(clinic, /const libraryCategoryMap =/);
+  assert.match(clinic, /definitions\.push\(\.\.\.await definitionResponse\.json\(\)\)/);
   assert.doesNotMatch(clinicHtml, /id="library-view"/);
   assert.match(clinic, /assessment-detail\.html/);
   const detailHtml = readFileSync(new URL('../public/assessment-detail.html', import.meta.url), 'utf8');
