@@ -161,9 +161,9 @@ export function openStore(path) {
     a.status AS assessment_status, a.completed_at FROM prescriptions p
     LEFT JOIN assessments a ON a.id = p.assessment_id ORDER BY p.created_at`);
   const insertPrescription = db.prepare('INSERT INTO prescriptions (id, demo_patient_id, form_id, created_at) VALUES (?, ?, ?, ?)');
-  const selectPrescription = db.prepare(`SELECT p.*, a.status AS assessment_status, a.mode AS assessment_mode, a.language AS assessment_language
+  const selectPrescription = db.prepare(`SELECT p.*, a.status AS assessment_status, a.mode AS assessment_mode, a.language AS assessment_language, a.completed_at
     FROM prescriptions p LEFT JOIN assessments a ON a.id = p.assessment_id WHERE p.id = ?`);
-  const listPrescriptions = db.prepare(`SELECT p.*, a.status AS assessment_status, a.mode AS assessment_mode, a.language AS assessment_language
+  const listPrescriptions = db.prepare(`SELECT p.*, a.status AS assessment_status, a.mode AS assessment_mode, a.language AS assessment_language, a.completed_at
     FROM prescriptions p LEFT JOIN assessments a ON a.id = p.assessment_id WHERE p.demo_patient_id = ? ORDER BY p.created_at DESC`);
   const linkPrescription = db.prepare('UPDATE prescriptions SET assessment_id = ? WHERE id = ? AND assessment_id IS NULL');
 
@@ -274,7 +274,7 @@ export function openStore(path) {
     if (!row) return null;
     return {
       id: row.id, demoPatientId: row.demo_patient_id, formId: row.form_id,
-      createdAt: row.created_at, assessmentId: row.assessment_id,
+      createdAt: row.created_at, completedAt: row.completed_at, assessmentId: row.assessment_id,
       mode: row.assessment_mode, language: row.assessment_language,
       status: row.assessment_status === 'completed' ? 'completed' : row.assessment_id ? 'in_progress' : 'assigned',
     };

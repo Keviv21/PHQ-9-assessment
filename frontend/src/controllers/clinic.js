@@ -1,4 +1,5 @@
 import { apiFetch as fetch } from '../api/client.js';
+import { completedReportEntries } from './report-order.js';
 const $ = (id) => document.getElementById(id);
 const patients = [];
 const catalogue = [];
@@ -569,33 +570,26 @@ async function loadReports(patientId) {
     if (!prescriptionsResponse.ok || !reportsResponse.ok) throw new Error('Could not load patient reports.');
     const [prescriptions, reports] = await Promise.all([prescriptionsResponse.json(), reportsResponse.json()]);
     if (current !== loadNumber) return;
-    const completedDrafts = prescriptions.filter((item) => item.kind === 'draft' && item.status === 'completed');
-    const completedDefinitions = prescriptions.filter((item) => item.kind === 'definition' && item.status === 'completed');
-    const reportCount = reports.length + completedDrafts.length + completedDefinitions.length;
+    const completed = completedReportEntries(reports, prescriptions);
+    const reportCount = completed.length;
     area.replaceChildren(el('h2', `${reportCount} assessment report${reportCount === 1 ? '' : 's'}`));
     const list = el('div', undefined, 'report-list');
-    for (const report of reports) {
+    for (const entry of completed) {
       const row = el('div', undefined, 'report-row');
       const info = el('div');
-      info.append(el('strong', `${report.formId.toUpperCase()} · ${report.scores.rawTotal} / ${report.scores.maxTotal || 27}`), el('small', `Completed ${new Date(report.completedAt).toLocaleString()}`));
-      const link = el('a', 'View report'); link.href = `/report.html?id=${encodeURIComponent(report.id)}`;
-      row.append(info, link); list.append(row);
-    }
-    for (const record of completedDrafts) {
-      const row = el('div', undefined, 'report-row');
-      const info = el('div');
-      const title = catalogue.find((item) => item.id === record.formId)?.title || record.formId;
-      info.append(el('strong', title), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
       const link = el('a', 'View report');
-      link.href = `/report.html?draftSessionId=${encodeURIComponent(record.assessmentId)}`;
-      row.append(info, link); list.append(row);
-    }
-    for (const record of completedDefinitions) {
-      const row = el('div', undefined, 'report-row');
-      const info = el('div');
-      const title = definitions.find((item) => item.id === record.formId)?.title || record.formId;
-      info.append(el('strong', `${title} · Report`), el('small', `Assigned ${new Date(record.createdAt).toLocaleString()}`));
-      const link = el('a', 'View report'); link.href = `/report.html?definitionSessionId=${encodeURIComponent(record.assessmentId)}`;
+      if (entry.kind === 'scored') {
+        const report = entry.report;
+        info.append(el('strong', `${report.formId.toUpperCase()} · ${report.scores.rawTotal} / ${report.scores.maxTotal || 27}`));
+        link.href = `/report.html?id=${encodeURIComponent(report.id)}`;
+      } else {
+        const record = entry.record;
+        const title = entry.kind === 'draft' ? catalogue.find((item) => item.id === record.formId)?.title || record.formId :
+          definitions.find((item) => item.id === record.formId)?.title || record.formId;
+        info.append(el('strong', `${title} · Report`));
+        link.href = `/report.html?${entry.kind === 'draft' ? 'draftSessionId' : 'definitionSessionId'}=${encodeURIComponent(record.assessmentId)}`;
+      }
+      if (entry.completedAt) info.append(el('small', `Completed ${new Date(entry.completedAt).toLocaleString()}`));
       row.append(info, link); list.append(row);
     }
     for (const record of prescriptions.filter((item) => item.status !== 'completed')) {

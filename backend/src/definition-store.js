@@ -11,7 +11,7 @@ function summary(row) {
   if (!row) return null;
   return { id: row.id, kind: 'definition', demoPatientId: row.patient_id,
     formId: row.form_id, assessmentId: row.session_id ?? null,
-    createdAt: row.created_at, status: row.session_status ?? 'assigned',
+    createdAt: row.created_at, completedAt: row.completed_at ?? null, status: row.session_status ?? 'assigned',
     unscored: !(getDefinition(row.form_id)?.rules.length) };
 }
 
@@ -70,9 +70,11 @@ function openSqlite(path) {
   db.exec(`CREATE TABLE IF NOT EXISTS definition_sessions (
     id TEXT PRIMARY KEY, prescription_id TEXT NOT NULL UNIQUE,
     state_json TEXT NOT NULL)`);
-  const selectPrescription = db.prepare(`SELECT p.*, json_extract(s.state_json,'$.status') AS session_status
+  const selectPrescription = db.prepare(`SELECT p.*, json_extract(s.state_json,'$.status') AS session_status,
+    json_extract(s.state_json,'$.completedAt') AS completed_at
     FROM definition_prescriptions p LEFT JOIN definition_sessions s ON s.id=p.session_id WHERE p.id=?`);
-  const selectPatient = db.prepare(`SELECT p.*, json_extract(s.state_json,'$.status') AS session_status
+  const selectPatient = db.prepare(`SELECT p.*, json_extract(s.state_json,'$.status') AS session_status,
+    json_extract(s.state_json,'$.completedAt') AS completed_at
     FROM definition_prescriptions p LEFT JOIN definition_sessions s ON s.id=p.session_id
     WHERE p.patient_id=? ORDER BY p.created_at DESC`);
   const selectSession = db.prepare('SELECT state_json FROM definition_sessions WHERE id=?');
@@ -139,7 +141,8 @@ function openSqlite(path) {
 
 function openPostgres(pool) {
   async function getPrescription(id, client = pool) {
-    const result = await client.query(`SELECT p.*, s.state->>'status' AS session_status FROM ${prescriptionsTable} p
+    const result = await client.query(`SELECT p.*, s.state->>'status' AS session_status,
+      s.state->>'completedAt' AS completed_at FROM ${prescriptionsTable} p
       LEFT JOIN ${sessionsTable} s ON s.id=p.session_id WHERE p.id=$1`, [id]);
     const row = result.rows[0];
     return summary(row && { ...row, created_at: row.created_at.toISOString() });
@@ -164,7 +167,8 @@ function openPostgres(pool) {
     },
     getPrescription,
     async patientPrescriptions(patientId) {
-      const result = await pool.query(`SELECT p.*, s.state->>'status' AS session_status FROM ${prescriptionsTable} p
+      const result = await pool.query(`SELECT p.*, s.state->>'status' AS session_status,
+        s.state->>'completedAt' AS completed_at FROM ${prescriptionsTable} p
         LEFT JOIN ${sessionsTable} s ON s.id=p.session_id WHERE p.patient_id=$1 ORDER BY p.created_at DESC`, [patientId]);
       return result.rows.map((row) => summary({ ...row, created_at: row.created_at.toISOString() }));
     },

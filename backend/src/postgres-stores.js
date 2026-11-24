@@ -95,6 +95,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
     if (!row) return null;
     return { id: row.id, kind: row.kind, formId: row.form_id,
       demoPatientId: row.patient_id, createdAt: row.created_at.toISOString(),
+      completedAt: row.session_state?.completedAt ?? null,
       assessmentId: row.session_id, mode: row.session_state?.mode ?? null,
       language: row.session_state?.language ?? null,
       status: row.session_state?.status === 'completed' ? 'completed' :

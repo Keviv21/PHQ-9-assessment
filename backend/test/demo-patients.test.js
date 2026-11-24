@@ -72,5 +72,6 @@ test('prescription links one patient to one resumable session and report', () =>
     assert.equal(store.patientResults('demo-a').length, 1);
     assert.equal(store.patientResults('demo-b').length, 0);
     assert.equal(store.patientPrescriptions('demo-a').length, 1);
+    assert.equal(store.patientPrescriptions('demo-a')[0].completedAt, store.patientResults('demo-a')[0].completedAt);
   } finally { store.close(); }
 });

@@ -72,6 +72,7 @@ test('assigned assessment saves a snapshot and a draft report', async () => {
     assert.equal(completed.scores.metrics.find((metric) => metric.id === 'part_a_raw').value, 0);
     assert.deepEqual((await store.getSession(session.id)).formSnapshot, form);
     assert.equal((await store.patientPrescriptions('demo-a'))[0].status, 'completed');
+    assert.equal((await store.patientPrescriptions('demo-a'))[0].completedAt, completed.completedAt);
   } finally { await store.close(); }
 });
 

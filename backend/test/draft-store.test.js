@@ -85,6 +85,7 @@ test('an imported review can be assigned to a sample patient and resumed', () =>
     store.finalize(session.id, form.questions.map(() => 0));
     assert.equal(store.getPrescription(assignment.id).status, 'completed');
     assert.equal(store.patientPrescriptions('demo-a').length, 1);
+    assert.equal(store.patientPrescriptions('demo-a')[0].completedAt, store.get(session.id).completedAt);
     assert.equal(store.patientPrescriptions('demo-b').length, 0);
     assert.equal(store.get(session.id).scores, null);
   } finally { store.close(); }

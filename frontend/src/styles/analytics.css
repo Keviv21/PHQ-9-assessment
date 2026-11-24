@@ -7,6 +7,7 @@
 .analytics-stat small{display:block;color:#7a8ba1;font-size:11px;line-height:1.4}
 .analytics-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;margin-bottom:20px}
 .analytics-panel{min-height:270px}
+#analytics-by-form{max-height:220px;overflow-y:auto;scrollbar-gutter:stable;padding-right:8px}
 .analytics-month-bars{height:164px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:end;gap:12px;padding:10px 6px 0;border-bottom:1px solid #dce5ef}
 .analytics-month{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
 .analytics-month strong{font-size:11px;color:#3e5773}

@@ -90,7 +90,7 @@ export default function ClinicPage() {
           <div id="analytics-summary" className="analytics-summary"></div>
           <div className="analytics-grid">
             <section className="panel analytics-panel"><h2>Completed prescriptions by month</h2><div id="analytics-months"></div></section>
-            <section className="panel analytics-panel"><h2>By assessment</h2><div id="analytics-by-form"></div></section>
+            <section className="panel analytics-panel"><h2>By assessment</h2><div id="analytics-by-form" role="region" aria-label="Assessments by assignment count" tabIndex={0}></div></section>
           </div>
           <section className="panel analytics-patient-panel">
             <div className="analytics-patient-heading"><div><h2>Patient progress</h2><p>View every completed assessment and follow each available score over time.</p></div><div className="analytics-controls"><label htmlFor="analytics-patient">Patient<select id="analytics-patient" className="patient-picker"><option value="">Choose a patient</option></select></label><label htmlFor="analytics-range">Period<select id="analytics-range" className="patient-picker"><option value="all">All time</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></label></div></div>

@@ -35,9 +35,9 @@ export function openDraftStore(path) {
     LEFT JOIN draft_prescriptions p ON p.id = s.prescription_id WHERE s.id = ?`);
   const listRecent = db.prepare('SELECT id, draft_id, mode, status, started_at, completed_at FROM draft_sessions ORDER BY started_at DESC LIMIT 25');
   const insertPrescription = db.prepare('INSERT INTO draft_prescriptions (id, demo_patient_id, draft_id, created_at) VALUES (?, ?, ?, ?)');
-  const selectPrescription = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode
+  const selectPrescription = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode, s.completed_at
     FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id WHERE p.id = ?`);
-  const listPatientPrescriptions = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode
+  const listPatientPrescriptions = db.prepare(`SELECT p.*, s.id AS session_id, s.status AS session_status, s.mode AS session_mode, s.completed_at
     FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id WHERE p.demo_patient_id = ? ORDER BY p.created_at DESC`);
   const listAnalyticsPrescriptions = db.prepare(`SELECT p.*, s.id AS assessment_id, s.status AS assessment_status, s.completed_at
     FROM draft_prescriptions p LEFT JOIN draft_sessions s ON s.prescription_id = p.id ORDER BY p.created_at`);
@@ -84,7 +84,7 @@ export function openDraftStore(path) {
     if (!row) return null;
     return {
       id: row.id, kind: 'draft', formId: row.draft_id,
-      demoPatientId: row.demo_patient_id, createdAt: row.created_at,
+      demoPatientId: row.demo_patient_id, createdAt: row.created_at, completedAt: row.completed_at,
       assessmentId: row.session_id, mode: row.session_mode,
       status: row.session_status === 'completed' ? 'completed' : row.session_id ? 'in_progress' : 'assigned',
       unscored: row.draft_id !== dass21DraftId,
