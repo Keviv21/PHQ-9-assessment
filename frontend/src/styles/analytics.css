@@ -14,7 +14,14 @@
 .analytics-month-column{display:block;width:min(38px,80%);min-height:2px;background:linear-gradient(180deg,#1686ec,#89c6ff);border-radius:5px 5px 0 0}
 .analytics-month small{font-size:11px;color:#667b94;padding:4px 0}
 .analytics-caption{font-size:11px!important;color:#8292a5!important;margin:11px 0 0}
+#analytics-by-form{max-height:280px;overflow-y:auto;padding-right:6px}
+#analytics-by-form::-webkit-scrollbar{width:6px}
+#analytics-by-form::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px}
+#analytics-by-form::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+#analytics-by-form::-webkit-scrollbar-thumb:hover{background:#94a3b8}
 .analytics-form-row{margin:18px 0}
+.analytics-form-row:first-child{margin-top:4px}
+.analytics-form-row:last-child{margin-bottom:4px}
 .analytics-form-heading{display:flex;justify-content:space-between;gap:10px;color:#425b75;font-size:12px;margin-bottom:8px}
 .analytics-form-heading strong{color:#193451;font-size:13px}
 .analytics-form-track{height:9px;border-radius:100px;background:#eaf0f6;overflow:hidden}

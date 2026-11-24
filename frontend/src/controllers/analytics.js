@@ -128,18 +128,48 @@ function scoreChart(series) {
   return chart;
 }
 
+function updateAssessmentDropdown() {
+  const select = byId('analytics-assessment');
+  if (!select) return;
+  const currentVal = select.value;
+  select.replaceChildren(new Option('Select assessment', ''));
+  if (!patientData) return;
+  const formMap = new Map();
+  for (const item of (patientData.activity || [])) {
+    if (item.formId && !formMap.has(item.formId)) {
+      formMap.set(item.formId, formLabel(item));
+    }
+  }
+  for (const item of (patientData.series || [])) {
+    if (item.formId && !formMap.has(item.formId)) {
+      formMap.set(item.formId, formLabel(item));
+    }
+  }
+  for (const [formId, title] of [...formMap.entries()].sort((a, b) => a[1].localeCompare(b[1]))) {
+    select.add(new Option(title, formId));
+  }
+  if (currentVal && formMap.has(currentVal)) {
+    select.value = currentVal;
+  } else {
+    select.value = '';
+  }
+}
+
 function renderPatient() {
   const area = byId('analytics-patient-content');
   if (!patientData) {
     area.replaceChildren(node('p', 'Choose a patient to see their score history.', 'empty-state'));
     return;
   }
-  const days = byId('analytics-range').value;
-  const cutoff = days === 'all' ? 0 : Date.now() - Number(days) * 86400000;
-  const activity = (patientData.activity || []).filter((item) => Date.parse(item.completedAt) >= cutoff);
+  const selectedForm = byId('analytics-assessment')?.value || '';
+  if (!selectedForm) {
+    area.replaceChildren(node('p', 'Select an assessment to view results and score history.', 'empty-state'));
+    return;
+  }
+  const activity = (patientData.activity || []).filter((item) => item.formId === selectedForm);
   const series = patientData.series.map((item) => ({ ...item,
-    points: item.points.filter((point) => Date.parse(point.completedAt) >= cutoff),
-  })).filter((item) => item.points.length);
+    points: item.points,
+  })).filter((item) => item.formId === selectedForm && item.points.length);
   area.replaceChildren();
   if (activity.length) {
     const card = node('section', undefined, 'analytics-activity');
@@ -185,7 +215,7 @@ function renderPatient() {
   }
   if (!series.length) {
     area.append(node('p', activity.length ? 'These completed forms have no score trend. Their answers remain available above.' :
-      'No completed assessments in this period. Choose All time to see earlier results.', 'empty-state'));
+      'No completed assessments found for this selection.', 'empty-state'));
     return;
   }
   for (const item of series) {
@@ -240,7 +270,12 @@ async function loadOverview() {
 async function loadPatient() {
   const current = ++patientLoad;
   const id = byId('analytics-patient').value;
-  if (!id) { patientData = null; renderPatient(); return; }
+  if (!id) {
+    patientData = null;
+    updateAssessmentDropdown();
+    renderPatient();
+    return;
+  }
   byId('analytics-patient-content').replaceChildren(node('p', 'Loading patient progress…', 'empty-state'));
   try {
     const response = await fetch(`/api/demo-patients/${encodeURIComponent(id)}/analytics`);
@@ -248,6 +283,7 @@ async function loadPatient() {
     const data = await response.json();
     if (current !== patientLoad) return;
     patientData = data;
+    updateAssessmentDropdown();
     renderPatient();
   } catch (error) {
     if (current === patientLoad) byId('analytics-patient-content').replaceChildren(node('p', error.message, 'empty-state'));
@@ -269,7 +305,7 @@ byId('analytics-patient').addEventListener('change', () => {
   history.replaceState({}, '', url);
   loadPatient();
 });
-byId('analytics-range').addEventListener('change', renderPatient);
+byId('analytics-assessment').addEventListener('change', renderPatient);
 window.addEventListener('clinic:analytics', showAnalytics);
 
 try {
