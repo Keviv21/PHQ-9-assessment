@@ -8,12 +8,15 @@ import { runInNewContext } from 'node:vm';
 import WebSocket from 'ws';
 import { isAllowedWebSocketOrigin, validateDeploymentEnvironment } from '../src/deployment.js';
 
-test('Vercel rejects ephemeral SQLite and invalid PostgreSQL configuration', () => {
+test('runtime requires PostgreSQL and permits SQLite only for explicit isolated tests', () => {
   assert.throws(() => validateDeploymentEnvironment({ VERCEL: '1' }), /requires DATABASE_URL/);
+  assert.throws(() => validateDeploymentEnvironment({}), /DATABASE_URL is required/);
+  assert.throws(() => validateDeploymentEnvironment({ DB_PATH: ':memory:' }), /DATABASE_URL is required/);
+  assert.doesNotThrow(() => validateDeploymentEnvironment({ ALLOW_SQLITE_TEST_BACKEND: 'true', DB_PATH: ':memory:' }));
+  assert.throws(() => validateDeploymentEnvironment({ VERCEL: '1', ALLOW_SQLITE_TEST_BACKEND: 'true', DB_PATH: ':memory:' }), /requires DATABASE_URL/);
   assert.throws(() => validateDeploymentEnvironment({ DATABASE_URL: 'invalid' }), /valid PostgreSQL URL/);
   assert.throws(() => validateDeploymentEnvironment({ DATABASE_URL: 'postgresql://db/app?sslmode=require' }), /verify-full/);
   assert.doesNotThrow(() => validateDeploymentEnvironment({ VERCEL: '1', DATABASE_URL: 'postgresql://db/app?sslmode=verify-full' }));
-  assert.doesNotThrow(() => validateDeploymentEnvironment({}));
 });
 
 test('WebSockets accept HTTPS deployment origins and reject cross-origin requests', () => {
@@ -62,7 +65,7 @@ test('exported Vercel server serves HTTP and resumes a saved assessment with an 
     server.listen(0, '127.0.0.1', () => console.log(server.address().port));
   `], {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
-    env: { ...process.env, VERCEL: '', DATABASE_URL: '', DB_PATH: ':memory:', GEMINI_API_KEY: '' },
+    env: { ...process.env, VERCEL: '', DATABASE_URL: '', ALLOW_SQLITE_TEST_BACKEND: 'true', DB_PATH: ':memory:', GEMINI_API_KEY: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let socket;

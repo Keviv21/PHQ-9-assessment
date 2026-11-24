@@ -8,32 +8,49 @@ import { assessmentQuestion, getAssessmentForm } from './forms.js';
 import { openStore } from './store.js';
 import { GeminiBridge } from './gemini-bridge.js';
 import { recommendAssessments } from './recommendation.js';
-import { getDemoPatient, listDemoPatients, suggestForDemoPatient } from './demo-patients.js';
 import { getDraftAssessment, getLiveDraftForm, listDraftAssessments } from './draft-library.js';
 import { openDraftStore } from './draft-store.js';
 import { openPostgresStores } from './postgres-stores.js';
 import { answerDoctor, fallbackDoctor, validateDoctorMessage } from './doctor-chat.js';
 import { getCatalogEntry } from './assessment-catalog.js';
-import { getDefinition, listDefinitions, useStoredDefinitions } from './definition-library.js';
+import { getDefinition, listDefinitions, useStoredDefinitions, useStoredReportProfiles, useStoredReportVisualSpecs } from './definition-library.js';
 import { openAssessmentLibrary } from './assessment-library-store.js';
+import { openReportProfileStore } from './report-profile-store.js';
+import { openReportVisualSpecStore } from './report-visual-spec-store.js';
 import { publicDefinition, publicSession } from './assessment-content.js';
 import { assetPath } from './assessment-assets.js';
 import { buildDefinitionReport, definitionReportHtml } from './definition-report.js';
+import { analysisPreviewReport, analysisCatalogue } from './analysis-preview.js';
 import { definitionReportPdf } from './definition-report-pdf.js';
+import { adaptLegacyPhq9, phq9PreviewStates } from './phq9-report.js';
+import { phq9Id } from './report-profiles.js';
 import { openDefinitionStore } from './definition-store.js';
 import { createDefinitionVoiceStore, nextDefinitionItem, voiceDefinitionState } from './definition-voice.js';
-import { isAllowedWebSocketOrigin, validateDeploymentEnvironment } from './deployment.js';
+import { isAllowedWebSocketOrigin, usesExplicitSqliteTestBackend, validateDeploymentEnvironment } from './deployment.js';
+import { openPatientStore } from './patient-store.js';
+import { suggestForPatient } from './patient-routing.js';
+import { openPatientRecommendationService } from './patient-recommendations.js';
 
 validateDeploymentEnvironment();
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const publicRoot = join(root, 'public');
-const dbPath = process.env.DB_PATH || fileURLToPath(new URL('../data/prototype.sqlite', import.meta.url));
+let phq9GraphDefinition = null;
+const sqliteTestBackend = usesExplicitSqliteTestBackend();
+const demoPatients = sqliteTestBackend ? await import('./demo-patients.js') : null;
+const getDemoPatient = demoPatients?.getDemoPatient ?? (() => null);
+const listDemoPatients = demoPatients?.listDemoPatients ?? (() => []);
+const suggestForDemoPatient = demoPatients?.suggestForDemoPatient ?? (() => null);
+const dbPath = sqliteTestBackend ? process.env.DB_PATH : null;
 const postgres = process.env.DATABASE_URL ? openPostgresStores() : null;
+const patientStore = postgres ? openPatientStore(postgres.pool) : null;
+const patientRecommendationService = postgres ? openPatientRecommendationService(postgres.pool) : null;
 const store = postgres?.store ?? openStore(dbPath);
 const draftStore = postgres?.draftStore ?? openDraftStore(dbPath);
 const definitionStore = openDefinitionStore(postgres ? { pool: postgres.pool } : { path: dbPath });
 const assessmentLibrary = openAssessmentLibrary(postgres ? { pool: postgres.pool } : { path: dbPath });
+const reportProfileStore = openReportProfileStore(postgres ? { pool: postgres.pool } : { path: dbPath });
+const reportVisualSpecStore = openReportVisualSpecStore(postgres ? { pool: postgres.pool } : { path: dbPath });
 const assetRoot = process.env.ASSESSMENT_ASSET_ROOT || join(root, 'local-data/assessment-assets');
 const definitionVoiceStore = createDefinitionVoiceStore(definitionStore);
 const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -43,6 +60,11 @@ const scoredDraftIds = new Set(['phq9', 'gad7', 'pcl5'].map((id) => getCatalogEn
 const port = Number(process.env.PORT || 4174);
 const allowedStatic = new Set(['/', '/clinic.html', '/clinic.css', '/clinic-recommend.css', '/clinic.js', '/analytics.css', '/analytics.js', '/doctor-chat.css', '/doctor-chat.js', '/openmind-mark.svg', '/index.html', '/assessment.html', '/assessment-polish.css', '/assessment-unified.css', '/casebook.css', '/app.js', '/i18n.js', '/audio-worklet.js', '/report.html', '/report.js', '/report-view.js', '/report.css', '/report-polish.css', '/report-view.css', '/recommend.html', '/recommend.js', '/patient-suggest.html', '/patient-suggest.js', '/assessment-library.html', '/assessment-library.js', '/assessment-library.css', '/draft-live.html', '/draft-live.js', '/draft-live.css', '/definition.html', '/definition.js', '/definition-information.js', '/definition-voice.js', '/definition.css']);
 const activeAssessments = new Set();
+const listRuntimePatients = () => patientStore ? patientStore.list() : Promise.resolve(listDemoPatients());
+const getRuntimePatient = (id) => patientStore ? patientStore.get(id) : Promise.resolve(getDemoPatient(id));
+const suggestRuntimePatient = (patient, focus = '') => patientRecommendationService
+  ? patientRecommendationService.suggest(patient)
+  : Promise.resolve(suggestForPatient(patient, focus));
 
 function json(response, status, value) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -62,7 +84,118 @@ async function readJson(request, maxBytes = 200_000) {
 const server = http.createServer(async (request, response) => {
   try {
   const url = new URL(request.url, `http://${request.headers.host || '127.0.0.1'}`);
+  if (url.pathname === '/api/patients' && request.method === 'GET') {
+    return json(response, 200, await listRuntimePatients());
+  }
+  const runtimePatientRoute = /^\/api\/patients\/([^/]+)\/(recommendations|prescriptions|reports|analytics|doctor-chat)$/.exec(url.pathname);
+  if (runtimePatientRoute) {
+    let patientId;
+    try { patientId = decodeURIComponent(runtimePatientRoute[1]); }
+    catch { return json(response, 400, { error: 'Invalid patient ID.' }); }
+    const patient = await getRuntimePatient(patientId);
+    if (!patient) return json(response, 404, { error: 'Patient not found.' });
+    const action = runtimePatientRoute[2];
+    if (action === 'recommendations' && request.method === 'GET') {
+      try { return json(response, 200, await suggestRuntimePatient(patient, url.searchParams.get('focus') || '')); }
+      catch (error) { return json(response, 400, { error: error.message }); }
+    }
+    if (action === 'prescriptions' && request.method === 'GET') {
+      return json(response, 200, [...await store.patientPrescriptions(patientId),
+        ...await draftStore.patientPrescriptions(patientId),
+        ...await definitionStore.patientPrescriptions(patientId)]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    }
+    if (action === 'reports' && request.method === 'GET') {
+      return json(response, 200, await store.patientResults(patientId));
+    }
+    if (action === 'analytics' && request.method === 'GET') {
+      return json(response, 200, await store.patientAnalytics(patientId,
+        [...await draftStore.patientAnalyticsRows(patientId),
+          ...await definitionStore.patientAnalyticsRows(patientId)]));
+    }
+    if (action === 'prescriptions' && request.method === 'POST') {
+      try {
+        const { formId } = await readJson(request, 2000);
+        const suggestion = await suggestRuntimePatient(patient);
+        if (suggestion.status !== 'suggestions') return json(response, 409,
+          { error: 'Clinical review is required before assigning an assessment.' });
+        if (typeof formId === 'string' && formId.startsWith('draft:')) {
+          const draftId = formId.slice('draft:'.length);
+          if (scoredDraftIds.has(draftId) || !getLiveDraftForm(draftId)) {
+            return json(response, 409, { error: 'This imported assessment is unavailable for assignment.' });
+          }
+          return json(response, 201, await draftStore.prescribe(patientId, draftId));
+        }
+        if (!suggestion.prescriptionChoices.some((item) => item.id === formId && item.availability === 'available')) {
+          return json(response, 409, { error: 'This assessment is not available for assignment.' });
+        }
+        return json(response, 201, await store.prescribe(patientId, formId));
+      } catch (error) { return json(response, 400, { error: error.message }); }
+    }
+    if (action === 'doctor-chat' && request.method === 'POST') {
+      try {
+        const input = await readJson(request, 10_000);
+        validateDoctorMessage(input.message, input.history);
+        const routing = await suggestRuntimePatient(patient);
+        if (routing.status !== 'suggestions') return json(response, 200,
+          { reply: routing.message, suggestions: [], reviewedByDoctor: false });
+        if (!apiKey) return json(response, 503, { error: 'Configure GEMINI_API_KEY to use the doctor conversation.' });
+        return json(response, 200, await answerDoctor({ patient, ...input, apiKey, model: textModel }));
+      } catch (error) { return json(response, 400, { error: error.message }); }
+    }
+    return json(response, 405, { error: 'Method not allowed.' });
+  }
+  const runtimeDefinitionPatientRoute = /^\/api\/definition-patients\/([^/]+)\/prescriptions$/.exec(url.pathname);
+  if (runtimeDefinitionPatientRoute && patientStore) {
+    let patientId;
+    try { patientId = decodeURIComponent(runtimeDefinitionPatientRoute[1]); }
+    catch { return json(response, 400, { error: 'Invalid patient ID.' }); }
+    const patient = await getRuntimePatient(patientId);
+    if (!patient) return json(response, 404, { error: 'Patient not found.' });
+    if (request.method === 'GET') return json(response, 200, await definitionStore.patientPrescriptions(patientId));
+    if (request.method === 'POST') {
+      try {
+        const { formId } = await readJson(request, 2000);
+        if ((await suggestRuntimePatient(patient)).status !== 'suggestions') return json(response, 409,
+          { error: 'Clinical review is required before assigning an assessment.' });
+        return json(response, 201, await definitionStore.prescribe(patientId, formId));
+      } catch (error) { return json(response, 400, { error: error.message }); }
+    }
+    return json(response, 405, { error: 'Method not allowed.' });
+  }
+  if (!sqliteTestBackend && url.pathname === '/api/demo-patients' && request.method === 'GET') {
+    return json(response, 200, []);
+  }
+  if (!sqliteTestBackend && (url.pathname.startsWith('/api/demo-patients/') ||
+      url.pathname.startsWith('/api/definition-patients/'))) {
+    return json(response, 404, { error: 'Demo patients are unavailable when PostgreSQL is active.' });
+  }
+  if (process.env.ASSESSMENT_ANALYSIS_PREVIEW === 'true' && request.method === 'GET' && url.pathname.startsWith('/preview/analysis')) {
+    if (url.pathname === '/preview/analysis') {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      return response.end(analysisCatalogue(listDefinitions().map(d => getDefinition(d.id))));
+    }
+    const match = /^\/preview\/analysis\/([a-z0-9-]+)(?:\.(html|json|pdf))?$/.exec(url.pathname);
+    const d = match && getDefinition(match[1]);
+    if (!d) return json(response, 404, { error: 'Assessment not found.' });
+    const report = analysisPreviewReport(d, { repeated: url.searchParams.get('repeated') === '1' });
+    if (match[2] === 'json') return json(response, 200, report);
+    if (match[2] === 'pdf') {
+      const pdf = await definitionReportPdf(report);
+      response.writeHead(200, { 'content-type': 'application/pdf', 'cache-control': 'no-store', 'content-disposition': 'attachment; filename="assessment-review.pdf"' });
+      return response.end(pdf);
+    }
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
+      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'self'" });
+    return response.end(definitionReportHtml(report));
+  }
   if (url.pathname === '/api/definitions' && request.method === 'GET') return json(response, 200, listDefinitions());
+  if (url.pathname === '/api/report-profiles/readiness' && request.method === 'GET') {
+    return json(response, 200, await reportProfileStore.readiness());
+  }
+  if (url.pathname === '/api/report-visual-specs/readiness' && request.method === 'GET') {
+    return json(response, 200, await reportVisualSpecStore.readiness());
+  }
   if (url.pathname.startsWith('/api/definitions/') && request.method === 'GET') {
     let id;
     try { id = decodeURIComponent(url.pathname.slice('/api/definitions/'.length)); }
@@ -80,12 +213,53 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(200, { 'content-type': asset.mime_type, 'x-content-type-options': 'nosniff', 'cache-control': 'private, max-age=3600' });
     return response.end(bytes);
   }
+  const previewRoute = /^\/preview\/phq9-report(?:\.(html|json|pdf))?$/.exec(url.pathname);
+  const legacyPhq9Route = /^\/api\/phq9-sessions\/([0-9a-f-]{36})\/report\.(html|json|pdf)$/.exec(url.pathname);
+  if ((previewRoute || legacyPhq9Route) && request.method === 'GET') {
+    let report, format;
+    if (previewRoute) {
+      const states = phq9PreviewStates(phq9GraphDefinition);
+      report = buildDefinitionReport(states.at(-1), url.searchParams.get('single') === '1' ? [] : states.slice(0,-1));
+      report.preview = true;
+      report.reportPath = '/preview/phq9-report';
+      report.downloadUrl = '/preview/phq9-report.pdf' + (url.searchParams.get('single') === '1' ? '?single=1' : '');
+      format = previewRoute[1] || 'html';
+    } else {
+      const state = await store.get(legacyPhq9Route[1]);
+      if (!state || state.status !== 'completed') return json(response, 404, { error: 'Completed PHQ-9 result not found.' });
+      let adapted;
+      try { adapted = adaptLegacyPhq9(state, phq9GraphDefinition); }
+      catch (error) { return json(response, 422, { error: error.message }); }
+      const summaries = state.demoPatientId ? await store.patientResults(state.demoPatientId) : [];
+      const history = [];
+      for (const row of summaries.filter(s => s.id !== state.id && s.formId === 'phq9' && s.language === state.language && s.formVersion === state.formVersion && s.completedAt <= state.completedAt)) {
+        const earlier = await store.get(row.id);
+        try { history.push(adaptLegacyPhq9(earlier, phq9GraphDefinition)); } catch { /* Incompatible historical responses stay in their original report. */ }
+      }
+      report = buildDefinitionReport(adapted, history);
+      report.reportPath = `/api/phq9-sessions/${state.id}/report`;
+      format = legacyPhq9Route[2];
+    }
+    if (format === 'json') return json(response, 200, report);
+    if (format === 'pdf') {
+      try {
+        const bytes = await definitionReportPdf(report);
+        response.writeHead(200, { 'content-type': 'application/pdf', 'cache-control': 'no-store', 'content-disposition': 'attachment; filename="phq9-report.pdf"' });
+        return response.end(bytes);
+      } catch (error) { return json(response, error.status || 500, { error: error.message }); }
+    }
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
+      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'self'" });
+    return response.end(definitionReportHtml(report));
+  }
   const definitionReportRoute = /^\/api\/definition-sessions\/([0-9a-f-]{36})\/report\.(json|html|pdf)$/.exec(url.pathname);
   if (definitionReportRoute && request.method === 'GET') {
     const state = await definitionStore.getSession(definitionReportRoute[1]);
     if (!state) return json(response, 404, { error: 'Session not found.' });
     if (state.status !== 'completed') return json(response, 409, { error: 'Complete the assessment before generating a report.' });
-    const report = buildDefinitionReport(state, await definitionStore.patientSessions(state.demoPatientId));
+    const patient = await getRuntimePatient(state.demoPatientId);
+    const stateWithPatient = patient ? { ...state, patientDetails: patient.demographics } : state;
+    const report = buildDefinitionReport(stateWithPatient, await definitionStore.patientSessions(state.demoPatientId));
     if (definitionReportRoute[2] === 'json') return json(response, 200, report);
     if (definitionReportRoute[2] === 'pdf') {
       try {
@@ -117,7 +291,7 @@ const server = http.createServer(async (request, response) => {
     const id = definitionPrescriptionRoute[1];
     if (request.method === 'GET' && !definitionPrescriptionRoute[2]) {
       const prescription = await definitionStore.getPrescription(id);
-      return prescription ? json(response, 200, { ...prescription, patient: getDemoPatient(prescription.demoPatientId) }) :
+      return prescription ? json(response, 200, { ...prescription, patient: await getRuntimePatient(prescription.demoPatientId) }) :
         json(response, 404, { error: 'Assignment not found.' });
     }
     if (request.method === 'POST' && definitionPrescriptionRoute[2]) {
@@ -228,7 +402,7 @@ const server = http.createServer(async (request, response) => {
   if (request.method !== 'GET') return json(response, 405, { error: 'Method not allowed.' });
   if (url.pathname === '/api/health') {
     if (postgres) await postgres.health();
-    return json(response, 200, { ok: true, database: postgres ? 'postgresql' : 'sqlite' });
+    return json(response, 200, { ok: true, database: postgres ? 'postgresql' : 'sqlite-test' });
   }
   if (url.pathname === '/api/draft-sessions') return json(response, 200, await draftStore.list());
   if (url.pathname.startsWith('/api/draft-sessions/')) {
@@ -236,8 +410,9 @@ const server = http.createServer(async (request, response) => {
     const state = await draftStore.get(id);
     return state ? json(response, 200, state) : json(response, 404, { error: 'Live review session not found.' });
   }
-  if (url.pathname === '/api/assessment-library') return json(response, 200, listDraftAssessments());
+  if (url.pathname === '/api/assessment-library') return json(response, 200, postgres ? [] : listDraftAssessments());
   if (url.pathname.startsWith('/api/assessment-library/')) {
+    if (postgres) return json(response, 404, { error: 'Assessment definitions are provided by PostgreSQL.' });
     let id;
     try { id = decodeURIComponent(url.pathname.slice('/api/assessment-library/'.length)); }
     catch { return json(response, 400, { error: 'Invalid assessment ID.' }); }
@@ -273,7 +448,7 @@ const server = http.createServer(async (request, response) => {
   const prescriptionRoute = /^\/api\/prescriptions\/([0-9a-f-]{36})$/i.exec(url.pathname);
   if (prescriptionRoute) {
     const prescription = await store.getPrescription(prescriptionRoute[1]) || await draftStore.getPrescription(prescriptionRoute[1]) || await definitionStore.getPrescription(prescriptionRoute[1]);
-    return prescription ? json(response, 200, { ...prescription, patient: getDemoPatient(prescription.demoPatientId) })
+    return prescription ? json(response, 200, { ...prescription, patient: await getRuntimePatient(prescription.demoPatientId) })
       : json(response, 404, { error: 'Prescription not found.' });
   }
   const patientRoute = /^\/api\/demo-patients\/(demo-[a-z])\/recommendations$/.exec(url.pathname);
@@ -431,7 +606,7 @@ async function handleScoredConnection(socket, request) {
     socket.close(1008, 'A valid prescription is required before starting PHQ-9.');
     return;
   }
-  const suggestion = suggestForDemoPatient(demoPatientId);
+  const suggestion = suggestForPatient(await getRuntimePatient(demoPatientId));
   if (!suggestion || suggestion.status !== 'suggestions' ||
       !suggestion.prescriptionChoices.some((item) => item.id === formId && item.availability === 'available')) {
     socket.close(1008, 'This assessment is not available for this demo patient.');
@@ -813,13 +988,24 @@ if (postgres) {
   await postgres.initialize((client) => definitionStore.initialize(client));
 }
 await assessmentLibrary.initialize();
-const storedLibraryLoaded = useStoredDefinitions(await assessmentLibrary.activeDefinitions());
-let fileLibraryLoaded = false;
-if (!storedLibraryLoaded && process.env.ASSESSMENT_LIBRARY_FILE) {
+await reportProfileStore.initialize();
+await reportVisualSpecStore.initialize();
+const storedDefinitions = await assessmentLibrary.activeDefinitions();
+let exportedDefinitions = [];
+if (!postgres && process.env.ASSESSMENT_LIBRARY_FILE) {
   const exported = JSON.parse(readFileSync(process.env.ASSESSMENT_LIBRARY_FILE, 'utf8'));
   if (exported.schemaVersion !== 1 || !Array.isArray(exported.records)) throw new Error('Unsupported assessment library file.');
-  fileLibraryLoaded = useStoredDefinitions(exported.records);
+  exportedDefinitions = exported.records;
 }
+// A targeted database update must not hide the other definitions in the runtime file.
+const storedLibraryLoaded = storedDefinitions.length > 0;
+const fileLibraryLoaded = exportedDefinitions.length > 0;
+useStoredDefinitions([...new Map([...exportedDefinitions, ...storedDefinitions].map(d => [d.id, d])).values()]);
+const storedReportProfiles = await reportProfileStore.activeProfiles();
+const loadedReportProfiles = useStoredReportProfiles(storedReportProfiles);
+const storedReportVisualSpecs = await reportVisualSpecStore.activeSpecs();
+const loadedReportVisualSpecs = useStoredReportVisualSpecs(storedReportVisualSpecs);
+phq9GraphDefinition = getDefinition(phq9Id);
 if (!postgres) await definitionStore.initialize();
 
 export default server;
@@ -829,8 +1015,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   server.listen(port, process.env.HOST || '127.0.0.1', () => {
     console.log(`OpenMind assessments: http://127.0.0.1:${port}`);
     console.log(`Voice assessment: ${apiKey ? 'ready' : 'unavailable; on-screen assessment available'}`);
-    console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `SQLite database: ${dbPath}`);
+    console.log(postgres ? `PostgreSQL database: connected (schema ${postgres.schema})` : `Explicit SQLite test database: ${dbPath}`);
     console.log(`Assessment library: ${storedLibraryLoaded ? 'versioned database definitions' : fileLibraryLoaded ? 'exported JSON definitions' : 'legacy bundled definitions; run library:import to upgrade'}`);
+    console.log(`Report profiles: ${loadedReportProfiles} versioned database profiles`);
+    console.log(`Report visual specs: ${loadedReportVisualSpecs} versioned database specs`);
   });
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
@@ -846,6 +1034,8 @@ function shutdown() {
   server.close(async () => {
     await definitionStore.close();
     await assessmentLibrary.close();
+    await reportProfileStore.close();
+    await reportVisualSpecStore.close();
     if (postgres) await postgres.close();
     else { store.close(); draftStore.close(); }
   });

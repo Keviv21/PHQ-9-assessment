@@ -1,0 +1,633 @@
+[
+  {
+    "assessmentId": "children-eating-attitudes-test-cheat--2088aadb3275",
+    "title": "Children’s Eating Attitudes Test (ChEAT)",
+    "comparisonColumns": {
+      "dieting_mean": 2,
+      "restricting_and_purging_mean": 2,
+      "food_preoccupation_mean": 2,
+      "oral_control_mean": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "wender-utah-rating-scale-25-item-version-wurs-25--a9fb5add572f",
+    "title": "Wender Utah Rating Scale – 25 item version (WURS-25)",
+    "comparisonColumns": {
+      "pdf_1": 2,
+      "pdf_2": 2,
+      "pdf_3": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "the-world-health-organisation-disability-assessment-schedule-whodas-child--ba92f6f5986e",
+    "title": "World Health Organisation Disability Assessment Schedule – Children and Youth version (WHODAS-Child)",
+    "comparisonColumns": {
+      "source_draft_1": 2,
+      "source_draft_2": 2,
+      "source_draft_3": 2,
+      "source_draft_4": 2,
+      "source_draft_5": 2,
+      "source_draft_6": 2,
+      "source_draft_7": 2,
+      "source_draft_8": 2,
+      "source_draft_9": 2,
+      "source_draft_10": 2,
+      "source_draft_11": 2,
+      "source_draft_12": 2,
+      "source_draft_13": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "repetitive-behaviours-questionnaire-3--5ea1225093e8",
+    "title": "Repetitive Behaviours Questionnaire–3 (RBQ-3)",
+    "comparisonColumns": {
+      "source_draft_2": 2,
+      "source_draft_4": 2,
+      "source_draft_6": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "session-reactions-scale-3-brief-srs-3-b--72adc7da7ddf",
+    "title": "Session Reactions Scale – 3 – Brief (SRS-3-B)",
+    "comparisonColumns": {
+      "source_draft_2": 2,
+      "source_draft_4": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "regensburg-insomnia-scale-ris--3e3ecac36f30",
+    "title": "Regensburg Insomnia Scale (RIS)",
+    "comparisonColumns": {
+      "pdf_1": 2,
+      "pdf_2": 2,
+      "pdf_3": 2,
+      "pdf_4": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "weiss-symptom-record-ii-wsr-ii--eddc170fac3b",
+    "title": "Weiss Symptom Record II (WSR-II)",
+    "comparisonColumns": {
+      "source_draft_3": 2,
+      "source_draft_6": 2,
+      "source_draft_9": 2,
+      "source_draft_12": 2,
+      "source_draft_15": 2,
+      "source_draft_18": 2,
+      "source_draft_21": 2,
+      "source_draft_24": 2,
+      "source_draft_27": 2,
+      "source_draft_30": 2,
+      "source_draft_33": 2,
+      "source_draft_36": 2,
+      "source_draft_39": 2,
+      "source_draft_42": 2,
+      "source_draft_45": 2,
+      "source_draft_48": 2,
+      "source_draft_51": 2,
+      "source_draft_54": 2,
+      "source_draft_57": 2
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "depression-anxiety-stress-scale-dass-10--3b7391b71c72",
+    "title": "Depression Anxiety Stress Scale (DASS-10)",
+    "comparisonColumns": {
+      "total_mean": null
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "world-health-organisation-disability-assessment-schedule-2-0-proxy-whodas-proxy--18dff5cd93b2",
+    "title": "World Health Organisation Disability Assessment Schedule 2.0 – Proxy (WHODAS-proxy)",
+    "comparisonColumns": {
+      "source_draft_1": 3,
+      "source_draft_2": 3,
+      "source_draft_3": 3,
+      "source_draft_4": 3,
+      "source_draft_5": 3,
+      "source_draft_6": 3,
+      "source_draft_7": 3
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "the-world-health-organisation-disability-assessment-schedule-whodas-2-0-self-report-v--d1cbf0de489d",
+    "title": "The World Health Organisation Disability Assessment Schedule (WHODAS 2.0) – Self-Report Version",
+    "comparisonColumns": {
+      "source_draft_1": 3,
+      "source_draft_2": 3,
+      "source_draft_3": 3,
+      "source_draft_4": 3,
+      "source_draft_5": 3,
+      "source_draft_6": 3,
+      "source_draft_7": 3
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "world-health-organisation-disability-assessment-schedule-2-0-interview-whodas-intervi--a836c2e2fbf5",
+    "title": "World Health Organisation Disability Assessment Schedule 2.0 – Interview (WHODAS-interview)",
+    "comparisonColumns": {
+      "source_draft_1": 3,
+      "source_draft_2": 3,
+      "source_draft_3": 3,
+      "source_draft_4": 3,
+      "source_draft_5": 3,
+      "source_draft_6": 3,
+      "source_draft_7": 3,
+      "source_draft_8": 3
+    },
+    "comparisonColumnEvidence": "Result table headers in the archived sample PDF; zero-based cell 0 is the row label. Null means no comparable source column."
+  },
+  {
+    "assessmentId": "adult-adhd-self-report-scale-asrs--814829bfeff1",
+    "title": "Adult ADHD Self-Report Scale (ASRS)",
+    "rowAliases": {
+      "Part A Raw": "Criterion (Part A) (0-24)",
+      "Part B Raw": "Additional Symptoms (Part B) (0-48)"
+    }
+  },
+  {
+    "assessmentId": "aggression-scale-for-autism--d6a56deea55d",
+    "title": "Institute for Basic Research – Modified Overt Aggression Scale (IBR-MOAS)",
+    "subscales": [
+      {
+        "label": "Verbal aggression towards others",
+        "items": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "method": "sum",
+        "multiplier": 1,
+        "evidence": "Source guidance: five aggression areas have summed scores 0–12; cluster averages are separate."
+      },
+      {
+        "label": "Verbal aggression towards self",
+        "items": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "method": "sum",
+        "multiplier": 1,
+        "evidence": "Source guidance: five aggression areas have summed scores 0–12; cluster averages are separate."
+      },
+      {
+        "label": "Physical aggression against other people",
+        "items": [
+          9,
+          10,
+          11,
+          12
+        ],
+        "method": "sum",
+        "multiplier": 1,
+        "evidence": "Source guidance: five aggression areas have summed scores 0–12; cluster averages are separate."
+      },
+      {
+        "label": "Physical aggression against objects",
+        "items": [
+          13,
+          14,
+          15,
+          16
+        ],
+        "method": "sum",
+        "multiplier": 1,
+        "evidence": "Source guidance: five aggression areas have summed scores 0–12; cluster averages are separate."
+      },
+      {
+        "label": "Physical aggression against self",
+        "items": [
+          17,
+          18,
+          19,
+          20
+        ],
+        "method": "sum",
+        "multiplier": 1,
+        "evidence": "Source guidance: five aggression areas have summed scores 0–12; cluster averages are separate."
+      }
+    ]
+  },
+  {
+    "assessmentId": "meno-d--0011882ab4fb",
+    "title": "Menopause Depression Rating Scale (MENO-D)",
+    "subscales": [
+      {
+        "label": "Self",
+        "items": [
+          2,
+          4,
+          5,
+          6
+        ],
+        "method": "mean",
+        "evidence": "Source guidance specifies lettered items, with A–L corresponding to questionnaire items 1–12, and subscale average scores 0–4."
+      },
+      {
+        "label": "Sexual",
+        "items": [
+          1,
+          10
+        ],
+        "method": "mean",
+        "evidence": "Source guidance specifies lettered items, with A–L corresponding to questionnaire items 1–12, and subscale average scores 0–4."
+      },
+      {
+        "label": "Somatic",
+        "items": [
+          7,
+          9
+        ],
+        "method": "mean",
+        "evidence": "Source guidance specifies lettered items, with A–L corresponding to questionnaire items 1–12, and subscale average scores 0–4."
+      },
+      {
+        "label": "Cognitive",
+        "items": [
+          11,
+          12
+        ],
+        "method": "mean",
+        "evidence": "Source guidance specifies lettered items, with A–L corresponding to questionnaire items 1–12, and subscale average scores 0–4."
+      },
+      {
+        "label": "Sleep",
+        "items": [
+          3,
+          8
+        ],
+        "method": "mean",
+        "evidence": "Source guidance specifies lettered items, with A–L corresponding to questionnaire items 1–12, and subscale average scores 0–4."
+      }
+    ],
+    "bands": {
+      "pdf_1": [
+        [
+          0,
+          19,
+          "No to Minimal Symptoms"
+        ],
+        [
+          20,
+          23,
+          "Mild"
+        ],
+        [
+          24,
+          31,
+          "Moderate"
+        ],
+        [
+          32,
+          48,
+          "Severe"
+        ]
+      ]
+    },
+    "comparisonColumns": {
+      "report_self": 2,
+      "report_sexual": 2,
+      "report_somatic": 2,
+      "report_cognitive": 2,
+      "report_sleep": 2
+    }
+  },
+  {
+    "assessmentId": "composite-caregiving-questionnaire-ccq--f9389578f2e8",
+    "title": "Composite Caregiving Questionnaire (CCQ)",
+    "subscales": [
+      {
+        "label": "Cue Recognition",
+        "items": [
+          28,
+          31,
+          33,
+          36,
+          39,
+          41,
+          44
+        ],
+        "method": "sum",
+        "evidence": "Source guidance Parental Mentalising subscale item list; raw sums are retained. The separate 0–10 display transformation is not assumed."
+      },
+      {
+        "label": "Mentalisation of Infant",
+        "items": [
+          29,
+          32,
+          35,
+          37,
+          40,
+          43,
+          45
+        ],
+        "method": "sum",
+        "evidence": "Source guidance Parental Mentalising subscale item list; raw sums are retained. The separate 0–10 display transformation is not assumed."
+      },
+      {
+        "label": "Own Childhood Experience",
+        "items": [
+          30,
+          34,
+          38,
+          42
+        ],
+        "method": "sum",
+        "evidence": "Source guidance Parental Mentalising subscale item list; raw sums are retained. The separate 0–10 display transformation is not assumed."
+      }
+    ]
+  },
+  {
+    "assessmentId": "fatigue-assessment-scale-fas--4da3697fad5d",
+    "title": "Fatigue Assessment Scale (FAS)",
+    "rowAliases": {
+      "Total FAS Score": "General Fatigue (10-50)"
+    },
+    "normalReferences": {
+      "pdf_1": [
+        {
+          "id": "dutch_working_adults",
+          "label": "Dutch working adults (21–65 years, ≥20 hours/week; n=351)",
+          "mean": 19.26,
+          "sd": 6.52,
+          "method": "normal_cdf",
+          "evidence": "Source guidance: approximately normally distributed normative scores; De Vries et al. (2003), Michielsen et al. (2003).",
+          "status": "source_specified_draft"
+        }
+      ]
+    }
+  },
+  {
+    "assessmentId": "multidimensional-assessment-of-interoceptive-awareness-version-2-maia-2--13c5b369ef78",
+    "title": "Multidimensional Assessment of Interoceptive Awareness – Version 2 (MAIA-2)",
+    "rowAliases": {
+      "Trusting": "Trust"
+    },
+    "metricLabels": {
+      "pdf_1": "Noticing",
+      "pdf_2": "Not-Distracting",
+      "pdf_3": "Not-Worrying",
+      "pdf_4": "Attention Regulation",
+      "pdf_5": "Emotional Awareness",
+      "pdf_6": "Self-Regulation",
+      "pdf_7": "Body Listening",
+      "pdf_8": "Trusting"
+    },
+    "normalReferences": {
+      "pdf_1": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 3.34,
+          "sd": 0.9,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_2": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 2.06,
+          "sd": 0.8,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_3": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 2.52,
+          "sd": 0.85,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_4": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 2.84,
+          "sd": 0.86,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_5": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 3.44,
+          "sd": 0.96,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_6": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 2.78,
+          "sd": 1.01,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_7": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 2.2,
+          "sd": 1.17,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ],
+      "pdf_8": [
+        {
+          "id": "community_adults",
+          "label": "Community adults (n=1,090); Mehling et al. (2018)",
+          "mean": 3.37,
+          "sd": 1.11,
+          "method": "normal_cdf",
+          "evidence": "Source guidance explicitly specifies approximate normal distribution conversion for each subscale.",
+          "status": "source_specified_draft"
+        }
+      ]
+    }
+  },
+  {
+    "assessmentId": "dar-5--5adc584d7917",
+    "title": "Dimensions of Anger Reactions (DAR-5)",
+    "referenceStatistics": {
+      "total_raw": [
+        {
+          "label": "Serving military personnel; n=32,851",
+          "mean": 7.65,
+          "sd": 3.65,
+          "status": "parameters_available_conversion_method_requires_review",
+          "evidence": "Extracted source guidance; do not assume empirical percentiles from mean and SD alone."
+        },
+        {
+          "label": "US males with PTSD; n=163",
+          "mean": 15.7,
+          "sd": 4.4,
+          "status": "parameters_available_conversion_method_requires_review",
+          "evidence": "Extracted source guidance; do not assume empirical percentiles from mean and SD alone."
+        }
+      ]
+    }
+  },
+  {
+    "assessmentId": "mclean-screening-instrument-for-bpd-msi-bpd--cfae059062bb",
+    "title": "McLean Screening Instrument for BPD (MSI-BPD)",
+    "referenceStatistics": {
+      "pdf_1": [
+        {
+          "label": "US university students; n=235",
+          "mean": 4.83,
+          "sd": 2.64,
+          "status": "parameters_available_conversion_method_requires_review",
+          "evidence": "Extracted source guidance; do not assume empirical percentiles from mean and SD alone."
+        }
+      ]
+    }
+  },
+  {
+    "assessmentId": "protective-factors-of-resilience-scale--d80af8b839be",
+    "title": "Protective Factors of Resilience Scale (PFRS)",
+    "referenceStatistics": {
+      "source_draft_4": [
+        {
+          "label": "North American adults; n=240",
+          "mean": 78.9,
+          "sd": 15.98,
+          "status": "parameters_available_conversion_method_requires_review",
+          "evidence": "Extracted source guidance; do not assume empirical percentiles from mean and SD alone."
+        }
+      ]
+    }
+  },
+  {
+    "assessmentId": "social-avoidance-and-distress-scale-sads--9d882228eccd",
+    "title": "Social Avoidance and Distress Scale (SADS)",
+    "referenceStatistics": {
+      "pdf_1": [
+        {
+          "label": "University students; n=205",
+          "mean": 9.11,
+          "sd": 8.01,
+          "status": "parameters_available_conversion_method_requires_review",
+          "evidence": "Extracted source guidance; do not assume empirical percentiles from mean and SD alone."
+        }
+      ]
+    }
+  },
+  {
+    "assessmentId": "ptsd-checklist-5-pcl-5--5a88422b610e",
+    "title": "PTSD Checklist for DSM-5 (PCL-5)",
+    "rowAliases": {
+      "Negative alterations in cognition and mood": "Negative Alterations (0-28)"
+    }
+  },
+  {
+    "assessmentId": "buss-perry-aggression-questionnaire-bpaq--de56900b41f4",
+    "title": "Buss and Perry Aggression Questionnaire (BPAQ)",
+    "rowAliases": {
+      "Physical Aggression": "Physical (9-45)",
+      "Verbal Aggression": "Verbal (5-25)"
+    }
+  },
+  {
+    "assessmentId": "geriatric-depression-scale-15-gds--a1ef7075a9d0",
+    "title": "Geriatric Depression Scale (GDS-15)",
+    "rowAliases": {
+      "The (Lack of) Positive Mood subscale": "(Lack of) Positive Mood (0 to 5)",
+      "The Depressed Mood subscale": "Depressed Mood (0 to 10)"
+    }
+  },
+  {
+    "assessmentId": "compassion-motivation-and-action-scales-self-compassion-cmas-self--749b02174491",
+    "title": "Compassion Motivation and Action Scale – Self-Compassion (CMAS-Self)",
+    "rowAliases": {
+      "Self-Compassion Intention": "Intention (5-35)",
+      "Self-Compassion Distress Tolerance": "Distress Tolerance (7-49)",
+      "Self-Compassionate Action": "Action (6-42)"
+    }
+  },
+  {
+    "assessmentId": "compassion-motivation-and-action-scales-compassion-cmas-other--4a884a66799a",
+    "title": "Compassion Motivation and Action Scales – Compassion (CMAS-other)",
+    "rowAliases": {
+      "Compassion Intention": "Intention (3-21)",
+      "Compassion Distress Tolerance": "Distress Tolerance (3-21)",
+      "Compassionate Action": "Action (6-42)"
+    }
+  },
+  {
+    "assessmentId": "clinical-impairment-assessment-questionnaire-cia--7b34a9aaf9f4",
+    "title": "Clinical Impairment Assessment Questionnaire (CIA)",
+    "subscales": [
+      {
+        "label": "Social impairment",
+        "items": [
+          3,
+          7,
+          10,
+          12,
+          15
+        ],
+        "method": "sum",
+        "evidence": "Source guidance lists the three item groups. Missing-item imputation is not enabled; incomplete results remain withheld."
+      },
+      {
+        "label": "Cognitive impairment",
+        "items": [
+          1,
+          4,
+          5,
+          6,
+          13
+        ],
+        "method": "sum",
+        "evidence": "Source guidance lists the three item groups. Missing-item imputation is not enabled; incomplete results remain withheld."
+      }
+    ]
+  },
+  {
+    "assessmentId": "mental-health-literacy-scale-mhls--e2b1069216a6",
+    "title": "Mental Health Literacy Scale (MHLS)",
+    "rowAliases": {
+      "MHLS Total Score": "Mental Health Literacy"
+    }
+  },
+  {
+    "assessmentId": "eating-attitudes-test-26-eat-26--b8cb550dc0d9",
+    "title": "Eating Attitudes Test-26 (EAT-26)",
+    "reviewNotes": [
+      "Archived sample selected Q26 (OFTEN) displays a scoring value of 1; the extracted questionnaire maps OFTEN to 0. This explains a one-point total/dieting discrepancy. Source version and reverse-key scoring require review. Do not change the rule merely to fit the example.",
+      "The extracted Oral Control item list contains the ambiguous token 1519. It is preserved in guidance but not silently rewritten into item membership."
+    ]
+  }
+]

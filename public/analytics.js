@@ -232,7 +232,7 @@ async function loadOverview() {
     const data = await response.json();
     if (current !== overviewLoad) return;
     renderOverview(data);
-    byId('analytics-status').textContent = data.totals.prescribed ? '' : 'No prescribed tests yet. Analytics will populate as sample patients complete assessments.';
+    byId('analytics-status').textContent = data.totals.prescribed ? '' : 'No prescribed tests yet. Analytics will populate after patients complete assessments.';
   } catch (error) {
     if (current === overviewLoad) byId('analytics-status').textContent = error.message;
   }
@@ -244,7 +244,7 @@ async function loadPatient() {
   if (!id) { patientData = null; renderPatient(); return; }
   byId('analytics-patient-content').replaceChildren(node('p', 'Loading patient progress…', 'empty-state'));
   try {
-    const response = await fetch(`/api/demo-patients/${encodeURIComponent(id)}/analytics`);
+    const response = await fetch(`/api/patients/${encodeURIComponent(id)}/analytics`);
     if (!response.ok) throw new Error('Could not load patient progress.');
     const data = await response.json();
     if (current !== patientLoad) return;
@@ -274,7 +274,7 @@ byId('analytics-range').addEventListener('change', renderPatient);
 window.addEventListener('clinic:analytics', showAnalytics);
 
 try {
-  const response = await fetch('/api/demo-patients');
+  const response = await fetch('/api/patients');
   if (!response.ok) throw new Error('Could not load patients.');
   patients = await response.json();
   for (const patient of patients) byId('analytics-patient').add(new Option(patient.label, patient.id));

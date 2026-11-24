@@ -13,7 +13,9 @@ export async function definitionReportPdf(report) {
     await context.route('**/*', route => route.abort());
     const page = await context.newPage();
     await page.setContent(definitionReportHtml(report, { printControls: false }), { timeout: 15000 });
-    return await page.pdf({ format: 'A4', printBackground: true, margin: { top: '14mm', bottom: '14mm', left: '12mm', right: '12mm' }, timeout: 20000 });
+    return await page.pdf({ format: 'A4', printBackground: true,
+      margin: report.visualSpec ? { top: '0', bottom: '0', left: '0', right: '0' } :
+        { top: '14mm', bottom: '14mm', left: '12mm', right: '12mm' }, timeout: 20000 });
   } catch (error) {
     if (error.status) throw error;
     throw Object.assign(new Error('PDF renderer unavailable. Configure REPORT_CHROMIUM_PATH or install Chromium. The report can still be printed from your browser.'), { status: 503 });

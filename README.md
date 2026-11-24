@@ -4,10 +4,10 @@ A standalone OpenMind/Casebook-style demonstration of clinician-selected assessm
 
 ## Current assessment JSON library
 
-The dev branch now supports versioned PostgreSQL definitions, private asset archiving,
+The test branch supports versioned PostgreSQL definitions, private asset archiving,
 a generated 186-assessment runtime JSON, saved-result reports with PDF download, and
 compatible visit analytics. See [library import and configuration](docs/ASSESSMENT_LIBRARY.md).
-The requested database is `sagar prototype`, schema `pod_assessment_prototype`.
+The configured database is `assessment_config_prototype`, schema `pod_assessment_prototype`.
 Live import must be completed before claiming the extracted library is in that database.
 
 ## Current scope
@@ -16,7 +16,7 @@ Live import must be completed before claiming the extracted library is in that d
 2. The Assessment Library below Doctor Conversation shows 186 entries from the 16 November 2026 assessment bundle. Clinicians can search, filter by category or patient suggestion, read each card's overview, and select one for final review. Category labels matched to the NovoPsych library are stored in `data/assessment-library-categories.json` and included in the browser script, so filters work even when an existing local server process has not restarted. Entries without a matching source category appear under Other. The searchable Prescribe Test picker reflects the selection. The 185 entries with questionnaires can be assigned; SDQ has no recovered form and is unavailable.
 3. The patient completes the assessment on screen or in a Gemini Live voice conversation. The voice flow proposes an answer and saves it only after confirmation. Questions and applicable options stay visible. A final review permits corrections before the report is created.
 4. PHQ-9, GAD-7, PCL-5, and DASS-21 have dedicated scoring flows. Other imported forms show source-draft raw calculations when their rules apply; LEC-5 and asQ save answers without a numeric composite. The prototype does not claim that imported calculations reproduce NovoPsych's clinical reports.
-5. Assignments, answers, results, and analytics persist in SQLite or an isolated PostgreSQL schema. Patient profiles and summaries remain in the JSON file, not in the database.
+5. Assignments, answers, results, and analytics persist in the isolated PostgreSQL schema. Patient profiles and summaries remain in the JSON file, not in the database.
 6. Multi-language support: 43 languages are available in the assessment screens, defaulting to English (`en`). Core clinical instruments (PHQ-9, GAD-7, DASS-21) feature translations for English (`en`), Hindi (`hi`), Marathi (`mr`), and Spanish (`es`). The patient can change languages on the fly while an assessment is actively underway, immediately re-rendering the current item and options in real time.
 
 ## Start locally
@@ -25,7 +25,7 @@ Use Node.js **24.x**, matching the Vercel deployment runtime.
 
 **macOS / Linux:**
 ```bash
-git checkout dev
+git switch test
 npm ci
 cp .env.example .env    # configure GEMINI_API_KEY if testing voice
 npm run dev
@@ -46,10 +46,9 @@ Open the address printed by the server, normally `http://127.0.0.1:4174`. The on
 | `GEMINI_API_KEY` | Enables Gemini Live and Doctor conversation | Unset |
 | `GEMINI_LIVE_MODEL` | Voice model | `gemini-3.8-live` |
 | `GEMINI_TEXT_MODEL` | Doctor conversation model | `gemini-3.5-flash-lite` |
-| `DATABASE_URL` | PostgreSQL connection; must use `sslmode=verify-full` | Unset; SQLite |
-| `DB_PATH` | SQLite file path when PostgreSQL is unset | `data/prototype.sqlite` |
+| `DATABASE_URL` | Required PostgreSQL connection; must use `sslmode=verify-full` | Required |
 
-When `DATABASE_URL` is set, run `npm run db:check` to test the connection. The app creates its tables in the `pod_assessment_prototype` schema. Without that variable it uses the local SQLite file. The two databases do not synchronize automatically. `GET /api/health` shows which storage backend the running server uses.
+Run `npm run db:check` to test the connection. The app creates its tables in the `pod_assessment_prototype` schema and refuses to start without PostgreSQL. Automated tests and synthetic review tools can opt into a private SQLite database explicitly; normal development and deployment cannot. `GET /api/health` reports `postgresql` for the normal runtime.
 
 ## Try the full workflow
 

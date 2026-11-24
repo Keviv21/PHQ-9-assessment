@@ -5,22 +5,44 @@
   "outputDirectory": "dist",
   "functions": {
     "api/server.js": {
-      "includeFiles": "{data/*.json,public/**}",
+      "includeFiles": "{data/**/*.json,public/**}",
       "maxDuration": 300
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/server" },
-    { "source": "/ws", "destination": "/api/server" },
-    { "source": "/draft-ws", "destination": "/api/server" },
-    { "source": "/definition-ws", "destination": "/api/server" }
+    {
+      "source": "/api/:path*",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/preview/:path*",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/ws",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/draft-ws",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/definition-ws",
+      "destination": "/api/server"
+    }
   ],
   "headers": [
     {
       "source": "/:path*",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Cache-Control", "value": "no-store" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
       ]
     }
   ]

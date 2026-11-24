@@ -12,7 +12,7 @@ flowchart LR
     J[(Synthetic patient JSON<br/>data/demo-patients.json)]
     F[(Versioned assessment definitions<br/>data/*.json)]
     R[Rules and catalogue checks]
-    D[(SQLite file or<br/>PostgreSQL prototype schema)]
+    D[(PostgreSQL prototype schema)]
     G[Google Gemini API<br/>Live voice and doctor chat]
     C <-->|HTTP| N
     P <-->|HTTP and WebSocket| N
@@ -32,7 +32,7 @@ The browser does not connect directly to the database or Gemini. The server owns
 | Core recommendation shortlist | `src/recommendation.js`, `src/assessment-catalog.js` | Current structured observations and four curated entries |
 | Doctor conversation | `src/doctor-chat.js` | De-identified current observations, message, keyword-retrieved candidates, Gemini response checked against those candidates |
 | Questionnaire catalogue | `src/definition-library.js`, `src/draft-library.js`, `src/forms.js` | Versioned JSON definitions and fixed core forms |
-| Assessment sessions and reports | `src/store.js`, `src/draft-store.js`, `src/definition-store.js`, `src/postgres-stores.js` | Configured SQLite or PostgreSQL database |
+| Assessment sessions and reports | `src/postgres-stores.js`, `src/definition-store.js` | Configured PostgreSQL database |
 | Voice bridge | `src/gemini-bridge.js`, `src/definition-voice.js` | Gemini Live and server-side answer validation |
 | Score calculations | `src/assessment.js`, `src/draft-scoring.js`, `src/definition-scoring.js` | Deterministic code and the assigned form snapshot |
 
@@ -153,7 +153,7 @@ flowchart LR
     F[Versioned form JSON] -->|snapshot at session start| S[Assessment session]
     A -->|patient ID and form ID| P[(Prescription record)]
     P --> S
-    S -->|final answers and computed metrics| D[(SQLite or PostgreSQL)]
+    S -->|final answers and computed metrics| D[(PostgreSQL)]
     D --> R[View Test Reports]
     D --> T[Patient activity and score trends]
     J -.->|not stored as a patient table| D
@@ -161,10 +161,10 @@ flowchart LR
 
 | Storage mode | Records |
 | --- | --- |
-| SQLite default | `data/prototype.sqlite`; core `prescriptions`, `assessments`, `answers`, `answer_revisions`; `draft_*` and `definition_*` tables for the other flows |
-| PostgreSQL when `DATABASE_URL` is set | Isolated `pod_assessment_prototype` schema; core/draft `prescriptions` and `sessions`, plus `definition_prescriptions` and `definition_sessions` |
+| PostgreSQL runtime | Database `assessment_config_prototype`; isolated `pod_assessment_prototype` schema; core/draft `prescriptions` and `sessions`, plus `definition_prescriptions` and `definition_sessions` |
+| Explicit test backend | Temporary SQLite files or `:memory:` databases used only by automated tests and synthetic review tools |
 
-Core/draft PostgreSQL sessions and generic definition sessions keep JSON state; the generic session includes its exact form snapshot, answers, context, completion time, and calculations. SQLite uses corresponding local tables. Sample patient labels and summaries remain in the checked-in JSON file. A production Casebook integration would need authenticated patient lookup and stable patient IDs before replacing this demo source.
+Core/draft PostgreSQL sessions and generic definition sessions keep JSON state; the generic session includes its exact form snapshot, answers, context, completion time, and calculations. Sample patient labels and summaries remain in the checked-in JSON file. A production Casebook integration would need authenticated patient lookup and stable patient IDs before replacing this demo source.
 
 The report view reads saved completed sessions. Analytics combine completed prescriptions across the three form families, show activity over time, and plot scores only against the **same assessment, version, language, and metric**. Forms without a valid comparable score remain visible in activity and reports without being plotted as a misleading score trend.
 

@@ -11,7 +11,7 @@ test('form-test WebSocket flow allows final review before generating a PHQ-9 rep
   const root = fileURLToPath(new URL('..', import.meta.url));
   const child = spawn(process.execPath, ['src/server.js'], {
     cwd: root,
-    env: { ...process.env, PORT: String(port), DB_PATH: ':memory:', GEMINI_API_KEY: '' },
+    env: { ...process.env, DATABASE_URL: '', ALLOW_SQLITE_TEST_BACKEND: 'true', PORT: String(port), DB_PATH: ':memory:', GEMINI_API_KEY: '' },
     stdio: 'ignore',
   });
   let socket;

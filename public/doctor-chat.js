@@ -71,7 +71,7 @@ byId('doctor-chat-form').addEventListener('submit', async (event) => {
   byId('doctor-chat-input').value = '';
   appendMessage('doctor', message);
   try {
-    const response = await fetch(`/api/demo-patients/${encodeURIComponent(patientId)}/doctor-chat`, {
+    const response = await fetch(`/api/patients/${encodeURIComponent(patientId)}/doctor-chat`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ message, history: history.slice(-8) }),
     });

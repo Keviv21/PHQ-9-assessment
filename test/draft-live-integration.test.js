@@ -11,7 +11,7 @@ test('imported questionnaire supports a saved unscored WebSocket session', { tim
   const base = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, ['src/server.js'], {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
-    env: { ...process.env, PORT: String(port), DB_PATH: ':memory:', GEMINI_API_KEY: '' },
+    env: { ...process.env, DATABASE_URL: '', ALLOW_SQLITE_TEST_BACKEND: 'true', PORT: String(port), DB_PATH: ':memory:', GEMINI_API_KEY: '' },
     stdio: 'ignore',
   });
   let socket;

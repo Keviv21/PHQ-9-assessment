@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { validateDeploymentEnvironment } from '../src/deployment.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-validateDeploymentEnvironment();
+validateDeploymentEnvironment(process.env, { requireDatabase: false });
 assert.ok(Number(process.versions.node.split('.')[0]) >= 24, 'Node.js 24 or newer is required.');
 
 async function files(directory) {

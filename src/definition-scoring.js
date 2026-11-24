@@ -1,5 +1,5 @@
 import { scoringRuntimeHash } from './assessment-content.js';
-export const scoringEngineVersion = 'definition-engine-2';
+export const scoringEngineVersion = 'definition-engine-3';
 const numeric = (value) => typeof value === 'number' && Number.isFinite(value);
 const compare = (left, operator, right) => {
   if (operator === 'equals') return left === right;
@@ -12,14 +12,14 @@ const compare = (left, operator, right) => {
   return null;
 };
 
-export function conditionState(condition, answers, questions, context = {}) {
+export function conditionState(condition, answers, questions, context = {}, visiting = new Set()) {
   if (!condition) return true;
   if (Array.isArray(condition.any)) {
-    const states = condition.any.map((entry) => conditionState(entry, answers, questions, context));
+    const states = condition.any.map((entry) => conditionState(entry, answers, questions, context, visiting));
     return states.includes(true) ? true : states.includes(null) ? null : false;
   }
   if (Array.isArray(condition.all)) {
-    const states = condition.all.map((entry) => conditionState(entry, answers, questions, context));
+    const states = condition.all.map((entry) => conditionState(entry, answers, questions, context, visiting));
     return states.includes(false) ? false : states.includes(null) ? null : true;
   }
   if (condition.context_key) {
@@ -27,7 +27,11 @@ export function conditionState(condition, answers, questions, context = {}) {
     return compare(context[condition.context_key], condition.operator, condition.value);
   }
   const item = questions.find(({ id }) => id === condition.item_id);
-  if (!item || !Object.hasOwn(answers, item.id)) return null;
+  if (!item || visiting.has(item.id)) return null;
+  const next = new Set(visiting).add(item.id);
+  const eligible = conditionState(item.displayIf, answers, questions, context, next);
+  if (eligible !== true) return eligible;
+  if (!Object.hasOwn(answers, item.id)) return null;
   const answer = answers[item.id];
   let value = answer;
   if (condition.value_field && condition.value_field !== 'answer_id' && typeof answer === 'string') {

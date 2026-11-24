@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env --env-file-if-exists=.env.local src/server.js",
     "start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local src/server.js",
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "db:check": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-database.mjs",
     "db:inspect": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/inspect-database.mjs",
     "db:smoke": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-postgres.mjs",
@@ -29,12 +29,30 @@
     "smoke:doctor": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-doctor-chat.mjs",
     "smoke:definition-live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-definition-live.mjs",
     "library:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-library.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "library:prepare": "node scripts/prepare-assessment-review.mjs",
+    "library:preview": "node scripts/preview-assessment-review.mjs",
+    "library:verify-review": "node scripts/verify-assessment-review.mjs",
+    "library:check-review-browser": "node scripts/check-assessment-review-browser.mjs",
+    "library:prepare-analysis": "node scripts/prepare-analysis-library.mjs",
+    "library:preview-app": "node scripts/preview-analysis-app.mjs",
+    "library:check-analysis-browser": "node scripts/check-analysis-browser.mjs",
+    "library:prepare-all-reports": "node scripts/compile-all-report-specs.mjs",
+    "library:verify-all-reports": "node scripts/verify-all-report-specs.mjs",
+    "library:import-report-profiles": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-report-profiles.mjs",
+    "library:smoke-report-profiles": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-report-profiles-postgres.mjs",
+    "assessment:validate": "node scripts/validate-assessment-definition.mjs",
+    "assessment:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-canonical-assessment.mjs",
+    "db:migrate:patients": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrate-patient-storage.mjs",
+    "patient:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-patient-json.mjs",
+    "report-visual:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-report-visual-spec.mjs",
+    "report-visual:import-all": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/import-all-report-visual-specs.mjs"
   },
   "dependencies": {
     "@google/genai": "2.32.0",
+    "@neondatabase/serverless": "^1.2.1",
     "pg": "^8.23.1",
-    "ws": "8.22.1",
-    "playwright-core": "1.59.1"
+    "playwright-core": "1.59.1",
+    "ws": "8.22.1"
   }
 }

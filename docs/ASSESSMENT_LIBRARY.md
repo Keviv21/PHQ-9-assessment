@@ -10,10 +10,10 @@ attribution requirements before publishing extracted text or images.
 
 ## Destination and configuration
 
-The requested destination is database **`sagar prototype`**, schema
+The test-branch destination is database **`assessment_config_prototype`**, schema
 **`pod_assessment_prototype`**. Configure its `DATABASE_URL` in ignored `.env.local`
 with `sslmode=verify-full`. Do not overwrite a different checkout's configured env.
-Set `ASSESSMENT_DATABASE_NAME=sagar prototype` to prevent importing into another
+Set `ASSESSMENT_DATABASE_NAME=assessment_config_prototype` to prevent importing into another
 database by mistake. The configuration is not committed.
 
 Five additive library tables are used:
@@ -39,7 +39,7 @@ Requires Node 24+, Python 3 (standard library only), and `npm ci`.
 npm run library:import -- \
   --source ../assessment-url-preview/assessment-exports/current/all-assessments.json \
   --source-root ../assessment-url-preview \
-  --expected-database "sagar prototype" \
+  --expected-database "assessment_config_prototype" \
   --export data/assessment-library.json \
   --dry-run
 ```

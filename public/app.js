@@ -537,7 +537,7 @@ async function start(nextMode) {
 
 async function refreshRecent() {
   if (!demoPatientId) return;
-  const response = await fetch(`/api/demo-patients/${encodeURIComponent(demoPatientId)}/reports`);
+  const response = await fetch(`/api/patients/${encodeURIComponent(demoPatientId)}/reports`);
   const results = await response.json();
   ui.recent.replaceChildren();
   if (!results.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'No completed assessments yet.'; ui.recent.append(empty); return; }

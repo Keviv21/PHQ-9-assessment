@@ -1,8 +1,16 @@
-// Hosting configuration is checked before opening a database. A temporary SQLite
-// file on a function instance would lose patient work on the next cold start.
-export function validateDeploymentEnvironment(env = process.env) {
+// Runtime storage is PostgreSQL. SQLite is available only to explicitly isolated
+// tests and synthetic review tools that never contain patient data.
+export function usesExplicitSqliteTestBackend(env = process.env) {
+  return env.ALLOW_SQLITE_TEST_BACKEND === 'true' && Boolean(env.DB_PATH?.trim());
+}
+
+export function validateDeploymentEnvironment(env = process.env, { requireDatabase = true } = {}) {
+  const sqliteTestBackend = usesExplicitSqliteTestBackend(env);
   if (env.VERCEL && !env.DATABASE_URL?.trim()) {
-    throw new Error('Vercel requires DATABASE_URL with persistent PostgreSQL storage; SQLite is only supported locally.');
+    throw new Error('Vercel requires DATABASE_URL with persistent PostgreSQL storage.');
+  }
+  if (requireDatabase && !env.DATABASE_URL?.trim() && !sqliteTestBackend) {
+    throw new Error('DATABASE_URL is required. SQLite is available only for explicitly isolated tests.');
   }
   if (env.DATABASE_URL) {
     let url;

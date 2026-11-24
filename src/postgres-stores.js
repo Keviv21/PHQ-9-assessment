@@ -9,6 +9,7 @@ import { dass21DraftId, scoreImportedAssessment } from './draft-scoring.js';
 const schema = 'pod_assessment_prototype';
 const sessions = `${schema}.sessions`;
 const prescriptions = `${schema}.prescriptions`;
+const patientIdPattern = /^(?:demo-[a-z]|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
 export function openPostgresStores(connectionString = process.env.DATABASE_URL) {
   if (!connectionString) throw new Error('DATABASE_URL is required for PostgreSQL storage.');
@@ -111,7 +112,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
   }
 
   async function prescribe(patientId, formId, kind) {
-    if (!/^demo-[a-z]$/.test(patientId)) throw new RangeError('Unsupported patient.');
+    if (!patientIdPattern.test(patientId)) throw new RangeError('Unsupported patient.');
     if (kind === 'scored' && !['phq9', 'gad7', 'pcl5'].includes(formId)) throw new RangeError('Unsupported prescription.');
     if (kind === 'draft' && !getLiveDraftForm(formId)) throw new RangeError('This imported assessment is unavailable for assignment.');
     const id = randomUUID();
@@ -122,7 +123,7 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
 
   function newScoredState(mode, language, patientId, formId) {
     if (!['demo', 'live'].includes(mode)) throw new RangeError('Unsupported mode.');
-    if (patientId !== null && !/^demo-[a-z]$/.test(patientId)) throw new RangeError('Unsupported demo patient.');
+    if (patientId !== null && !patientIdPattern.test(patientId)) throw new RangeError('Unsupported patient.');
     const form = getAssessmentForm(formId, language);
     return { id: randomUUID(), formId, formVersion: form.version, language, mode,
       collectionMethod: mode === 'live' ? 'conversational_inference' : 'explicit_choice',

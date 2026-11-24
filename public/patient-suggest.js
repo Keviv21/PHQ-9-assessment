@@ -74,7 +74,7 @@ picker.addEventListener('change', async () => {
   summaryArea.replaceChildren(element('p', 'Loading patient summary…'));
   output.replaceChildren(element('p', 'Preparing suggestion…', 'info'));
   try {
-    const response = await fetch(`/api/demo-patients/${encodeURIComponent(picker.value)}/recommendations`);
+    const response = await fetch(`/api/patients/${encodeURIComponent(picker.value)}/recommendations`);
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not prepare suggestion.');
     if (currentRequest !== requestNumber) return;
@@ -88,7 +88,7 @@ picker.addEventListener('change', async () => {
 });
 
 try {
-  const response = await fetch('/api/demo-patients');
+  const response = await fetch('/api/patients');
   if (!response.ok) throw new Error('Could not load the patient list.');
   const patients = await response.json();
   for (const patient of patients) {

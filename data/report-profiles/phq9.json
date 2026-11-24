@@ -1,0 +1,154 @@
+{
+  "id": "phq9-graphs",
+  "version": "1.0.0",
+  "assessmentId": "patient-health-questionnaire-depression-phq-9--8f81b7b3270c",
+  "compatibleScoringHash": "193720a8ff2a5e0ff7623707c53160d4dd6957d38533d2c64fe4d6d528ba4c57",
+  "status": "development_preview",
+  "metricId": "total_raw",
+  "minimum": 0,
+  "maximum": 27,
+  "bands": [
+    {
+      "label": "Minimal",
+      "min": 0,
+      "max": 4,
+      "colour": "#c6e4dd"
+    },
+    {
+      "label": "Mild",
+      "min": 5,
+      "max": 9,
+      "colour": "#dce9ab"
+    },
+    {
+      "label": "Moderate",
+      "min": 10,
+      "max": 14,
+      "colour": "#ffe5a1"
+    },
+    {
+      "label": "Moderately severe",
+      "min": 15,
+      "max": 19,
+      "colour": "#ffcba7"
+    },
+    {
+      "label": "Severe",
+      "min": 20,
+      "max": 27,
+      "colour": "#efa9a9"
+    }
+  ],
+  "charts": [
+    "severity_bar",
+    "community_cumulative",
+    "reference_distributions",
+    "visit_trend",
+    "item_profile"
+  ],
+  "communityReference": {
+    "label": "German community sample",
+    "sampleSize": 2519,
+    "ageRange": "16–96 years",
+    "collected": "December 2020–March 2021",
+    "statistic": "Percentage scoring at or below the raw score",
+    "sourceId": "kliem2024",
+    "table": "Table 2, total sample",
+    "lookup": {
+      "0": 41,
+      "1": 52.3,
+      "2": 64.3,
+      "3": 72.9,
+      "4": 79.2,
+      "5": 83.8,
+      "6": 87.5,
+      "7": 89.4,
+      "8": 92.1,
+      "9": 93.9,
+      "10": 95,
+      "11": 95.9,
+      "12": 96.4,
+      "13": 97.2,
+      "14": 97.8,
+      "15": 98.3,
+      "16": 98.8,
+      "17": 99,
+      "18": 99,
+      "19": 99.3,
+      "20": 99.5,
+      "21": 99.6,
+      "22": 99.7,
+      "23": 99.8,
+      "24": null,
+      "25": 99.8,
+      "26": 99.9,
+      "27": ">99.9"
+    },
+    "missingPolicy": "Do not interpolate. Score 24 is omitted in the published table.",
+    "applicability": "Descriptive comparison with this study sample only. Not an age-, sex-, country- or language-matched patient norm or a probability of a diagnosis."
+  },
+  "referenceGroups": [
+    {
+      "label": "Community",
+      "population": "German community sample, ages 16–96",
+      "n": 2519,
+      "counts": [
+        1996,
+        370,
+        97,
+        38,
+        18
+      ],
+      "sourceId": "kliem2024",
+      "table": "Table 3"
+    },
+    {
+      "label": "Other depressive disorder",
+      "population": "US primary care; interview-classified subgroup",
+      "n": 65,
+      "counts": [
+        8,
+        23,
+        17,
+        14,
+        3
+      ],
+      "sourceId": "kroenke2001",
+      "table": "Table 2"
+    },
+    {
+      "label": "Major depressive disorder",
+      "population": "US primary care; interview-classified subgroup",
+      "n": 41,
+      "counts": [
+        1,
+        4,
+        8,
+        14,
+        14
+      ],
+      "sourceId": "kroenke2001",
+      "table": "Table 2"
+    }
+  ],
+  "sources": [
+    {
+      "id": "kliem2024",
+      "citation": "Kliem et al. (2024). Psychometric evaluation and community norms of the PHQ-9, based on a representative German sample. Tables 2–3.",
+      "doi": "10.3389/fpsyt.2024.1483782",
+      "licence": "CC BY",
+      "retrieved": "2026-11-19"
+    },
+    {
+      "id": "kroenke2001",
+      "citation": "Kroenke, Spitzer & Williams (2001). The PHQ-9: Validity of a Brief Depression Severity Measure. Table 2.",
+      "doi": "10.1046/j.1525-1497.2001.016009606.x",
+      "retrieved": "2026-11-19"
+    }
+  ],
+  "notes": [
+    "Reference distributions describe study samples; they do not determine a patient’s diagnosis.",
+    "Groups come from different studies and settings. Bars show observed severity-band frequencies, not fitted probability curves.",
+    "The score trend compares compatible saved visits. No reliable-change or treatment-effect conclusion is inferred."
+  ]
+}

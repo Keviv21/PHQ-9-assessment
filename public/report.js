@@ -44,7 +44,9 @@ if (definitionSessionId && /^[0-9a-f-]{36}$/i.test(definitionSessionId)) {
       backLink.textContent = '← आकलन पर वापस जाएँ';
       printButton.textContent = 'प्रिंट करें / PDF के रूप में सहेजें';
     }
-    renderReport(container, assessment, form);
+    if (assessment.formId === 'phq9' && assessment.formVersion === 'v1-prototype' && assessment.language === 'en') {
+      location.replace(`/api/phq9-sessions/${encodeURIComponent(assessment.id)}/report.html`);
+    } else renderReport(container, assessment, form);
     printButton.disabled = false;
   } catch (error) {
     container.textContent = error.message;

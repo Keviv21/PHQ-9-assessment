@@ -52,7 +52,16 @@ export function openAssessmentLibrary({ pool, path, schema = 'pod_assessment_pro
       } finally { client?.release(); }
     },
     async activeDefinitions() {
-      return (await query(`SELECT v.runtime FROM ${table('assessment_library')} a JOIN ${table('assessment_versions')} v ON v.id=a.active_version_id ORDER BY a.id`)).map(r => decode(r.runtime));
+      const definitions = [];
+      let afterId = '';
+      while (true) {
+        const rows = await query(`SELECT a.id,v.runtime FROM ${table('assessment_library')} a
+          JOIN ${table('assessment_versions')} v ON v.id=a.active_version_id
+          WHERE a.id>$1 ORDER BY a.id LIMIT 25`, [afterId]);
+        definitions.push(...rows.map(row => decode(row.runtime)));
+        if (rows.length < 25) return definitions;
+        afterId = rows.at(-1).id;
+      }
     },
     async getVersion(id) {
       const [row] = await query(`SELECT definition,runtime FROM ${table('assessment_versions')} WHERE id=$1`, [id]);

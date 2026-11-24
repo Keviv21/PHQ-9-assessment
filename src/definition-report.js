@@ -1,11 +1,27 @@
-import { contentHash, displayText, displayTitle } from './assessment-content.js';
+import { contentHash, displayText, displayTitle, scoringRuntimeHash } from './assessment-content.js';
 import { conditionState } from './definition-scoring.js';
+import { phq9VisualData, phq9ReportHtml } from './phq9-report.js';
+import { analysisVisualData, analysisReportHtml } from './analysis-report.js';
+import { reportVisualSpecData, visualReportHtml } from './visual-report.js';
+import { getDefinition } from './definition-library.js';
 
-export const reportTemplateVersion = 'assessment-report-1';
+export const reportTemplateVersion = 'assessment-report-2';
+export function withActiveReportVisualSpec(state, activeDefinition = getDefinition(state.formId)) {
+  const savedVersionId = state.formSnapshot?.versionId ?? state.formVersion;
+  const spec = activeDefinition?.reporting?.reportVisualSpec;
+  if (!spec || activeDefinition.id !== state.formId || activeDefinition.versionId !== savedVersionId ||
+      spec.assessmentId !== state.formId || spec.assessmentVersionId !== savedVersionId) return state;
+  if (state.formSnapshot?.reporting?.reportVisualSpec?.visualSpecVersionId === spec.visualSpecVersionId) return state;
+  return { ...state, formSnapshot: { ...state.formSnapshot,
+    reporting: { ...state.formSnapshot.reporting, reportVisualSpec: spec } } };
+}
 export function comparisonKey(state) {
   return contentHash({ patient: state.demoPatientId, id: state.formId,
-    version: state.formSnapshot.versionId ?? state.formVersion,
+    version: state.formSnapshot.id.startsWith('patient-health-questionnaire-depression-phq-9--') && state.formSnapshot.runtimeHash === scoringRuntimeHash(state.formSnapshot)
+      ? state.formSnapshot.runtimeHash : state.formSnapshot.versionId ?? state.formVersion,
     content: state.formSnapshot.runtimeHash ?? state.formSnapshot,
+    reportProfileVersion: state.formSnapshot.reporting?.analysisProfile?.profileVersionId ?? null,
+    reportVisualSpecVersion: state.formSnapshot.reporting?.reportVisualSpec?.visualSpecVersionId ?? null,
     language: state.formSnapshot.language || 'en', context: state.context || {},
     engine: state.scores?.engineVersion ?? 'legacy', status: state.scores?.status });
 }
@@ -19,6 +35,8 @@ function responseLabel(state, item) {
   return Array.isArray(answer) ? answer.map(label).join(', ') : label(answer);
 }
 export function buildDefinitionReport(state, history = []) {
+  state = withActiveReportVisualSpec(state);
+  history = history.map(visit => withActiveReportVisualSpec(visit));
   if (state.status !== 'completed' || !state.scores) throw new RangeError('Complete the assessment before generating a report.');
   const d = state.formSnapshot;
   const earlier = history.filter(s => s.id !== state.id && s.status === 'completed' && s.completedAt <= state.completedAt && comparisonKey(s) === comparisonKey(state))
@@ -31,8 +49,17 @@ export function buildDefinitionReport(state, history = []) {
     return { ...m, label: displayText(config?.label || m.label), unit: config?.axis_unit || 'score',
       previousChange: delta(points.at(-2)), baselineChange: points.length > 1 ? delta(points[0]) : null, points };
   });
-  const responses = d.questions.map(item => ({ id: item.id, order: item.order, text: item.text,
-    value: responseLabel(state, item), history: visits.map(s => ({ date: s.completedAt, value: responseLabel(s, s.formSnapshot.questions.find(q => q.id === item.id)) })) }));
+  const responses = d.questions.map(item => {
+    const answer = state.answers[item.id];
+    const selected = Array.isArray(answer) ? null : item.options?.find(option => option.id === answer);
+    return { id: item.id, order: item.order, text: item.text,
+      value: responseLabel(state, item), selectedOptionId: selected?.id ?? null,
+      printedValue: Number.isFinite(selected?.printed_value) ? selected.printed_value : null,
+      options: (item.options || []).map(option => ({ id: option.id, text: option.text,
+        printedValue: Number.isFinite(option.printed_value) ? option.printed_value : null })),
+      history: visits.map(s => ({ date: s.completedAt,
+        value: responseLabel(s, s.formSnapshot.questions.find(q => q.id === item.id)) })) };
+  });
   const groups = (d.reporting?.response_groups || []).map(g => ({ label: g.label, responses: g.item_ids.map(id => responses.find(r => r.id === id)).filter(Boolean) }));
   const limitations = [...new Set([
     'Draft results are not clinically validated. No diagnosis, percentile or reliable-change conclusion is inferred.',
@@ -41,11 +68,14 @@ export function buildDefinitionReport(state, history = []) {
     ...(d.reporting?.paired_profile ? ['Paired profile unavailable until compatible paired administrations and interpretation are verified.'] : []),
   ].map(displayText).filter(Boolean))];
   return { id: state.id, title: displayTitle(d.title), description: displayText(d.description), administration: displayText(d.administration),
-    patient: state.demoPatientId, completedAt: state.completedAt, definitionVersion: d.version,
+    patient: state.patientDetails?.name || state.demoPatientId, patientId: state.demoPatientId,
+    patientDetails: state.patientDetails || null, completedAt: state.completedAt, definitionVersion: d.version,
     definitionVersionId: d.versionId ?? state.formVersion, engineVersion: state.scores.engineVersion ?? 'Legacy saved result',
     reportVersion: reportTemplateVersion, mode: d.reporting?.mode ?? (metrics.length ? 'numeric_scores' : 'descriptive_responses'),
+    reportProfileVersionId: d.reporting?.analysisProfile?.profileVersionId ?? null,
     draftLabel: state.scores.label || 'Draft score — not clinically validated',
-    metrics, responses, groups, context: state.context || {}, visits: visits.map(s => ({ id: s.id, date: s.completedAt })),
+    visualSpec: reportVisualSpecData(d, metrics, visits),
+    analysis: analysisVisualData(d, metrics), phq9: d.reporting?.analysisProfile ? null : phq9VisualData(d, metrics, state.answers), metrics, responses, groups, context: state.context || {}, visits: visits.map(s => ({ id: s.id, date: s.completedAt })),
     limitations, references: d.references || [] };
 }
 
@@ -70,6 +100,9 @@ function responseTable(responses) {
   return `<table><thead><tr><th>Item</th><th>Question</th><th>Response</th></tr></thead><tbody>${responses.map(r => `<tr><td>${esc(r.order ?? r.id)}</td><td>${esc(r.text)}</td><td>${esc(r.value)}</td></tr>`).join('')}</tbody></table>`;
 }
 export function definitionReportHtml(report, { printControls = true } = {}) {
+  if (report.visualSpec) return visualReportHtml(report, { printControls });
+  if (report.analysis) return analysisReportHtml(report, { printControls });
+  if (report.phq9) return phq9ReportHtml(report, { printControls });
   const metricRows = report.metrics.map(m => `<tr><td>${esc(m.label)}</td><td>${m.value === null ? esc(m.reason || 'Unavailable') : number(m.value)}</td><td>${number(m.minimum)}–${number(m.maximum)}</td><td>${number(m.previousChange)}</td><td>${number(m.baselineChange)}</td></tr>`).join('');
   const history = report.visits.length > 1 ? `<h2>Response history</h2><p>Only compatible saved definitions, respondent context and scoring engines are compared. Numeric changes are not improvement claims.</p>${report.responses.map(r => `<details open><summary>${esc(r.text)}</summary><table><tbody>${r.history.map(v => `<tr><td>${esc(date(v.date))}</td><td>${esc(v.value)}</td></tr>`).join('')}</tbody></table></details>`).join('')}` : '<p>One completed visit is available. Complete a compatible assessment again to see change over time.</p>';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(report.title)} | OpenMind</title><style>

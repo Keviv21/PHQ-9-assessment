@@ -7,7 +7,7 @@ const port = 4199;
 const base = `http://127.0.0.1:${port}`;
 const child = spawn(process.execPath, ['src/server.js'], {
   cwd: new URL('..', import.meta.url),
-  env: { ...process.env, PORT: String(port), DATABASE_URL: '', DB_PATH: ':memory:' },
+  env: { ...process.env, PORT: String(port), DATABASE_URL: '', ALLOW_SQLITE_TEST_BACKEND: 'true', DB_PATH: ':memory:' },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 let childOutput = '';

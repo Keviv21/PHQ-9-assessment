@@ -1,0 +1,141 @@
+{
+  "title": "Assessment report visual specification bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "assessmentCount", "assessments", "bundleHash"],
+  "properties": {
+    "schemaVersion": { "const": "report-visual-spec-bundle/1.0.0" },
+    "assessmentCount": { "type": "integer", "minimum": 1 },
+    "bundleHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "assessments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/visualSpec" }
+    }
+  },
+  "$defs": {
+    "visualSpec": {
+      "type": "object",
+      "required": [
+        "schemaVersion", "assessmentId", "title", "status", "definitionRef",
+        "sources", "page", "theme", "metricBindings", "variants", "sections",
+        "charts", "tables", "assets", "validation", "exceptions"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "report-visual-spec/1.0.0" },
+        "assessmentId": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["draft_extracted", "draft_evidence_compiled"] },
+        "layoutTemplate": { "type": "string" },
+        "definitionRef": {
+          "type": "object",
+          "required": ["assessmentId", "definitionVersion", "questionnaireItemCount", "requiredRuleIds"],
+          "properties": {
+            "assessmentId": { "type": "string" },
+            "definitionVersion": { "type": "string" },
+            "questionnaireItemCount": { "type": "integer", "minimum": 0 },
+            "requiredRuleIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+          }
+        },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "page": { "type": "object" },
+        "theme": { "type": "object" },
+        "metricBindings": { "type": "array", "items": { "$ref": "#/$defs/metricBinding" } },
+        "variants": { "type": "array", "items": { "$ref": "#/$defs/variant" }, "minItems": 2 },
+        "sections": { "type": "array", "items": { "type": "object" } },
+        "charts": { "type": "array", "items": { "$ref": "#/$defs/chart" } },
+        "tables": { "type": "array", "items": { "type": "object" } },
+        "interpretationRules": { "type": ["object", "array"] },
+        "assets": { "type": "array", "items": { "type": "object" } },
+        "observedLayout": { "$ref": "#/$defs/observedLayout" },
+        "validation": { "$ref": "#/$defs/validation" },
+        "exceptions": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "role", "sha256", "pageCount", "usage"],
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "pageCount": { "type": ["integer", "null"], "minimum": 0 },
+        "usage": { "type": "string" }
+      }
+    },
+    "metricBinding": {
+      "type": "object",
+      "required": ["id", "ruleId", "label", "minimum", "maximum", "unit", "missingPolicy"],
+      "properties": {
+        "id": { "type": "string" },
+        "ruleId": { "type": "string" },
+        "label": { "type": "string" },
+        "calculation": { "type": ["string", "null"] },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "unit": { "type": "string" },
+        "precision": { "type": "integer", "minimum": 0 },
+        "missingPolicy": { "type": "string" }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "required": ["id", "when", "chartIds", "sectionIds", "changePolicy"],
+      "properties": {
+        "id": { "enum": ["first_administration", "repeat_administration"] },
+        "when": { "type": "object" },
+        "chartIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "sectionIds": { "type": "array", "items": { "type": "string" } },
+        "changePolicy": { "type": "object" }
+      }
+    },
+    "chart": {
+      "type": "object",
+      "required": ["id", "title", "variantId", "type", "xAxis", "yAxis", "series", "dataPolicy"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "variantId": { "enum": ["first_administration", "repeat_administration"] },
+        "type": { "enum": ["vertical_bar", "line", "multi_line"] },
+        "xAxis": { "type": "object" },
+        "yAxis": {
+          "type": "object",
+          "required": ["minimum", "maximum", "scale"],
+          "properties": {
+            "minimum": { "type": "number" },
+            "maximum": { "type": "number" },
+            "scale": { "const": "linear" }
+          }
+        },
+        "series": { "type": "array", "items": { "type": "object" }, "minItems": 1 },
+        "bands": { "type": "array" },
+        "gradient": { "type": ["object", "null"] },
+        "annotations": { "type": "array" },
+        "legend": { "type": "object" },
+        "dataPolicy": { "type": "object" }
+      }
+    },
+    "observedLayout": {
+      "type": "object",
+      "required": ["pageCount", "chartCount", "tableCount", "sampleReportCount", "imageOnlyEvidence", "numericTemplateVerified", "charts", "tables"],
+      "properties": {
+        "pageCount": { "type": "integer", "minimum": 0 },
+        "chartCount": { "type": "integer", "minimum": 0 },
+        "tableCount": { "type": "integer", "minimum": 0 },
+        "sampleReportCount": { "type": "integer", "minimum": 0 },
+        "imageOnlyEvidence": { "type": "boolean" },
+        "numericTemplateVerified": { "type": "boolean" },
+        "charts": { "type": "array", "items": { "type": "object" } },
+        "tables": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["rendererEquivalent", "clinicalApproved"],
+      "properties": {
+        "rendererEquivalent": { "type": "boolean" },
+        "clinicalApproved": { "type": "boolean" },
+        "numericTemplateVerified": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -45,7 +45,7 @@ able to create and use tables in `pod_assessment_prototype`. Simultaneous cold
 starts serialize schema initialization with a PostgreSQL advisory lock.
 
 Use a separate database for Preview if preview submissions must not appear in
-Production. Local SQLite records are not automatically copied to PostgreSQL.
+Production. Explicit SQLite test data is isolated and is never copied to PostgreSQL.
 
 ## Validate before promoting
 

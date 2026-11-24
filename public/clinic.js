@@ -738,7 +738,7 @@ function renderPatientList() {
   for (const patient of patients.filter((item) => item.label.toLowerCase().includes(query))) {
     const row = el('label', undefined, `patient-row${patient.id === selectedPatientId ? ' selected' : ''}`);
     const radio = el('input');
-    radio.type = 'radio'; radio.name = 'demo-patient'; radio.value = patient.id;
+    radio.type = 'radio'; radio.name = 'patient'; radio.value = patient.id;
     radio.checked = patient.id === selectedPatientId;
     radio.addEventListener('change', () => {
       selectedPatientId = patient.id;
@@ -755,7 +755,9 @@ function renderPatientList() {
     row.append(radio, avatar, name);
     list.append(row);
   }
-  if (!list.children.length) list.append(el('p', 'No patients match this search.', 'empty-state'));
+  if (!list.children.length) list.append(el('p', patients.length
+    ? 'No patients match this search.'
+    : 'No validated patients are available. Import and validate a patient record first.', 'empty-state'));
 }
 
 function renderSummary(result) {
@@ -816,7 +818,8 @@ function renderSuggestions(result) {
 function defaultAssessmentId(result) {
   if (result.status !== 'suggestions') return '';
   if (definitions.some(item => item.versionId)) {
-    const match = definitions.find(item => item.available && item.id === legacyDraftIds[result.primaryAssessmentId]);
+    const suggestedDefinitionId = legacyDraftIds[result.primaryAssessmentId] || result.primaryAssessmentId;
+    const match = definitions.find(item => item.available && item.id === suggestedDefinitionId);
     if (match) return `definition:${match.id}`;
   }
   if (result.primaryAssessmentId === 'dass21') {
@@ -848,7 +851,8 @@ function assessmentChoices() {
 
 function suggestedLibraryIds() {
   return new Set((suggestion?.recommendations || []).map((item) => {
-    const definition = definitions.find(entry => entry.versionId && entry.id === legacyDraftIds[item.id]);
+    const definitionId = legacyDraftIds[item.id] || item.id;
+    const definition = definitions.find(entry => entry.versionId && entry.id === definitionId);
     return definition ? `definition:${definition.id}` : item.id === 'dass21' ? `draft:${legacyDraftIds.dass21}` : item.id;
   }));
 }
@@ -1027,7 +1031,8 @@ function updateSelectedChoice() {
     return;
   }
   const info = assessmentInfo(selectedFormId);
-  const matched = suggestion?.recommendations.find((item) => item.id === (draft ? 'dass21' : selectedFormId));
+  const selectedRecommendationId = definition ? selectedFormId.slice(11) : (draft ? 'dass21' : selectedFormId);
+  const matched = suggestion?.recommendations.find((item) => item.id === selectedRecommendationId);
   const card = el('article', undefined, 'selected-assessment-card');
   card.append(el('h3', info.title), assessmentFacts(info));
   appendOverview(card, info.description, matched?.purpose);
@@ -1055,7 +1060,7 @@ async function loadSuggestion(focus = '') {
   $('prescription-result').replaceChildren();
   try {
     const query = focus ? `?focus=${encodeURIComponent(focus)}` : '';
-    const response = await fetch(`/api/demo-patients/${encodeURIComponent(selectedPatientId)}/recommendations${query}`);
+    const response = await fetch(`/api/patients/${encodeURIComponent(selectedPatientId)}/recommendations${query}`);
     if (!response.ok) throw new Error('Could not load this patient summary.');
     const result = await response.json();
     if (current !== loadNumber) return;
@@ -1086,7 +1091,7 @@ async function prescribe() {
   try {
     const isDefinition = selectedFormId.startsWith('definition:');
     const response = await fetch(isDefinition ? `/api/definition-patients/${encodeURIComponent(selectedPatientId)}/prescriptions` :
-      `/api/demo-patients/${encodeURIComponent(selectedPatientId)}/prescriptions`, {
+      `/api/patients/${encodeURIComponent(selectedPatientId)}/prescriptions`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ formId: isDefinition ? selectedFormId.slice(11) : selectedFormId }),
     });
@@ -1125,8 +1130,8 @@ async function loadReports(patientId) {
   area.replaceChildren(el('p', 'Loading reports…', 'empty-state'));
   try {
     const [prescriptionsResponse, reportsResponse] = await Promise.all([
-      fetch(`/api/demo-patients/${encodeURIComponent(patientId)}/prescriptions`),
-      fetch(`/api/demo-patients/${encodeURIComponent(patientId)}/reports`),
+      fetch(`/api/patients/${encodeURIComponent(patientId)}/prescriptions`),
+      fetch(`/api/patients/${encodeURIComponent(patientId)}/reports`),
     ]);
     if (!prescriptionsResponse.ok || !reportsResponse.ok) throw new Error('Could not load patient reports.');
     const [prescriptions, reports] = await Promise.all([prescriptionsResponse.json(), reportsResponse.json()]);
@@ -1255,7 +1260,7 @@ window.addEventListener('popstate', () => setView(new URL(location.href).searchP
 
 try {
   const [response, catalogueResponse, definitionResponse] = await Promise.all([
-    fetch('/api/demo-patients'), fetch('/api/assessment-library'), fetch('/api/definitions'),
+    fetch('/api/patients'), fetch('/api/assessment-library'), fetch('/api/definitions'),
   ]);
   if (!response.ok || !catalogueResponse.ok || !definitionResponse.ok) throw new Error('Could not load the patient or assessment list.');
   patients.push(...await response.json());

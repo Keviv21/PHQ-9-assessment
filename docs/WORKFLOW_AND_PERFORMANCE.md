@@ -14,7 +14,7 @@ flowchart LR
     N --> B
     B --> C[Participant confirms proposal]
     C --> N
-    N --> D[(SQLite or PostgreSQL write)]
+    N --> D[(PostgreSQL write)]
     D --> Q[Next question or final review]
 ```
 
@@ -64,7 +64,7 @@ Use the provider's current billing data to reconcile cost; do not infer price fr
 
 1. A long conversation accumulates context and may increase model work; the bridge requests context compression but does not expose its savings.
 2. Each answer can require a model proposal, a human confirmation, a database write, and the next model turn. The human and remote-model stages dominate perceived delay but have not been quantified here.
-3. PostgreSQL adds remote round trips compared with SQLite. The chosen backend is visible at `GET /api/health`; neither mode currently has a latency benchmark in this project.
+3. PostgreSQL adds a remote round trip to each persisted operation. The backend is visible at `GET /api/health`; no runtime database latency benchmark has been collected in this project.
 4. Compare the same form, language, device, network, and camera setting when measuring sessions. Different item counts and clarification turns make raw total duration misleading.
 
 Run `npm test` for functional coverage. It verifies scoring and state transitions, not real-time speech quality, provider latency, token cost, or clinical validity.

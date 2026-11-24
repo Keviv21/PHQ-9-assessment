@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { reportProfileFor } from './report-profiles.js';
 
 export const hashBytes = bytes => createHash('sha256').update(bytes).digest('hex');
 export function stableJson(value) {
@@ -62,7 +63,7 @@ export function normalizeDefinition(entry, { bundleHash, versionId = contentHash
     reviewIssues: (entry.review.issues || []).map(({ code, detail }) => ({ code, detail: displayText(detail) })),
     sections: (entry.context_sections || []).map(s => ({ id: s.id, title: displayText(s.title), text: displayText(s.text) })).filter(s => s.title && s.text),
     sourceGuidance: (entry.scoring.source_guidance || []).map(s => ({ title: displayText(s.title), text: displayText(s.text) })).filter(s => s.title && s.text),
-    tables: displayValue(entry.tables || []), reporting: displayValue(entry.reporting),
+    tables: displayValue(entry.tables || []), reporting: { ...displayValue(entry.reporting), ...(reportProfileFor(entry.assessment_id) ? { visualProfile: reportProfileFor(entry.assessment_id) } : {}) },
     references: (entry.references || []).map(r => displayText(r.citation)).filter(Boolean),
     verification: { status: entry.verification.status, contentVerified: verified, rules: entry.verification.rules,
       remainingWork: (entry.verification.remaining_work || []).map(displayText).filter(Boolean), clinicalApproved: false },

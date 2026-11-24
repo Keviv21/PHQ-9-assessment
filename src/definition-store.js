@@ -142,6 +142,7 @@ function openSqlite(path) {
 }
 
 function openPostgres(pool) {
+  const patientIdPattern = /^(?:demo-[a-z]|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
   async function getPrescription(id, client = pool) {
     const result = await client.query(`SELECT p.*, s.state->>'status' AS session_status FROM ${prescriptionsTable} p
       LEFT JOIN ${sessionsTable} s ON s.id=p.session_id WHERE p.id=$1`, [id]);
@@ -173,7 +174,7 @@ function openPostgres(pool) {
       return result.rows.map((row) => summary({ ...row, created_at: row.created_at.toISOString() }));
     },
     async prescribe(patientId, formId) {
-      if (!/^demo-[a-z]$/.test(patientId) || !getDefinition(formId)?.questions.length) throw new RangeError('Assessment unavailable.');
+      if (!patientIdPattern.test(patientId) || !getDefinition(formId)?.questions.length) throw new RangeError('Assessment unavailable.');
       const id = randomUUID();
       await pool.query(`INSERT INTO ${prescriptionsTable} (id, patient_id, form_id) VALUES ($1,$2,$3)`, [id, patientId, formId]);
       return getPrescription(id);
