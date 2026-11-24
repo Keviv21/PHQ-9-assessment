@@ -1,0 +1,18 @@
+@import url('./report-view.css');
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#eef3fa;font-family:Inter,Arial,sans-serif;color:#243347}
+.report-toolbar{max-width:900px;margin:0 auto;padding:18px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.report-toolbar a{color:#2563eb;text-decoration:none;font-size:13px;font-weight:700}
+.report-toolbar button{border:0;border-radius:9px;background:#2563eb;color:#fff;font:700 13px Inter,Arial,sans-serif;padding:10px 14px;cursor:pointer}
+.report-toolbar button:disabled{opacity:.5;cursor:default}
+.report-page{max-width:900px;margin:0 auto 40px;padding:32px;background:#fff;border:1px solid #dfe8f3;border-radius:14px;box-shadow:0 12px 30px #2144670d}
+@media(max-width:650px){.report-page{padding:20px;margin:0 10px 30px}.report-toolbar{padding:14px 10px}}
+@media print{
+  @page{size:A4;margin:15mm}
+  body{background:#fff}
+  .report-toolbar{display:none}
+  .report-page{max-width:none;margin:0;padding:0;border:0;border-radius:0;box-shadow:none}
+  .phq-report-table tr{break-inside:avoid}
+  .phq-report-score,.phq-report-severity,.phq-report-track,.phq-report-band.active,.phq-report-alert{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
