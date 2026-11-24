@@ -132,7 +132,7 @@ function updateAssessmentDropdown() {
   const select = byId('analytics-assessment');
   if (!select) return;
   const currentVal = select.value;
-  select.replaceChildren(new Option('All assessments', 'all'));
+  select.replaceChildren(new Option('Select assessment', ''));
   if (!patientData) return;
   const formMap = new Map();
   for (const item of (patientData.activity || [])) {
@@ -148,10 +148,10 @@ function updateAssessmentDropdown() {
   for (const [formId, title] of [...formMap.entries()].sort((a, b) => a[1].localeCompare(b[1]))) {
     select.add(new Option(title, formId));
   }
-  if (formMap.has(currentVal)) {
+  if (currentVal && formMap.has(currentVal)) {
     select.value = currentVal;
   } else {
-    select.value = 'all';
+    select.value = '';
   }
 }
 
@@ -161,11 +161,15 @@ function renderPatient() {
     area.replaceChildren(node('p', 'Choose a patient to see their score history.', 'empty-state'));
     return;
   }
-  const selectedForm = byId('analytics-assessment')?.value || 'all';
-  const activity = (patientData.activity || []).filter((item) => selectedForm === 'all' || item.formId === selectedForm);
+  const selectedForm = byId('analytics-assessment')?.value || '';
+  if (!selectedForm) {
+    area.replaceChildren(node('p', 'Select an assessment to view results and score history.', 'empty-state'));
+    return;
+  }
+  const activity = (patientData.activity || []).filter((item) => item.formId === selectedForm);
   const series = patientData.series.map((item) => ({ ...item,
     points: item.points,
-  })).filter((item) => (selectedForm === 'all' || item.formId === selectedForm) && item.points.length);
+  })).filter((item) => item.formId === selectedForm && item.points.length);
   area.replaceChildren();
   if (activity.length) {
     const card = node('section', undefined, 'analytics-activity');
