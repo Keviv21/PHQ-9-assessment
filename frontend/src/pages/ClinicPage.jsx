@@ -93,7 +93,7 @@ export default function ClinicPage() {
             <section className="panel analytics-panel"><h2>By assessment</h2><div id="analytics-by-form"></div></section>
           </div>
           <section className="panel analytics-patient-panel">
-            <div className="analytics-patient-heading"><div><h2>Patient progress</h2><p>View every completed assessment and follow each available score over time.</p></div><div className="analytics-controls"><label htmlFor="analytics-patient">Patient<select id="analytics-patient" className="patient-picker"><option value="">Choose a patient</option></select></label><label htmlFor="analytics-range">Period<select id="analytics-range" className="patient-picker"><option value="all">All time</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></label></div></div>
+            <div className="analytics-patient-heading"><div><h2>Patient progress</h2><p>View every completed assessment and follow each available score over time.</p></div><div className="analytics-controls"><label htmlFor="analytics-patient">Patient<select id="analytics-patient" className="patient-picker"><option value="">Choose a patient</option></select></label><label htmlFor="analytics-assessment">Assessment<select id="analytics-assessment" className="patient-picker"><option value="all">All assessments</option></select></label></div></div>
             <div id="analytics-patient-content"><p className="empty-state">Choose a patient to see their score history.</p></div>
           </section>
         </section>
