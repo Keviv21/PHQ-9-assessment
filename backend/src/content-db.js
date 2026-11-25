@@ -17,8 +17,8 @@ function postgresPool() {
   const connectionString = process.env.DATABASE_URL;
   const url = new URL(connectionString);
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || !url.hostname ||
-      url.searchParams.get('sslmode') !== 'verify-full') {
-    throw new Error('DATABASE_URL must be a PostgreSQL URL with sslmode=verify-full.');
+      !['verify-full', 'require'].includes(url.searchParams.get('sslmode'))) {
+    throw new Error('DATABASE_URL must be a PostgreSQL URL with sslmode=require or sslmode=verify-full.');
   }
   return new pg.Pool({ connectionString, max: 2, connectionTimeoutMillis: 15000,
     idleTimeoutMillis: 1000, allowExitOnIdle: true });

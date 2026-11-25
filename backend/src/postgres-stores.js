@@ -14,8 +14,8 @@ export function openPostgresStores(connectionString = process.env.DATABASE_URL) 
   if (!connectionString) throw new Error('DATABASE_URL is required for PostgreSQL storage.');
   const parsed = new URL(connectionString);
   if (!['postgres:', 'postgresql:'].includes(parsed.protocol) || !parsed.hostname ||
-      parsed.searchParams.get('sslmode') !== 'verify-full') {
-    throw new Error('DATABASE_URL must be a PostgreSQL URL with sslmode=verify-full.');
+      !['verify-full', 'require'].includes(parsed.searchParams.get('sslmode'))) {
+    throw new Error('DATABASE_URL must be a PostgreSQL URL with sslmode=require or sslmode=verify-full.');
   }
   const pool = new pg.Pool({ connectionString, max: 5, connectionTimeoutMillis: 15000,
     idleTimeoutMillis: 30000 });
